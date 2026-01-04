@@ -1,0 +1,17 @@
+{
+  "name": "orderflow-pro",
+  "version": "1.0.0",
+  "description": "OrderFlow Pro - Sistema di gestione ordini",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Build complete'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.28.1"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}
