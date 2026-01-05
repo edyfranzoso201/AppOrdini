@@ -1,7 +1,6 @@
 import { getRedis, KEYS } from './lib/redis.js';
 
 export default async function handler(req, res) {
-  // Configurazione per permettere al frontend di comunicare con l'API
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -12,14 +11,12 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // Recupera i dati dal database
       const data = await redis.get(KEYS.ACTIVITY_LOG);
       const logs = data ? (typeof data === 'string' ? JSON.parse(data) : data) : [];
       return res.status(200).json(logs);
     }
 
     if (req.method === 'POST') {
-      // Salva nuovi dati nel database
       const newLog = req.body;
       const currentData = await redis.get(KEYS.ACTIVITY_LOG);
       let logs = currentData ? (typeof currentData === 'string' ? JSON.parse(currentData) : currentData) : [];
