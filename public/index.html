@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OrderFlow Pro - Sistema Gestione Ordini</title>
-    <link rel="stylesheet" href="/output.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -4097,7 +4097,6 @@
                             }
                         }
                     </style>
-                <script src="/api-adapter.js"></script>
 </head>
                 <body>
                     <div class="container">
@@ -5621,22 +5620,50 @@
             if (modal) modal.remove();
         }
         
-        // Salva configurazione
-        function saveQuickIdConfig() {
-            const quickIdFilters = {};
-            
-            for (let i = 1; i <= 15; i++) { // 15 pulsanti
-                const min = document.getElementById(`quickIdMin_${i}`).value.trim();
-                const max = document.getElementById(`quickIdMax_${i}`).value.trim();
-                
-                if (min && max) {
-                    quickIdFilters[i] = { min, max };
-                }
-            }
-            
-            localStorage.setItem('quickIdFilters', JSON.stringify(quickIdFilters));
-            closeQuickIdConfig();
-            initQuickIdButtons();
+// --- NUOVO SISTEMA DATABASE ---
+const DB = {
+    async fetchAll() {
+        try {
+            const res = await fetch('/api/index');
+            const data = await res.json();
+            return data || { quickIdFilters: {} };
+        } catch (e) { return { quickIdFilters: {} }; }
+    },
+    async saveAll(data) {
+        await fetch('/api/index', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    }
+};
+
+let appData = { quickIdFilters: {} };
+
+async function initApp() {
+    const data = await DB.fetchAll();
+    appData = data;
+    initQuickIdButtons(); // Avvia i pulsanti con i dati del database
+}
+
+function saveQuickIdConfig() {
+    const filters = {};
+    for (let i = 1; i <= 15; i++) {
+        const min = document.getElementById(`quickIdMin_${i}`)?.value.trim();
+        const max = document.getElementById(`quickIdMax_${i}`)?.value.trim();
+        if (min && max) filters[i] = { min, max };
+    }
+    
+    appData.quickIdFilters = filters;
+    DB.saveAll(appData).then(() => {
+        closeQuickIdConfig();
+        initQuickIdButtons();
+        alert("✅ Configurazione salvata nel Cloud (Upstash)!");
+    });
+}
+
+// Avvio automatico
+window.addEventListener('DOMContentLoaded', initApp);
             
             const configCount = Object.keys(quickIdFilters).length;
             alert(`✅ Configurazione salvata!\n\n📊 ${configCount} pulsanti configurati su 15 disponibili.`);
