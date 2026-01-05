@@ -10,36 +10,39 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { font-family: 'Inter', Arial, sans-serif; }
+        * { font-family: Arial, 'Inter', sans-serif; }
         body { overflow: hidden; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); } 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .tab-content { display: none; height: calc(100vh - 80px); overflow-y: auto; animation: fadeIn 0.3s ease-out; }
+        .tab-content { display: none; height: calc(100vh - 100px); overflow-y: auto; animation: fadeIn 0.3s ease-out; }
         .tab-content.active { display: block; }
-        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="h-screen flex items-center justify-center p-4">
     
-    <div id="app-container" class="w-full max-w-[1600px] bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[92vh]">
+    <div id="app-container" class="w-full max-w-[1400px] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[95vh] relative">
         
         <header class="bg-white border-b px-6 py-4 flex justify-between items-center z-50">
             <div class="flex items-center gap-3">
-                <div class="bg-blue-600 text-white p-2 rounded-lg"><i class="fas fa-boxes-stacked text-xl"></i></div>
+                <div class="bg-blue-600 text-white p-2 rounded-lg shadow-lg">
+                    <i class="fas fa-boxes-stacked text-xl"></i>
+                </div>
                 <div>
-                    <h1 class="text-xl font-bold text-gray-800">OrderFlow Pro</h1>
-                    <div id="db-status" class="text-[10px] font-bold text-orange-500 uppercase">CONNETTENDO AL DATABASE...</div>
+                    <h1 class="text-xl font-black text-gray-800 tracking-tight">OrderFlow <span class="text-blue-600">Pro</span></h1>
+                    <div id="db-status" class="text-[10px] font-mono text-orange-500 uppercase font-bold">Connessione Cloud in corso...</div>
                 </div>
             </div>
 
             <nav class="flex bg-gray-100 p-1 rounded-xl">
-                <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-6 py-2 rounded-lg text-sm font-bold transition-all bg-white shadow-sm">Dashboard</button>
-                <button onclick="showTab('ordini')" id="nav-ordini" class="px-6 py-2 rounded-lg text-sm font-bold transition-all">Ordini</button>
-                <button onclick="showTab('magazzino')" id="nav-magazzino" class="px-6 py-2 rounded-lg text-sm font-bold transition-all">Magazzino</button>
+                <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white shadow-sm">Dashboard</button>
+                <button onclick="showTab('ordini')" id="nav-ordini" class="px-4 py-2 rounded-lg text-sm font-bold transition-all hover:bg-white">Ordini</button>
+                <button onclick="showTab('magazzino')" id="nav-magazzino" class="px-4 py-2 rounded-lg text-sm font-bold transition-all hover:bg-white">Magazzino</button>
             </nav>
 
-            <div class="flex items-center gap-4">
-                <div id="clock" class="text-sm font-mono font-bold text-gray-600">00:00:00</div>
-                <button onclick="openQuickIdConfig()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200"><i class="fas fa-cog"></i></button>
+            <div class="flex items-center gap-3">
+                <div id="clock" class="text-sm font-mono font-bold text-gray-500">00:00:00</div>
+                <button onclick="openQuickIdConfig()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600 transition-colors">
+                    <i class="fas fa-cog"></i>
+                </button>
             </div>
         </header>
 
@@ -48,38 +51,32 @@
             <div id="tab-dashboard" class="tab-content active p-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <p class="text-gray-500 text-xs font-bold uppercase">Totale Ordini</p>
-                        <h3 id="stat-orders" class="text-3xl font-black text-gray-800">0</h3>
+                        <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Ordini Totali</p>
+                        <h3 id="stat-total-orders" class="text-3xl font-black text-gray-800">0</h3>
                     </div>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border p-6">
-                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fas fa-bolt text-yellow-500"></i> Configurazione Pulsanti Rapidi</h2>
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-bolt text-yellow-500"></i> Accesso Rapido ID
+                    </h2>
                     <div id="quickIdButtonsContainer" class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3">
                         </div>
                 </div>
             </div>
 
             <div id="tab-ordini" class="tab-content p-6">
-                <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-50 border-b">
-                            <tr>
-                                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Data</th>
-                                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Cliente</th>
-                                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ordersTableBody">
-                            </tbody>
-                    </table>
+                <h2 class="text-2xl font-black text-gray-800 mb-6">Registro Ordini</h2>
+                <div id="ordersList" class="bg-white rounded-2xl border p-4 shadow-sm min-h-[200px]">
+                    <p class="text-gray-400 italic">Caricamento ordini dal database...</p>
                 </div>
             </div>
 
             <div id="tab-magazzino" class="tab-content p-6">
-                <div class="bg-white rounded-2xl p-8 text-center border-2 border-dashed">
-                    <i class="fas fa-warehouse text-4xl text-gray-300 mb-4"></i>
-                    <p class="text-gray-500">Sezione Magazzino collegata al Database Cloud.</p>
+                <h2 class="text-2xl font-black text-gray-800 mb-6">Magazzino Cloud</h2>
+                <div class="bg-white rounded-2xl border p-8 text-center">
+                    <i class="fas fa-warehouse text-5xl text-gray-200 mb-4"></i>
+                    <p class="text-gray-500">Sincronizzazione scorte attiva.</p>
                 </div>
             </div>
 
@@ -87,36 +84,39 @@
     </div>
 
     <script>
-        // --- PONTE VERSO IL DATABASE ---
+        // 1. GESTORE DATABASE (Comunicazione con Vercel API)
         const DB = {
-            async fetch() {
+            async fetchAll() {
                 try {
                     const res = await fetch('/api/index');
                     if (!res.ok) throw new Error();
-                    return await res.json();
+                    const data = await res.json();
+                    return data || { orders: [], quickIdFilters: {} };
                 } catch (e) {
-                    return JSON.parse(localStorage.getItem('orderFlow_backup') || '{"quickIdFilters":{}, "orders":[]}');
+                    console.warn("Utilizzo localStorage di emergenza");
+                    return JSON.parse(localStorage.getItem('orderflow_local') || '{"orders":[], "quickIdFilters":{}}');
                 }
             },
-            async save(data) {
+            async saveAll(data) {
                 try {
                     await fetch('/api/index', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     });
-                    localStorage.setItem('orderFlow_backup', JSON.stringify(data));
-                    document.getElementById('db-status').className = "text-[10px] font-bold text-green-500 uppercase";
-                    document.getElementById('db-status').innerText = "DATABASE SINCRONIZZATO";
+                    localStorage.setItem('orderflow_local', JSON.stringify(data));
+                    document.getElementById('db-status').innerText = "☁️ Database Cloud Sincronizzato";
+                    document.getElementById('db-status').className = "text-[10px] font-mono text-green-500 uppercase font-bold";
                 } catch (e) {
-                    console.error("Errore salvataggio cloud");
+                    alert("Errore sincronizzazione Cloud!");
                 }
             }
         };
 
-        let appData = { quickIdFilters: {}, orders: [] };
+        // 2. STATO DELL'APP
+        let appData = { orders: [], quickIdFilters: {} };
 
-        // --- GESTIONE INTERFACCIA ---
+        // 3. NAVIGAZIONE TABS
         function showTab(name) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('bg-white', 'shadow-sm'));
@@ -124,64 +124,82 @@
             document.getElementById(`nav-${name}`).classList.add('bg-white', 'shadow-sm');
         }
 
+        // 4. LOGICA PULSANTI ID (Sostituisce i 15 blocchi ripetuti)
         function initQuickIdButtons() {
             const container = document.getElementById('quickIdButtonsContainer');
+            if (!container) return;
             container.innerHTML = '';
+            
             for (let i = 1; i <= 15; i++) {
                 const config = appData.quickIdFilters[i];
                 const btn = document.createElement('button');
-                btn.className = `p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center ${config ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-dashed border-gray-200 text-gray-300'}`;
-                btn.innerHTML = config ? `<span class="text-xs font-black">ID ${i}</span><span class="text-[10px]">${config.min}-${config.max}</span>` : `<span class="text-xs">Libero</span>`;
+                btn.className = `p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${config ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' : 'border-dashed border-gray-200 text-gray-300 hover:border-gray-300'}`;
+                
+                btn.innerHTML = config 
+                    ? `<span class="text-[10px] font-black uppercase">ID ${i}</span><span class="text-sm font-bold">${config.min}-${config.max}</span>`
+                    : `<span class="text-xs font-medium">Vuoto</span><span class="text-[10px]">${i}</span>`;
+                
                 container.appendChild(btn);
             }
         }
 
-        // --- FUNZIONI DI CONFIGURAZIONE (MODAL) ---
+        // 5. CONFIGURAZIONE (Modal)
         function openQuickIdConfig() {
-            const modalHtml = `
-                <div id="modal-cfg" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-2xl">
-                        <h2 class="text-xl font-bold mb-4 border-b pb-2">Configurazione Pulsanti Cloud</h2>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-2">
+            let html = `
+                <div id="modal-config" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                    <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                        <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+                            <h2 class="text-2xl font-black text-gray-800">Impostazioni Cloud Pulsanti</h2>
+                            <button onclick="document.getElementById('modal-config').remove()" class="text-gray-400 hover:text-red-500 text-2xl"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-4">
                             ${Array.from({length: 15}, (_, i) => i + 1).map(i => `
-                                <div class="p-2 border rounded-lg bg-gray-50">
-                                    <p class="text-[10px] font-bold text-gray-400 mb-1">PULSANTE ${i}</p>
-                                    <input id="qmin_${i}" type="number" value="${appData.quickIdFilters[i]?.min || ''}" placeholder="Min" class="w-full text-xs border p-1 rounded mb-1">
-                                    <input id="qmax_${i}" type="number" value="${appData.quickIdFilters[i]?.max || ''}" placeholder="Max" class="w-full text-xs border p-1 rounded">
+                                <div class="p-4 border rounded-2xl bg-white shadow-sm">
+                                    <p class="text-xs font-black text-blue-600 mb-2 uppercase tracking-widest">Pulsante ${i}</p>
+                                    <div class="flex gap-2">
+                                        <input id="quickIdMin_${i}" type="number" value="${appData.quickIdFilters[i]?.min || ''}" placeholder="Min" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <input id="quickIdMax_${i}" type="number" value="${appData.quickIdFilters[i]?.max || ''}" placeholder="Max" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    </div>
                                 </div>
                             `).join('')}
                         </div>
-                        <div class="mt-6 flex gap-2">
-                            <button onclick="saveAndClose()" class="flex-grow bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg">SALVA NEL CLOUD</button>
-                            <button onclick="document.getElementById('modal-cfg').remove()" class="bg-gray-200 px-6 rounded-xl font-bold">ANNULLA</button>
+                        <div class="p-6 border-t bg-gray-50 flex gap-4">
+                            <button onclick="saveQuickIdConfig()" class="flex-grow bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg transition-all transform active:scale-[0.98]">
+                                <i class="fas fa-cloud-upload-alt mr-2"></i>SALVA NEL DATABASE CLOUD
+                            </button>
                         </div>
                     </div>
                 </div>`;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        async function saveAndClose() {
-            const newFilters = {};
+        async function saveQuickIdConfig() {
+            const filters = {};
             for (let i = 1; i <= 15; i++) {
-                const min = document.getElementById(`qmin_${i}`).value;
-                const max = document.getElementById(`qmax_${i}`).value;
-                if (min && max) newFilters[i] = { min, max };
+                const min = document.getElementById(`quickIdMin_${i}`).value.trim();
+                const max = document.getElementById(`quickIdMax_${i}`).value.trim();
+                if (min && max) filters[i] = { min, max };
             }
-            appData.quickIdFilters = newFilters;
-            await DB.save(appData);
-            document.getElementById('modal-cfg').remove();
+            
+            appData.quickIdFilters = filters;
+            await DB.saveAll(appData);
+            document.getElementById('modal-config').remove();
             initQuickIdButtons();
         }
 
-        // --- AVVIO APP ---
+        // 6. INIZIALIZZAZIONE ALL'AVVIO
         async function initApp() {
-            appData = await DB.fetch();
-            initQuickIdButtons();
-            document.getElementById('db-status').innerText = "DATABASE CONNESSO";
-            document.getElementById('db-status').className = "text-[10px] font-bold text-green-500 uppercase";
+            // Sincronizza dati da Upstash
+            appData = await DB.fetchAll();
             
+            initQuickIdButtons();
+            document.getElementById('stat-total-orders').innerText = appData.orders.length || 0;
+            document.getElementById('db-status').innerText = "✅ Database Cloud Connesso";
+            document.getElementById('db-status').className = "text-[10px] font-mono text-green-500 uppercase font-bold";
+
+            // Orologio
             setInterval(() => {
-                document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+                document.getElementById('clock').innerText = new Date().toLocaleTimeString('it-IT');
             }, 1000);
         }
 
