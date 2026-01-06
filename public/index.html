@@ -542,5 +542,28 @@
             }
         });
     </script>
+<script>
+function performLogin() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    if (!username || !password) {
+        errorDiv.textContent = '⚠️ Inserisci username e password';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+    
+    // Simula il login con utente admin
+    if (username === 'admin' && password === 'admin123') {
+        document.getElementById('loginScreen').classList.add('hidden');
+        // Mostra la dashboard
+        showTab('dashboard');
+    } else {
+        errorDiv.textContent = '❌ Username o password errati';
+        errorDiv.classList.remove('hidden');
+    }
+}
+</script>
 </body>
 </html>
