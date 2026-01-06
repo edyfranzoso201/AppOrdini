@@ -10,10 +10,18 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { font-family: Arial, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        body { overflow: hidden; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 0; }
+        * { 
+            font-family: Arial, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            box-sizing: border-box;
+        }
+        body { 
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        }
         
-        /* Login Screen */
+        /* Login Screen Styles */
         .login-container { 
             min-height: 100vh; 
             display: flex; 
@@ -23,169 +31,472 @@
         }
         .login-card {
             background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 400px;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+            max-width: 420px;
             width: 90%;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .login-logo {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .login-title {
+            text-align: center;
             font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
         }
         .login-input {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
             font-size: 1rem;
+            transition: all 0.3s;
+            background: #f9fafb;
         }
         .login-input:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
         .login-button {
             width: 100%;
-            padding: 0.75rem;
+            padding: 0.875rem 1.5rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 0.75rem;
+            font-size: 1.05rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
+            margin-top: 0.5rem;
         }
         .login-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .login-button:active {
+            transform: translateY(0);
+        }
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .login-error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 0.875rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            display: none;
+            border-left: 4px solid #dc2626;
+        }
+        .login-error.show {
+            display: block;
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .login-hint {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+        .login-hint p {
+            margin: 0.25rem 0;
+        }
+        .login-credentials {
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 0.85rem;
         }
         
-        /* App Container */
-        #appContainer { display: none; }
-        
-        /* Animations */
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
+        /* App Container Styles */
+        #appContainer {
+            display: none;
+            min-height: 100vh;
+            background: #f3f4f6;
         }
-        @keyframes slideIn { 
-            from { transform: translateX(-20px); opacity: 0; } 
-            to { transform: translateX(0); opacity: 1; } 
+        #appContainer.active {
+            display: block;
         }
         
-        /* Tab System */
-        .tab-content { 
-            display: none; 
-            height: calc(100vh - 100px); 
-            overflow-y: auto; 
-            animation: fadeIn 0.3s ease-out; 
+        /* Header Styles */
+        .app-header {
+            background: white;
+            padding: 1.25rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .tab-content.active { display: block; }
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1f2937;
+        }
+        .app-title i {
+            color: #667eea;
+            font-size: 1.75rem;
+        }
+        .header-actions {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        .current-user {
+            font-size: 0.95rem;
+            color: #6b7280;
+            font-weight: 600;
+        }
+        .logout-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .logout-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
         
-        /* Utility Classes */
-        .glass-effect { 
-            background: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(10px); 
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); 
+        /* Tabs Styles */
+        .tabs-container {
+            background: white;
+            border-bottom: 2px solid #e5e7eb;
+            padding: 0 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        .btn-gradient { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            transition: all 0.3s ease; 
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
         }
-        .btn-gradient:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); 
+        .tab-button {
+            padding: 1rem 2rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            position: relative;
         }
-        .card-shadow { 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07); 
-            transition: all 0.3s ease; 
+        .tab-button:hover {
+            color: #667eea;
+            background: #f9fafb;
         }
-        .card-shadow:hover { 
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); 
-            transform: translateY(-2px); 
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        /* Tab Content Styles */
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+        }
+        .stat-card.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .stat-card.success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        .stat-card-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.95;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .stat-icon {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+        
+        /* Button Styles */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
         }
         
         /* Table Styles */
-        .sticky-header th { 
-            position: sticky; 
-            top: 0; 
-            z-index: 20; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+        .table-container {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
-        table tbody tr { transition: all 0.2s ease; }
-        table tbody tr:hover { 
-            background-color: #f9fafb !important; 
-            transform: scale(1.001); 
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        th {
+            padding: 1.25rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        tbody tr {
+            transition: all 0.2s;
+        }
+        tbody tr:hover {
+            background: #f9fafb;
+            transform: scale(1.01);
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
         }
         
-        /* Form Elements */
-        input:focus, select:focus, textarea:focus { 
-            outline: none; 
-            border-color: #667eea; 
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); 
-            transition: all 0.2s ease; 
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #9ca3af;
         }
-        button { transition: all 0.2s ease; }
-        button:active { transform: scale(0.98); }
-        
-        /* Hide elements initially */
-        .hidden { display: none !important; }
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #6b7280;
+        }
+        .empty-state-text {
+            font-size: 0.95rem;
+        }
         
         /* Loading Spinner */
         .spinner {
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #667eea;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 2rem auto;
+            margin: 3rem auto;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: 700; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header { padding: 1rem; }
+            .tabs-container { padding: 0 1rem; }
+            .tab-content { padding: 1rem; }
+            .stat-card { padding: 1.5rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .header-content { flex-direction: column; gap: 1rem; }
+            .header-actions { flex-direction: column; width: 100%; }
+            .logout-button { width: 100%; }
+        }
     </style>
 </head>
 <body>
-
     <!-- Login Screen -->
     <div id="loginScreen" class="login-container">
         <div class="login-card">
             <div class="login-logo">
                 <i class="fas fa-boxes"></i>
             </div>
-            <h1 style="text-align: center; font-size: 1.75rem; font-weight: bold; margin-bottom: 0.5rem; color: #1f2937;">
-                OrderFlow
-            </h1>
-            <p style="text-align: center; color: #6b7280; margin-bottom: 2rem; font-size: 0.875rem;">
-                Inventory & Filters System
-            </p>
+            <h1 class="login-title">OrderFlow</h1>
+            <p class="login-subtitle">Inventory & Filters System</p>
             
-            <div id="loginError" class="hidden" style="background: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem;">
+            <div id="loginError" class="login-error">
                 <i class="fas fa-exclamation-circle"></i>
                 <span id="loginErrorText"></span>
             </div>
             
-            <form id="loginForm" onsubmit="return handleLogin(event)">
-                <div style="margin-bottom: 0.5rem;">
-                    <label style="display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">
-                        Username
-                    </label>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
                     <input 
                         type="text" 
                         id="loginUsername" 
@@ -195,10 +506,8 @@
                         autocomplete="username">
                 </div>
                 
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem;">
-                        Password
-                    </label>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
                     <input 
                         type="password" 
                         id="loginPassword" 
@@ -209,135 +518,168 @@
                 </div>
                 
                 <button type="submit" class="login-button" id="loginButton">
-                    <i class="fas fa-sign-in-alt" style="margin-right: 0.5rem;"></i>
+                    <i class="fas fa-sign-in-alt"></i>
                     Accedi
                 </button>
             </form>
             
-            <div style="margin-top: 1.5rem; text-align: center; font-size: 0.75rem; color: #9ca3af;">
+            <div class="login-hint">
                 <p>Credenziali predefinite:</p>
-                <p style="font-family: monospace; color: #667eea;">admin / admin123</p>
+                <p class="login-credentials">admin / admin123</p>
             </div>
         </div>
     </div>
 
     <!-- Main App Container -->
-    <div id="appContainer" class="hidden">
-        <div class="glass-effect" style="padding: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1 style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">
-                    <i class="fas fa-boxes" style="color: #667eea; margin-right: 0.5rem;"></i>
-                    OrderFlow R68
-                </h1>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <span id="currentUser" style="font-size: 0.875rem; color: #6b7280;"></span>
-                    <button onclick="logout()" class="btn-gradient" style="padding: 0.5rem 1rem; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">
-                        <i class="fas fa-sign-out-alt" style="margin-right: 0.5rem;"></i>
+    <div id="appContainer">
+        <div class="app-header">
+            <div class="header-content">
+                <div class="app-title">
+                    <i class="fas fa-boxes"></i>
+                    <span>OrderFlow R68</span>
+                </div>
+                <div class="header-actions">
+                    <span id="currentUser" class="current-user"></span>
+                    <button onclick="logout()" class="logout-button">
+                        <i class="fas fa-sign-out-alt"></i>
                         Logout
                     </button>
                 </div>
             </div>
-            
-            <!-- Tabs -->
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; border-bottom: 2px solid #e5e7eb;">
-                <button onclick="switchTab('gestione')" id="tab-gestione" class="tab-button active" style="padding: 0.75rem 1.5rem; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #667eea; border-bottom: 3px solid #667eea;">
-                    Gestione
+        </div>
+        
+        <div class="tabs-container">
+            <div class="tabs">
+                <button onclick="switchTab('gestione')" id="tab-gestione" class="tab-button active">
+                    <i class="fas fa-tasks"></i> Gestione
                 </button>
-                <button onclick="switchTab('distinta')" id="tab-distinta" class="tab-button" style="padding: 0.75rem 1.5rem; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent;">
-                    Distinta
+                <button onclick="switchTab('distinta')" id="tab-distinta" class="tab-button">
+                    <i class="fas fa-list-alt"></i> Distinta
                 </button>
-                <button onclick="switchTab('tabella')" id="tab-tabella" class="tab-button" style="padding: 0.75rem 1.5rem; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent;">
-                    Tabella
+                <button onclick="switchTab('tabella')" id="tab-tabella" class="tab-button">
+                    <i class="fas fa-table"></i> Tabella
                 </button>
-                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-button" style="padding: 0.75rem 1.5rem; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent;">
-                    Dashboard
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-button">
+                    <i class="fas fa-chart-line"></i> Dashboard
                 </button>
             </div>
         </div>
 
-        <!-- Tab Contents -->
-        <div id="content-gestione" class="tab-content active" style="padding: 2rem; background: white; margin: 1rem; border-radius: 1rem;">
-            <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">Gestione Ordini</h2>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                <div class="card-shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <!-- Tab: Gestione -->
+        <div id="content-gestione" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-card-content">
                         <div>
-                            <p style="font-size: 0.875rem; opacity: 0.9;">Ordini Totali</p>
-                            <p style="font-size: 2rem; font-weight: bold;" id="totalOrders">0</p>
+                            <div class="stat-label">Ordini Totali</div>
+                            <div class="stat-value" id="totalOrders">0</div>
                         </div>
-                        <i class="fas fa-shopping-cart" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                        <i class="fas fa-shopping-cart stat-icon"></i>
                     </div>
                 </div>
                 
-                <div class="card-shadow" style="background: #10b981; color: white; padding: 1.5rem; border-radius: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="stat-card success">
+                    <div class="stat-card-content">
                         <div>
-                            <p style="font-size: 0.875rem; opacity: 0.9;">Articoli Unici</p>
-                            <p style="font-size: 2rem; font-weight: bold;" id="uniqueItems">0</p>
+                            <div class="stat-label">Articoli Unici</div>
+                            <div class="stat-value" id="uniqueItems">0</div>
                         </div>
-                        <i class="fas fa-box" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                        <i class="fas fa-box stat-icon"></i>
                     </div>
                 </div>
                 
-                <div class="card-shadow" style="background: #f59e0b; color: white; padding: 1.5rem; border-radius: 0.5rem;">
-                    <div>
-                        <p style="font-size: 0.875rem; opacity: 0.9;">Totale Valore</p>
-                        <p style="font-size: 2rem; font-weight: bold;" id="totalValue">€0</p>
+                <div class="stat-card warning">
+                    <div class="stat-card-content">
+                        <div>
+                            <div class="stat-label">Totale Valore</div>
+                            <div class="stat-value" id="totalValue">€0</div>
+                        </div>
+                        <i class="fas fa-euro-sign stat-icon"></i>
                     </div>
                 </div>
             </div>
             
-            <div style="margin-bottom: 1rem;">
-                <button onclick="createNewOrder()" class="btn-gradient" style="padding: 0.75rem 1.5rem; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600;">
-                    <i class="fas fa-plus" style="margin-right: 0.5rem;"></i>
-                    Nuovo Ordine
-                </button>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 class="card-title" style="margin: 0;">Elenco Ordini</h2>
+                    <button onclick="createNewOrder()" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Nuovo Ordine
+                    </button>
+                </div>
+                
+                <div id="ordersTableContainer">
+                    <div class="spinner"></div>
+                </div>
             </div>
-            
-            <div id="ordersTableContainer" class="card-shadow" style="background: white; border-radius: 0.5rem; overflow: hidden;">
-                <div class="spinner"></div>
+        </div>
+
+        <!-- Tab: Distinta -->
+        <div id="content-distinta" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">Distinta Materiali</h2>
+                <div id="distinctaContent">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="empty-state-title">Distinta Materiali</div>
+                        <div class="empty-state-text">Riepilogo materiali ordinati...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="content-distinta" class="tab-content" style="padding: 2rem; background: white; margin: 1rem; border-radius: 1rem;">
-            <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">Distinta Materiali</h2>
-            <p style="color: #6b7280;">Riepilogo materiali ordinati...</p>
-            <div id="distinctaContent"></div>
+        <!-- Tab: Tabella -->
+        <div id="content-tabella" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">Tabella Riepilogo</h2>
+                <div id="tabellaContent">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <div class="empty-state-title">Tabella Riepilogo</div>
+                        <div class="empty-state-text">Vista tabellare degli ordini...</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="content-tabella" class="tab-content" style="padding: 2rem; background: white; margin: 1rem; border-radius: 1rem;">
-            <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">Tabella Riepilogo</h2>
-            <div id="tabellaContent"></div>
-        </div>
-
-        <div id="content-dashboard" class="tab-content" style="padding: 2rem; background: white; margin: 1rem; border-radius: 1rem;">
-            <h2 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">Dashboard Analytics</h2>
-            <canvas id="ordersChart" width="400" height="200"></canvas>
+        <!-- Tab: Dashboard -->
+        <div id="content-dashboard" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">Dashboard Analytics</h2>
+                <canvas id="ordersChart" width="400" height="150"></canvas>
+            </div>
         </div>
     </div>
 
-    <!-- JavaScript -->
     <script>
-        // Global State
+        // ======================
+        // GLOBAL STATE
+        // ======================
         let currentUser = null;
         let orders = [];
         let users = [];
         let inventory = {};
         let activityLog = [];
 
-        // Login Handler
-        async function handleLogin(event) {
+        // ======================
+        // LOGIN HANDLER
+        // ======================
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             
-            const username = document.getElementById('loginUsername').value;
+            const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             const loginButton = document.getElementById('loginButton');
             const loginError = document.getElementById('loginError');
             
+            // Disable button and show loading
             loginButton.disabled = true;
             loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso in corso...';
-            loginError.classList.add('hidden');
+            loginError.classList.remove('show');
             
             try {
                 const response = await fetch('/api/users', {
@@ -353,131 +695,168 @@
                     localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
                     showApp();
                 } else {
-                    showLoginError('Credenziali non valide');
+                    showLoginError('Credenziali non valide. Riprova.');
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                showLoginError('Errore di connessione al server');
+                showLoginError('Errore di connessione al server. Verifica che le API siano attive.');
             } finally {
                 loginButton.disabled = false;
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt" style="margin-right: 0.5rem;"></i>Accedi';
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
             }
-        }
+        });
 
         function showLoginError(message) {
             const loginError = document.getElementById('loginError');
             const loginErrorText = document.getElementById('loginErrorText');
             loginErrorText.textContent = message;
-            loginError.classList.remove('hidden');
+            loginError.classList.add('show');
+            
+            setTimeout(() => {
+                loginError.classList.remove('show');
+            }, 5000);
         }
 
         function showApp() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('appContainer').classList.remove('hidden');
-            document.getElementById('currentUser').textContent = `👤 ${currentUser.name || currentUser.username}`;
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContainer').classList.add('active');
+            document.getElementById('currentUser').innerHTML = `<i class="fas fa-user-circle"></i> ${currentUser.name || currentUser.username}`;
             loadAppData();
         }
 
         function logout() {
-            currentUser = null;
-            localStorage.removeItem('orderFlowCurrentUser');
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('appContainer').classList.add('hidden');
-            document.getElementById('loginForm').reset();
+            if (confirm('Sei sicuro di voler uscire?')) {
+                currentUser = null;
+                localStorage.removeItem('orderFlowCurrentUser');
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('appContainer').classList.remove('active');
+                document.getElementById('loginForm').reset();
+            }
         }
 
-        // Load App Data
+        // ======================
+        // LOAD APP DATA
+        // ======================
         async function loadAppData() {
             try {
+                showLoadingState();
+                
                 // Load orders
                 const ordersRes = await fetch('/api/orders');
-                const ordersData = await ordersRes.json();
-                orders = ordersData.data || [];
+                if (ordersRes.ok) {
+                    const ordersData = await ordersRes.json();
+                    orders = ordersData.data || [];
+                }
                 
                 // Load inventory
                 const inventoryRes = await fetch('/api/inventory');
-                const inventoryData = await inventoryRes.json();
-                inventory = inventoryData.data || {};
+                if (inventoryRes.ok) {
+                    const inventoryData = await inventoryRes.json();
+                    inventory = inventoryData.data || {};
+                }
                 
                 // Load users
                 const usersRes = await fetch('/api/users');
-                const usersData = await usersRes.json();
-                users = usersData.data || [];
+                if (usersRes.ok) {
+                    const usersData = await usersRes.json();
+                    users = usersData.data || [];
+                }
                 
                 // Update UI
                 updateDashboard();
                 renderOrdersTable();
+                renderChart();
             } catch (error) {
                 console.error('Error loading app data:', error);
-                alert('Errore caricamento dati. Riprova.');
+                alert('Errore caricamento dati. Le API potrebbero non essere attive.');
             }
         }
 
-        // Tab Switching
+        function showLoadingState() {
+            document.getElementById('ordersTableContainer').innerHTML = '<div class="spinner"></div>';
+        }
+
+        // ======================
+        // TAB SWITCHING
+        // ======================
         function switchTab(tabName) {
             // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
             document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.style.color = '#6b7280';
-                btn.style.borderBottom = '3px solid transparent';
+                btn.classList.remove('active');
             });
             
             // Show selected tab
             document.getElementById(`content-${tabName}`).classList.add('active');
-            const activeButton = document.getElementById(`tab-${tabName}`);
-            activeButton.style.color = '#667eea';
-            activeButton.style.borderBottom = '3px solid #667eea';
+            document.getElementById(`tab-${tabName}`).classList.add('active');
         }
 
-        // Update Dashboard
+        // ======================
+        // UPDATE DASHBOARD
+        // ======================
         function updateDashboard() {
             document.getElementById('totalOrders').textContent = orders.length;
-            document.getElementById('uniqueItems').textContent = new Set(orders.map(o => o.clientId)).size;
+            
+            const uniqueClients = new Set(orders.map(o => o.clientId || o.clientName)).size;
+            document.getElementById('uniqueItems').textContent = uniqueClients;
+            
             const total = orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0);
             document.getElementById('totalValue').textContent = `€${total.toFixed(2)}`;
         }
 
-        // Render Orders Table
+        // ======================
+        // RENDER ORDERS TABLE
+        // ======================
         function renderOrdersTable() {
             const container = document.getElementById('ordersTableContainer');
             
             if (orders.length === 0) {
                 container.innerHTML = `
-                    <div style="text-align: center; padding: 3rem; color: #9ca3af;">
-                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                        <p>Nessun ordine presente</p>
-                        <p style="font-size: 0.875rem;">Crea il primo ordine per iniziare</p>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <div class="empty-state-title">Nessun ordine presente</div>
+                        <div class="empty-state-text">Crea il primo ordine per iniziare</div>
                     </div>
                 `;
                 return;
             }
             
             let html = `
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead class="sticky-header">
-                        <tr>
-                            <th style="padding: 1rem; text-align: left;">ID</th>
-                            <th style="padding: 1rem; text-align: left;">Cliente</th>
-                            <th style="padding: 1rem; text-align: left;">Anno</th>
-                            <th style="padding: 1rem; text-align: right;">Totale</th>
-                            <th style="padding: 1rem; text-align: center;">Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Ordine</th>
+                                <th>Cliente</th>
+                                <th>Anno</th>
+                                <th class="text-right">Totale</th>
+                                <th class="text-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             `;
             
             orders.forEach(order => {
+                const orderId = order.id || order.orderId || '-';
+                const clientName = order.clientName || order.clientId || 'Cliente sconosciuto';
+                const year = order.year || new Date().getFullYear();
+                const total = parseFloat(order.total) || 0;
+                
                 html += `
                     <tr>
-                        <td style="padding: 1rem;">${order.id || '-'}</td>
-                        <td style="padding: 1rem;">${order.clientName || order.clientId || '-'}</td>
-                        <td style="padding: 1rem;">${order.year || new Date().getFullYear()}</td>
-                        <td style="padding: 1rem; text-align: right; font-weight: 600;">€${(order.total || 0).toFixed(2)}</td>
-                        <td style="padding: 1rem; text-align: center;">
-                            <button onclick="editOrder('${order.id}')" style="background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-right: 0.5rem;">
+                        <td class="font-bold">${orderId}</td>
+                        <td>${clientName}</td>
+                        <td>${year}</td>
+                        <td class="text-right font-bold">€${total.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button onclick="editOrder('${orderId}')" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="deleteOrder('${order.id}')" style="background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer;">
+                            <button onclick="deleteOrder('${orderId}')" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.85rem; margin-left: 0.5rem;">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -486,32 +865,33 @@
             });
             
             html += `
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             `;
             
             container.innerHTML = html;
         }
 
-        // Create New Order
+        // ======================
+        // ORDER ACTIONS
+        // ======================
         function createNewOrder() {
-            alert('Funzionalità in sviluppo: Creazione nuovo ordine');
-            // TODO: Implement order creation modal
+            alert('Funzionalità in sviluppo: Creazione nuovo ordine\n\nQuesta funzione permetterà di:\n- Creare un nuovo ordine\n- Selezionare cliente\n- Aggiungere articoli\n- Calcolare totale');
         }
 
-        // Edit Order
         function editOrder(orderId) {
-            alert(`Modifica ordine: ${orderId}`);
-            // TODO: Implement order editing
+            alert(`Modifica ordine: ${orderId}\n\nFunzionalità in sviluppo.`);
         }
 
-        // Delete Order
         async function deleteOrder(orderId) {
-            if (!confirm('Sei sicuro di voler eliminare questo ordine?')) return;
-            
-            orders = orders.filter(o => o.id !== orderId);
+            if (!confirm(`Sei sicuro di voler eliminare l'ordine ${orderId}?`)) {
+                return;
+            }
             
             try {
+                orders = orders.filter(o => (o.id || o.orderId) !== orderId);
+                
                 await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -520,14 +900,69 @@
                 
                 updateDashboard();
                 renderOrdersTable();
-                alert('Ordine eliminato con successo');
+                alert('Ordine eliminato con successo!');
             } catch (error) {
                 console.error('Error deleting order:', error);
-                alert('Errore durante l\'eliminazione');
+                alert('Errore durante l\'eliminazione dell\'ordine.');
             }
         }
 
-        // Initialize on page load
+        // ======================
+        // RENDER CHART
+        // ======================
+        function renderChart() {
+            const ctx = document.getElementById('ordersChart');
+            if (!ctx) return;
+            
+            // Group orders by month
+            const monthlyData = {};
+            orders.forEach(order => {
+                const date = new Date(order.createdAt || order.timestamp || Date.now());
+                const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                monthlyData[month] = (monthlyData[month] || 0) + 1;
+            });
+            
+            const labels = Object.keys(monthlyData).sort();
+            const data = labels.map(label => monthlyData[label]);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.length > 0 ? labels : ['Nessun dato'],
+                    datasets: [{
+                        label: 'Ordini per Mese',
+                        data: data.length > 0 ? data : [0],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ======================
+        // INITIALIZE ON LOAD
+        // ======================
         window.addEventListener('DOMContentLoaded', () => {
             // Check if user is already logged in
             const savedUser = localStorage.getItem('orderFlowCurrentUser');
@@ -542,28 +977,5 @@
             }
         });
     </script>
-<script>
-function performLogin() {
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errorDiv = document.getElementById('loginError');
-    
-    if (!username || !password) {
-        errorDiv.textContent = '⚠️ Inserisci username e password';
-        errorDiv.classList.remove('hidden');
-        return;
-    }
-    
-    // Simula il login con utente admin
-    if (username === 'admin' && password === 'admin123') {
-        document.getElementById('loginScreen').classList.add('hidden');
-        // Mostra la dashboard
-        showTab('dashboard');
-    } else {
-        errorDiv.textContent = '❌ Username o password errati';
-        errorDiv.classList.remove('hidden');
-    }
-}
-</script>
 </body>
 </html>
