@@ -4931,12 +4931,12 @@
             }
             
             // ASSICURA che i filtri siano sempre visibili per TUTTI
-            setTimeout(() => {
+            const ensureFiltersVisible = () => {
                 const filtersContainer = document.querySelector('.p-3.border-b.bg-gray-50');
                 if (filtersContainer) {
-                    filtersContainer.style.display = 'flex';
-                    filtersContainer.style.visibility = 'visible';
-                    filtersContainer.style.opacity = '1';
+                    filtersContainer.style.display = 'flex !important';
+                    filtersContainer.style.visibility = 'visible !important';
+                    filtersContainer.style.opacity = '1 !important';
                 }
                 
                 // Mostra tutti gli elementi di filtro
@@ -4948,9 +4948,34 @@
                         el.style.display = '';
                         el.style.visibility = 'visible';
                         el.disabled = false;
+                        el.style.pointerEvents = 'auto';
                     }
                 });
-            }, 200);
+            };
+            
+            // Esegui immediatamente e dopo timeout
+            ensureFiltersVisible();
+            setTimeout(ensureFiltersVisible, 100);
+            setTimeout(ensureFiltersVisible, 500);
+            setTimeout(ensureFiltersVisible, 1000);
+            
+            // Aggiungi CSS per forzare la visibilità dei filtri
+            const filterStyle = document.createElement('style');
+            filterStyle.id = 'filterVisibilityStyle';
+            filterStyle.textContent = `
+                .p-3.border-b.bg-gray-50 { 
+                    display: flex !important; 
+                    visibility: visible !important; 
+                    opacity: 1 !important; 
+                }
+                #searchInput, #sortOrder, #filterStatus, #filterRoleYear, 
+                #filterSize, #filterKitType, #filterItem, #filterMinId, #filterMaxId {
+                    display: inline-block !important;
+                    visibility: visible !important;
+                    pointer-events: auto !important;
+                }
+            `;
+            document.head.appendChild(filterStyle);
             
             // Disabilita campi editabili per utenti senza permessi
             if (!perms.editOrders || !perms.deleteOrders || !perms.downloadGoogleForm) {
