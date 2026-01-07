@@ -3087,7 +3087,57 @@
             }
         }
 
+        // ===== SISTEMA MEMORIZZAZIONE FILTRI =====
+        function saveFiltersState() {
+            try {
+                const filtersState = {
+                    searchInput: document.getElementById('searchInput')?.value || '',
+                    sortOrder: document.getElementById('sortOrder')?.value || 'asc',
+                    filterStatus: document.getElementById('filterStatus')?.value || 'all',
+                    filterRoleYear: document.getElementById('filterRoleYear')?.value || '',
+                    filterSize: document.getElementById('filterSize')?.value || 'all',
+                    filterKitType: document.getElementById('filterKitType')?.value || 'all',
+                    filterItem: document.getElementById('filterItem')?.value || 'all',
+                    filterMinId: document.getElementById('filterMinId')?.value || '',
+                    filterMaxId: document.getElementById('filterMaxId')?.value || ''
+                };
+                localStorage.setItem('orderflow_filters', JSON.stringify(filtersState));
+            } catch (e) {
+                console.warn('⚠️ Impossibile salvare filtri:', e);
+            }
+        }
+        
+        function restoreFiltersState() {
+            try {
+                const saved = localStorage.getItem('orderflow_filters');
+                if (!saved) return;
+                
+                const filtersState = JSON.parse(saved);
+                
+                // Ripristina ogni filtro
+                Object.keys(filtersState).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element && filtersState[key]) {
+                        element.value = filtersState[key];
+                    }
+                });
+                
+                console.log('✅ Filtri ripristinati:', filtersState);
+            } catch (e) {
+                console.warn('⚠️ Impossibile ripristinare filtri:', e);
+            }
+        }
+        
+        function clearFiltersState() {
+            localStorage.removeItem('orderflow_filters');
+            console.log('🗑️ Filtri cancellati');
+        }
+        // ===== FINE SISTEMA MEMORIZZAZIONE FILTRI =====
+        
         function renderTable() {
+            // Salva stato filtri
+            saveFiltersState();
+            
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             const filterStatus = document.getElementById('filterStatus').value; 
@@ -3793,6 +3843,7 @@
         function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
         function updateUI() { 
             populateGestioneOrdiniIdSelects();
+            restoreFiltersState(); // Ripristina filtri salvati
             renderTable(); 
             renderChart(); 
             saveData(); 
@@ -4759,6 +4810,7 @@
                         updateUI();
                         applyUserPermissions();
                         startClock();
+                        startAutoRefresh(); // Avvia auto-refresh anche per auto-login
                     });
                 } catch (error) {
                     console.error('Error loading user:', error);
