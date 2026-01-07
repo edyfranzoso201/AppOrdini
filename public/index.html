@@ -315,7 +315,7 @@
                     <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
                     <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" placeholder="Inserisci password" onkeypress="if(event.key==='Enter') performLogin()">
                 </div>
-                <button onclick="performLogin()" id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition"></button>
+                <button onclick="performLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>Accedi
                 </button>
                 <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
@@ -4565,37 +4565,36 @@
             XLSX.writeFile(wb, "OrderFlow_BACKUP_" + new Date().toISOString().slice(0,10) + ".xlsx");
         }
 
-// ===== INIZIALIZZAZIONE =====
-// Inizializza la variabile currentUser
-let currentUser = null;
-
-// Funzione per caricare l'utente salvato
-async function loadSavedUser() {
-    const savedUser = localStorage.getItem('orderFlowCurrentUser');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            // Carica i dati e inizializza l'interfaccia
-            await loadData();
-            initSelect();
-            updateUI();
-            applyUserPermissions();
-            startClock();
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-        } catch (error) {
-            console.error('Error loading saved user:', error);
-            localStorage.removeItem('orderFlowCurrentUser');
-            document.getElementById('loginScreen').style.display = 'flex';
-        }
-    } else {
-        document.getElementById('loginScreen').style.display = 'flex';
-        startClock();
-    }
-}
-// Esegui il caricamento dell'utente salvato
-loadSavedUser();
+        // ===== INIZIALIZZAZIONE =====
         
+// IMPORTANTE: Check login first, then load data
+        const savedUser = localStorage.getItem('orderFlowCurrentUser');
+        if (savedUser) {
+            try {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                
+                // Load data then initialize UI
+                loadData().then(() => {
+                    initSelect();
+                    updateUI();
+                    applyUserPermissions();
+                    startClock();
+                });
+            } catch (error) {
+                console.error('Error loading user:', error);
+                localStorage.removeItem('orderFlowCurrentUser');
+                document.getElementById('loginScreen').style.display = 'flex';
+            }
+        } else {
+            document.getElementById('loginScreen').style.display = 'flex';
+            startClock();
+        }
+        
+        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
+        
+        let currentUser = null;
         
         // Definizione ruoli
         const USER_ROLES = {
@@ -4756,76 +4755,48 @@ loadSavedUser();
             }
         }
         
-// ===== LOGIN CORRETTO CON API =====
-async function performLogin() {
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const loginButton = document.getElementById('loginButton');
-    
-    if (!username || !password) {
-        alert('Inserisci username e password');
-        return;
-    }
-    
-    loginButton.disabled = true;
-    loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
-    
-    try {
-        const response = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'login', username, password })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.user) {
-            currentUser = data.user;
-            localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            await loadData();
-            updateUI();
-            applyUserPermissions();
-        } else {
-            alert('Credenziali non valide');
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        alert('Errore di connessione al server');
-    } finally {
-        loginButton.disabled = false;
-        loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
-    }
-}
+        // Login
+        async function performLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const loginButton = document.getElementById('loginButton');
             
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            console.log('👥 Utenti disponibili:', users.length);
-            console.log('📋 Lista utenti:', users.map(u => ({username: u.username, role: u.role})));
-            
-            const user = users.find(u => u.username === username && u.password === password);
-            
-            if (user) {
-                console.log('✅ Login riuscito:', user.username);
-                currentUser = user;
-                localStorage.setItem('orderFlowCurrentUser', JSON.stringify(user));
-                document.getElementById('loginScreen').classList.add('hidden');
-                applyUserPermissions();
-                
-                // Disabilita campi se necessario
-                setTimeout(() => {
-                    if (window.disableEditInputs) window.disableEditInputs();
-                }, 200);
-                
-                // Log login
-                logActivity('LOGIN', `Accesso effettuato`);
-                
-                showQuickNotification(`Benvenuto, ${user.name}!`, 'success');
-            } else {
-                console.log('❌ Login fallito - credenziali errate');
-                errorDiv.textContent = '❌ Username o password errati';
-                errorDiv.classList.remove('hidden');
+            if (!username || !password) {
+                alert('Inserisci username e password');
+                return;
             }
+            
+            loginButton.disabled = true;
+            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'login', username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    currentUser = data.user;
+                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('appContainer').style.display = 'block';
+                    await loadData();
+                    updateUI();
+                    applyUserPermissions();
+                } else {
+                    alert('Credenziali non valide');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Errore di connessione al server');
+            } finally {
+                loginButton.disabled = false;
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+            }
+        }
         
         // Logout
         function logout() {
@@ -5440,6 +5411,18 @@ async function performLogin() {
             if (!currentUser) return false;
             const role = USER_ROLES[currentUser.role.toUpperCase()] || USER_ROLES.VIEWER;
             return role.permissions[action] === true;
+        }
+        
+        // Auto-login se sessione attiva
+        const savedUser = localStorage.getItem('orderFlowCurrentUser');
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            document.getElementById('loginScreen').classList.add('hidden');
+            applyUserPermissions();
+            // Disabilita campi dopo l'applicazione permessi
+            setTimeout(() => {
+                if (window.disableEditInputs) window.disableEditInputs();
+            }, 200);
         }
         
         // ===== FINE SISTEMA UTENTI =====
