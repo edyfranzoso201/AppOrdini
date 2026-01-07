@@ -4695,14 +4695,35 @@
                     createOrders: false,
                     editOrders: false,
                     deleteOrders: false,
-                    importGoogle: false, // NON può importare da Google Sheets
+                    importGoogle: false,
                     importExcel: false,
                     exportBackup: false,
                     resetData: false,
                     manageUsers: false,
                     viewDistinta: true,
                     viewTabella: true,
-                    downloadGoogleForm: true // Può scaricare tramite Google Form
+                    downloadGoogleForm: true,
+                    editStatus: false
+                }
+            },
+            CONTRIBUTOR_ADVANCED: {
+                id: 'contributor_advanced',
+                name: 'Contributore Avanzato (Google Form + Stato)',
+                permissions: {
+                    viewAll: true,
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: false,
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: true,
+                    viewTabella: true,
+                    downloadGoogleForm: true,
+                    editStatus: true // Può modificare SOLO lo stato
                 }
             },
             TABLE_EDITOR: {
@@ -5045,6 +5066,8 @@
                             if (el.type === 'button' || el.type === 'submit') return;
                             // NON disabilitare elementi nella sezione "Filtri & Ricerca"
                             if (el.closest('.p-3.border-b.bg-gray-50')) return;
+                            // NON disabilitare select STATO se l'utente ha editStatus
+                            if (perms.editStatus && el.classList.contains('status-select')) return;
                             
                             // Disabilita solo se è nella tabella/area dati
                             const isInTable = el.closest('table') || el.closest('.tab-content');
@@ -5220,6 +5243,7 @@
                                     <option value="viewer">Visualizzazione (senza Dashboard)</option>
                                     <option value="viewer_full">Visualizzazione (con Dashboard)</option>
                                     <option value="contributor">Contributore (Google Form)</option>
+                                    <option value="contributor_advanced">Contributore Avanzato (Form + Stato)</option>
                                     <option value="table_editor">Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full">Tabella Completa</option>
                                     <option value="tabella_readonly">Tabella Solo Lettura</option>
@@ -5348,6 +5372,7 @@
                                     <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Visualizzazione (senza Dashboard)</option>
                                     <option value="viewer_full" ${user.role === 'viewer_full' ? 'selected' : ''}>Visualizzazione (con Dashboard)</option>
                                     <option value="contributor" ${user.role === 'contributor' ? 'selected' : ''}>Contributore (Google Form)</option>
+                                    <option value="contributor_advanced" ${user.role === 'contributor_advanced' ? 'selected' : ''}>Contributore Avanzato (Form + Stato)</option>
                                     <option value="table_editor" ${user.role === 'table_editor' ? 'selected' : ''}>Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full" ${user.role === 'tabella_full' ? 'selected' : ''}>Tabella Completa</option>
                                     <option value="tabella_readonly" ${user.role === 'tabella_readonly' ? 'selected' : ''}>Tabella Solo Lettura</option>
