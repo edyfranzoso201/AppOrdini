@@ -1,6 +1,12 @@
 {
   "name": "orderflow-pro",
   "version": "1.0.0",
+{
+  "name": "orderflow-pro",
+  "version": "1.0.0",
+  "type": "module",
+  ...
+}
   "description": "OrderFlow Pro - Sistema di gestione ordini",
   "main": "index.js",
   "scripts": {
