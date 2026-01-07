@@ -4596,9 +4596,6 @@ async function loadSavedUser() {
 // Esegui il caricamento dell'utente salvato
 loadSavedUser();
         
-        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
-        
-        let currentUser = null;
         
         // Definizione ruoli
         const USER_ROLES = {
@@ -4760,7 +4757,7 @@ loadSavedUser();
         }
         
 // ===== LOGIN CORRETTO CON API =====
-async function performLogin() {
+function performLogin() {
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   const loginButton = document.getElementById('loginButton');
