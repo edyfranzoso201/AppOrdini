@@ -3593,7 +3593,9 @@
         }
 
         function initSelect() { 
-            const sel = document.getElementById('addItemSelect'); sel.innerHTML = ''; 
+            const sel = document.getElementById('addItemSelect'); 
+            if (!sel) return; // Protezione
+            sel.innerHTML = ''; 
             [...globalItems].filter(i => i && typeof i === 'string').forEach(i => { 
                 const opt = document.createElement('option');
                 opt.value = i; 
@@ -3603,10 +3605,13 @@
                 sel.appendChild(opt); 
             }); 
             const sizeSel = document.getElementById('filterSize');
-            SIZE_ORDER.forEach(s => sizeSel.innerHTML += `<option value="${s}">${s}</option>`);
+            if (sizeSel) {
+                SIZE_ORDER.forEach(s => sizeSel.innerHTML += `<option value="${s}">${s}</option>`);
+            }
             
             // Popola filtro articoli
             const itemSel = document.getElementById('filterItem');
+            if (!itemSel) return; // Protezione
             const currentItemFilter = itemSel.value; // Preserva selezione corrente
             itemSel.innerHTML = '<option value="all">🔍 Cerca Capo...</option>';
             [...globalItems].filter(item => item && typeof item === 'string').sort().forEach(item => {
@@ -4571,30 +4576,37 @@
         
         let currentUser = null;
         
-        // IMPORTANTE: Check login first, then load data
-        const savedUser = localStorage.getItem('orderFlowCurrentUser');
-        if (savedUser) {
-            try {
-                currentUser = JSON.parse(savedUser);
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
-                
-                // Load data then initialize UI
-                loadData().then(() => {
-                    initSelect();
-                    updateUI();
-                    applyUserPermissions();
-                    startClock();
-                });
-            } catch (error) {
-                console.error('Error loading user:', error);
-                localStorage.removeItem('orderFlowCurrentUser');
-                document.getElementById('loginScreen').style.display = 'flex';
+        // IMPORTANTE: Check login first, then load data - DOPO che il DOM è pronto
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedUser = localStorage.getItem('orderFlowCurrentUser');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    const loginScreen = document.getElementById('loginScreen');
+                    const appContainer = document.getElementById('appContainer');
+                    
+                    if (loginScreen) loginScreen.style.display = 'none';
+                    if (appContainer) appContainer.style.display = 'block';
+                    
+                    // Load data then initialize UI
+                    loadData().then(() => {
+                        initSelect();
+                        updateUI();
+                        applyUserPermissions();
+                        startClock();
+                    });
+                } catch (error) {
+                    console.error('Error loading user:', error);
+                    localStorage.removeItem('orderFlowCurrentUser');
+                    const loginScreen = document.getElementById('loginScreen');
+                    if (loginScreen) loginScreen.style.display = 'flex';
+                }
+            } else {
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) loginScreen.style.display = 'flex';
+                startClock();
             }
-        } else {
-            document.getElementById('loginScreen').style.display = 'flex';
-            startClock();
-        }
+        });
         
         // Definizione ruoli
         const USER_ROLES = {
