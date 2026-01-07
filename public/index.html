@@ -4646,7 +4646,8 @@
                     manageUsers: true,
                     viewDistinta: true,
                     viewTabella: true,
-                    useQuickIdFilters: true
+                    useQuickIdFilters: true,
+                    downloadGoogleForm: true
                 }
             },
             VIEWER: {
@@ -4998,6 +4999,8 @@
                             if (filterIds.includes(el.id)) return;
                             // NON disabilitare elementi già gestiti o non nella tabella
                             if (el.type === 'button' || el.type === 'submit') return;
+                            // NON disabilitare elementi nella sezione "Filtri & Ricerca"
+                            if (el.closest('.p-3.border-b.bg-gray-50')) return;
                             
                             // Disabilita solo se è nella tabella/area dati
                             const isInTable = el.closest('table') || el.closest('.tab-content');
