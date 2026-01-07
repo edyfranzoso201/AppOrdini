@@ -3593,7 +3593,7 @@
         }
 
         function initSelect() { 
-            const sel = document.getElementById('addItemSelect'); 
+            const sel = document.getElementById('addItemSelect');
             if (!sel) return; // Protezione
             sel.innerHTML = ''; 
             [...globalItems].filter(i => i && typeof i === 'string').forEach(i => { 
@@ -4572,12 +4572,30 @@
 
         // ===== INIZIALIZZAZIONE =====
         
-// ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
-        
+        // Dichiarazione variabili globali
         let currentUser = null;
         
         // IMPORTANTE: Check login first, then load data - DOPO che il DOM è pronto
         document.addEventListener('DOMContentLoaded', () => {
+            // Inizializza utenti di default
+            initializeDefaultUsers();
+            
+            // Setup event listeners per login
+            const loginButton = document.getElementById('loginButton');
+            const loginPassword = document.getElementById('loginPassword');
+            
+            if (loginButton) {
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Accedi';
+                loginButton.addEventListener('click', performLogin);
+            }
+            
+            if (loginPassword) {
+                loginPassword.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') performLogin();
+                });
+            }
+            
+            // Auto-login se sessione attiva
             const savedUser = localStorage.getItem('orderFlowCurrentUser');
             if (savedUser) {
                 try {
@@ -4607,6 +4625,8 @@
                 startClock();
             }
         });
+        
+        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
         
         // Definizione ruoli
         const USER_ROLES = {
@@ -4746,24 +4766,36 @@
         };
         
         // Inizializza utente admin di default
-        function initializeDefaultUsers() {
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            console.log('🔍 Utenti esistenti:', users.length);
-            
-            if (users.length === 0) {
-                // Crea admin di default
-                const defaultAdmin = {
-                    username: 'admin',
-                    password: 'admin123',
-                    role: 'admin',
-                    name: 'Amministratore',
-                    createdAt: new Date().toISOString()
-                };
-                users.push(defaultAdmin);
-                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
-                console.log('✅ Utente admin creato:', defaultAdmin);
-            } else {
-                console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
+        async function initializeDefaultUsers() {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const users = data.users || [];
+                
+                console.log('🔍 Utenti esistenti:', users.length);
+                
+                if (users.length === 0) {
+                    // Crea admin di default
+                    const createResponse = await fetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'create',
+                            username: 'admin',
+                            password: 'admin123',
+                            role: 'admin',
+                            name: 'Amministratore'
+                        })
+                    });
+                    
+                    if (createResponse.ok) {
+                        console.log('✅ Utente admin creato');
+                    }
+                } else {
+                    console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
+                }
+            } catch (error) {
+                console.error('Error initializing users:', error);
             }
         }
         
@@ -4822,23 +4854,6 @@
                 location.reload();
             }
         }
-        
-        // Inizializza event listeners per login
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginButton = document.getElementById('loginButton');
-            const loginPassword = document.getElementById('loginPassword');
-            
-            if (loginButton) {
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Accedi';
-                loginButton.addEventListener('click', performLogin);
-            }
-            
-            if (loginPassword) {
-                loginPassword.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') performLogin();
-                });
-            }
-        });
         
         // Applica permessi interfaccia
         function applyUserPermissions() {
@@ -4973,13 +4988,16 @@
         }
         
         // Gestione utenti (solo admin)
-        function openUserManagement() {
+        async function openUserManagement() {
             if (!currentUser || currentUser.role !== 'admin') {
                 alert('⚠️ Accesso negato. Solo gli amministratori possono gestire gli utenti.');
                 return;
             }
             
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const users = data.users || [];
             
             let html = `
                 <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="event.target === this && closeUserManagement()">
@@ -5067,6 +5085,10 @@
             `;
             
             document.body.insertAdjacentHTML('beforeend', html);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Errore nel caricamento degli utenti');
+            }
         }
         
         function closeUserManagement() {
@@ -5119,7 +5141,7 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
         
-        function saveNewUser() {
+        async function saveNewUser() {
             const username = document.getElementById('newUserUsername').value.trim();
             const name = document.getElementById('newUserName').value.trim();
             const password = document.getElementById('newUserPassword').value;
@@ -5130,36 +5152,40 @@
                 return;
             }
             
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            
-            if (users.find(u => u.username === username)) {
-                alert('⚠️ Username già esistente');
-                return;
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'create',
+                        username,
+                        password,
+                        role,
+                        name
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
+                    
+                    // Chiudi modals
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    
+                    showQuickNotification('✅ Utente creato con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nella creazione utente'}`);
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                alert('Errore di connessione al server');
             }
-            
-            users.push({
-                username,
-                password,
-                role,
-                name,
-                createdAt: new Date().toISOString()
-            });
-            
-            localStorage.setItem('orderFlowUsers', JSON.stringify(users));
-            
-            logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
-            
-            // Chiudi modals
-            document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-            
-            showQuickNotification('✅ Utente creato con successo!', 'success');
-            openUserManagement();
         }
         
-        function deleteUser(username) {
+        async function deleteUser(username) {
             if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) return;
-            
-            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
             
             // Non permettere eliminazione admin corrente
             if (currentUser && currentUser.username === username) {
@@ -5167,20 +5193,40 @@
                 return;
             }
             
-            users = users.filter(u => u.username !== username);
-            localStorage.setItem('orderFlowUsers', JSON.stringify(users));
-            
-            logActivity('DELETE_USER', `Eliminato utente: ${username}`);
-            
-            closeUserManagement();
-            showQuickNotification('✅ Utente eliminato', 'success');
-            openUserManagement();
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        username
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logActivity('DELETE_USER', `Eliminato utente: ${username}`);
+                    
+                    closeUserManagement();
+                    showQuickNotification('✅ Utente eliminato', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nell\'eliminazione utente'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Errore di connessione al server');
+            }
         }
         
         // Modifica ruolo utente
-        function editUser(username) {
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            const user = users.find(u => u.username === username);
+        async function editUser(username) {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const users = data.users || [];
+                const user = users.find(u => u.username === username);
             
             if (!user) {
                 alert('⚠️ Utente non trovato');
@@ -5221,9 +5267,13 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            } catch (error) {
+                console.error('Error loading user:', error);
+                alert('Errore nel caricamento utente');
+            }
         }
         
-        function saveEditUser(username) {
+        async function saveEditUser(username) {
             const newName = document.getElementById('editUserName').value.trim();
             const newRole = document.getElementById('editUserRole').value;
             
@@ -5232,21 +5282,34 @@
                 return;
             }
             
-            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            const userIndex = users.findIndex(u => u.username === username);
-            
-            if (userIndex !== -1) {
-                users[userIndex].name = newName;
-                users[userIndex].role = newRole;
-                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'edit',
+                        username,
+                        name: newName,
+                        role: newRole
+                    })
+                });
                 
-                logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
+                const data = await response.json();
                 
-                // Chiudi modals
-                document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-                
-                showQuickNotification('✅ Utente modificato con successo!', 'success');
-                openUserManagement();
+                if (data.success) {
+                    logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
+                    
+                    // Chiudi modals
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    
+                    showQuickNotification('✅ Utente modificato con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nella modifica utente'}`);
+                }
+            } catch (error) {
+                console.error('Error editing user:', error);
+                alert('Errore di connessione al server');
             }
         }
         
@@ -5283,7 +5346,7 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
         
-        function saveNewPassword(username) {
+        async function saveNewPassword(username) {
             const pass1 = document.getElementById('newPassword1').value;
             const pass2 = document.getElementById('newPassword2').value;
             
@@ -5302,24 +5365,31 @@
                 return;
             }
             
-            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            const userIndex = users.findIndex(u => u.username === username);
-            
-            if (userIndex !== -1) {
-                users[userIndex].password = pass1;
-                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update',
+                        username,
+                        newPassword: pass1
+                    })
+                });
                 
-                // Se è l'utente corrente, aggiorna anche la sessione
-                if (currentUser && currentUser.username === username) {
-                    currentUser.password = pass1;
-                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
+                const data = await response.json();
+                
+                if (data.success) {
+                    logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
+                    
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    showQuickNotification('✅ Password aggiornata con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nell\'aggiornamento password'}`);
                 }
-                
-                logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
-                
-                document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-                showQuickNotification('✅ Password aggiornata con successo!', 'success');
-                openUserManagement();
+            } catch (error) {
+                console.error('Error updating password:', error);
+                alert('Errore di connessione al server');
             }
         }
         
@@ -5445,18 +5515,6 @@
             if (!currentUser) return false;
             const role = USER_ROLES[currentUser.role.toUpperCase()] || USER_ROLES.VIEWER;
             return role.permissions[action] === true;
-        }
-        
-        // Auto-login se sessione attiva
-        const savedUserSession = localStorage.getItem('orderFlowCurrentUser');
-        if (savedUserSession) {
-            currentUser = JSON.parse(savedUserSession);
-            document.getElementById('loginScreen').classList.add('hidden');
-            applyUserPermissions();
-            // Disabilita campi dopo l'applicazione permessi
-            setTimeout(() => {
-                if (window.disableEditInputs) window.disableEditInputs();
-            }, 200);
         }
         
         // ===== FINE SISTEMA UTENTI =====
