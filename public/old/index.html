@@ -364,7 +364,7 @@
             <div class="bg-white rounded shadow overflow-hidden h-full flex flex-col">
                 <div class="p-3 border-b bg-gray-50 flex flex-col gap-2">
                     <h2 class="font-bold text-blue-900 text-sm">Filtri & Ricerca</h2>
-                    <div class="flex gap-2 flex-wrap">
+                    <div id="filtersContainer" class="flex gap-2 flex-wrap">
                         <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Cerca Cliente..." class="text-sm border rounded px-3 py-1 w-48">
                         <select id="sortOrder" onchange="renderTable()" class="text-sm border rounded px-2 font-bold bg-gray-50 text-blue-900">
                             <option value="asc">ID Crescente (1..10)</option>
@@ -4692,16 +4692,17 @@
                 permissions: {
                     viewAll: true,
                     viewDashboard: false,
-                    createOrders: false, // Può solo importare
+                    createOrders: false,
                     editOrders: false,
                     deleteOrders: false,
-                    importGoogle: true, // Può importare da Google
+                    importGoogle: false, // NON può importare da Google Sheets
                     importExcel: false,
                     exportBackup: false,
                     resetData: false,
                     manageUsers: false,
                     viewDistinta: true,
-                    viewTabella: true
+                    viewTabella: true,
+                    downloadGoogleForm: true // Può scaricare tramite Google Form
                 }
             },
             TABLE_EDITOR: {
@@ -4932,11 +4933,16 @@
             
             // ASSICURA che i filtri siano sempre visibili per TUTTI
             const ensureFiltersVisible = () => {
-                const filtersContainer = document.querySelector('.p-3.border-b.bg-gray-50');
+                // Forza visibilità del container principale
+                const filtersContainer = document.getElementById('filtersContainer');
                 if (filtersContainer) {
-                    filtersContainer.style.display = 'flex !important';
-                    filtersContainer.style.visibility = 'visible !important';
-                    filtersContainer.style.opacity = '1 !important';
+                    filtersContainer.style.cssText += 'display: flex !important; visibility: visible !important; opacity: 1 !important; flex-wrap: wrap !important;';
+                }
+                
+                // Forza anche il parent
+                const filterSection = document.querySelector('.p-3.border-b.bg-gray-50');
+                if (filterSection) {
+                    filterSection.style.cssText += 'display: flex !important; visibility: visible !important;';
                 }
                 
                 // Mostra tutti gli elementi di filtro
@@ -4945,34 +4951,47 @@
                 filterIds.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
-                        el.style.display = '';
-                        el.style.visibility = 'visible';
+                        el.style.cssText += 'display: inline-block !important; visibility: visible !important; pointer-events: auto !important;';
                         el.disabled = false;
-                        el.style.pointerEvents = 'auto';
                     }
                 });
+                
+                console.log('✅ Filtri forzati visibili');
             };
             
             // Esegui immediatamente e dopo timeout
-            ensureFiltersVisible();
+            setTimeout(ensureFiltersVisible, 0);
             setTimeout(ensureFiltersVisible, 100);
             setTimeout(ensureFiltersVisible, 500);
             setTimeout(ensureFiltersVisible, 1000);
+            setTimeout(ensureFiltersVisible, 2000);
             
-            // Aggiungi CSS per forzare la visibilità dei filtri
+            // Aggiungi CSS globale per forzare la visibilità dei filtri
             const filterStyle = document.createElement('style');
             filterStyle.id = 'filterVisibilityStyle';
             filterStyle.textContent = `
+                /* Forza visibilità sezione filtri */
                 .p-3.border-b.bg-gray-50 { 
                     display: flex !important; 
                     visibility: visible !important; 
                     opacity: 1 !important; 
                 }
+                #filtersContainer {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    gap: 0.5rem !important;
+                    visibility: visible !important;
+                }
+                #filtersContainer * {
+                    visibility: visible !important;
+                }
+                /* Forza visibilità singoli filtri */
                 #searchInput, #sortOrder, #filterStatus, #filterRoleYear, 
                 #filterSize, #filterKitType, #filterItem, #filterMinId, #filterMaxId {
                     display: inline-block !important;
                     visibility: visible !important;
                     pointer-events: auto !important;
+                    opacity: 1 !important;
                 }
             `;
             document.head.appendChild(filterStyle);
