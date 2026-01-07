@@ -3305,8 +3305,9 @@
                             <option value="In Lavorazione" ${o.status==='In Lavorazione'?'selected':''}>In Lavorazione</option>
                             <option value="Ordine Arrivato" ${o.status==='Ordine Arrivato'?'selected':''}>Arrivato</option>
                             <option value="Pagato" ${o.status==='Pagato'?'selected':''}>Pagato</option>
+                            <option value="Consegna Parziale" ${o.status==='Consegna Parziale'?'selected':''}>Consegna Parziale</option>
                             <option value="Consegnato" ${o.status==='Consegnato'?'selected':''}>Consegnato</option>
-                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegnato') ?
+                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegna Parziale' && o.status !== 'Consegnato') ?
                             `<option value="${o.status}" selected disabled>${o.status}</option>` : ''}
                         </select>
                     </div>`;
