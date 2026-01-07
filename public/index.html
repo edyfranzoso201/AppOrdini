@@ -313,9 +313,9 @@
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
-                    <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" placeholder="Inserisci password" onkeypress="if(event.key==='Enter') performLogin()">
+                    <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" placeholder="Inserisci password">
                 </div>
-                <button onclick="performLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition">
+                <button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>Accedi
                 </button>
                 <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
@@ -4806,6 +4806,23 @@
             }
         }
         
+        // Inizializza event listeners per login
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginButton = document.getElementById('loginButton');
+            const loginPassword = document.getElementById('loginPassword');
+            
+            if (loginButton) {
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Accedi';
+                loginButton.addEventListener('click', performLogin);
+            }
+            
+            if (loginPassword) {
+                loginPassword.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') performLogin();
+                });
+            }
+        });
+        
         // Applica permessi interfaccia
         function applyUserPermissions() {
             if (!currentUser) return;
@@ -5414,9 +5431,9 @@
         }
         
         // Auto-login se sessione attiva
-        const savedUser = localStorage.getItem('orderFlowCurrentUser');
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
+        const savedUserSession = localStorage.getItem('orderFlowCurrentUser');
+        if (savedUserSession) {
+            currentUser = JSON.parse(savedUserSession);
             document.getElementById('loginScreen').classList.add('hidden');
             applyUserPermissions();
             // Disabilita campi dopo l'applicazione permessi
