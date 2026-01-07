@@ -1778,6 +1778,153 @@
     }
 }
         
+        // ===== SISTEMA NOTIFICHE =====
+        function showQuickNotification(message, type = 'info') {
+            // Crea elemento notifica
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-[10000] px-6 py-3 rounded-lg shadow-lg text-white font-bold flex items-center gap-2 transition-all';
+            
+            // Colore in base al tipo
+            const colors = {
+                'success': 'bg-green-600',
+                'error': 'bg-red-600',
+                'warning': 'bg-yellow-600',
+                'info': 'bg-blue-600'
+            };
+            notification.classList.add(colors[type] || colors.info);
+            
+            // Icona in base al tipo
+            const icons = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            };
+            
+            notification.innerHTML = `
+                <span class="text-xl">${icons[type] || icons.info}</span>
+                <span>${message}</span>
+            `;
+            
+            // Aggiungi al body
+            document.body.appendChild(notification);
+            
+            // Animazione entrata
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // Rimuovi dopo 3 secondi
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // ===== SISTEMA AUTO-REFRESH =====
+        let autoRefreshInterval = null;
+        let lastDataHash = null;
+        
+        // Calcola un hash semplice dei dati per rilevare modifiche
+        function getDataHash() {
+            return JSON.stringify({
+                ordersCount: orders.length,
+                lastOrderId: lastOrderId,
+                ordersData: orders.map(o => ({
+                    id: o.id,
+                    status: o.status,
+                    itemsCount: o.itemsList?.length || 0
+                }))
+            });
+        }
+        
+        // Funzione di auto-refresh silenziosa
+        async function autoRefreshData() {
+            try {
+                // Salva posizione scroll
+                const scrollPos = window.scrollY;
+                
+                // Carica dati senza chiamare saveData
+                const ordersRes = await fetch('/api/orders');
+                if (ordersRes.ok) {
+                    const ordersData = await ordersRes.json();
+                    if (ordersData.success && ordersData.data) {
+                        const newHash = JSON.stringify({
+                            ordersCount: ordersData.data.orders?.length || 0,
+                            lastOrderId: ordersData.data.lastOrderId || 0,
+                            ordersData: (ordersData.data.orders || []).map(o => ({
+                                id: o.id,
+                                status: o.status,
+                                itemsCount: o.itemsList?.length || 0
+                            }))
+                        });
+                        
+                        // Controlla se ci sono modifiche
+                        if (lastDataHash && newHash !== lastDataHash) {
+                            console.log('🔄 Dati aggiornati da altro utente');
+                            
+                            // Aggiorna i dati
+                            orders = ordersData.data.orders || [];
+                            lastOrderId = ordersData.data.lastOrderId || 0;
+                            currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                            highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                            
+                            // Re-render UI
+                            updateUI();
+                            
+                            // Mostra notifica
+                            showQuickNotification('🔄 Dati aggiornati', 'info');
+                            
+                            // Ripristina scroll
+                            setTimeout(() => window.scrollTo(0, scrollPos), 100);
+                        }
+                        
+                        lastDataHash = newHash;
+                    }
+                }
+                
+                // Carica anche inventory
+                const invRes = await fetch('/api/inventory');
+                if (invRes.ok) {
+                    const invData = await invRes.json();
+                    if (invData.success && invData.data) {
+                        inventory = invData.data.inventory || {};
+                    }
+                }
+                
+            } catch (error) {
+                console.warn('⚠️ Auto-refresh error:', error);
+            }
+        }
+        
+        // Avvia auto-refresh
+        function startAutoRefresh() {
+            // Ferma eventuale refresh precedente
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            // Inizializza hash
+            lastDataHash = getDataHash();
+            
+            // Avvia polling ogni 30 secondi
+            autoRefreshInterval = setInterval(autoRefreshData, 30000);
+            console.log('✅ Auto-refresh attivo (ogni 30 secondi)');
+        }
+        
+        // Ferma auto-refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                console.log('⏸️ Auto-refresh fermato');
+            }
+        }
+        
+        // ===== FINE SISTEMA AUTO-REFRESH =====
+        
         // NUOVA FUNZIONE: Ripara tutti gli importKey per evitare duplicati all'importazione
         function repairAllImportKeys() {
             let repairedCount = 0;
@@ -4869,6 +5016,9 @@
                     await loadData();
                     updateUI();
                     applyUserPermissions();
+                    
+                    // Avvia auto-refresh per sincronizzazione multi-utente
+                    startAutoRefresh();
                 } else {
                     alert('Credenziali non valide');
                 }
