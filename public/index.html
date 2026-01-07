@@ -4825,8 +4825,13 @@
                 if (data.success && data.user) {
                     currentUser = data.user;
                     localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('appContainer').style.display = 'block';
+                    
+                    const loginScreen = document.getElementById('loginScreen');
+                    const appContainer = document.getElementById('appContainer');
+                    
+                    if (loginScreen) loginScreen.style.display = 'none';
+                    if (appContainer) appContainer.style.display = 'block';
+                    
                     await loadData();
                     updateUI();
                     applyUserPermissions();
