@@ -4759,48 +4759,58 @@ loadSavedUser();
             }
         }
         
-        // Login
-        async function performLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const loginButton = document.getElementById('loginButton');
-            
-            if (!username || !password) {
-                alert('Inserisci username e password');
-                return;
-            }
-            
-            loginButton.disabled = true;
-            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
-            
-            try {
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'login', username, password })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success && data.user) {
-                    currentUser = data.user;
-                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('appContainer').style.display = 'block';
-                    await loadData();
-                    updateUI();
-                    applyUserPermissions();
-                } else {
-                    alert('Credenziali non valide');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('Errore di connessione al server');
-            } finally {
-                loginButton.disabled = false;
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
-            }
-        }
+// ===== LOGIN CORRETTO CON API =====
+async function performLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const loginButton = document.getElementById('loginButton');
+  const loginError = document.getElementById('loginError');
+  
+  // Validazione input
+  if (!username || !password) {
+    loginError.textContent = '⚠️ Inserisci username e password';
+    loginError.classList.remove('hidden');
+    return;
+  }
+  
+  // Disabilita il pulsante e mostra lo spinner
+  loginButton.disabled = true;
+  loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
+  loginError.classList.add('hidden');
+  
+  try {
+    // Chiama l'API di login
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', username, password })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.user) {
+      // Login riuscito
+      localStorage.setItem('orderFlowCurrentUser', JSON.stringify(data.user));
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('appContainer').classList.remove('hidden');
+      // Qui devi caricare i dati dell'app
+      await loadData(); // Assicurati che questa funzione esista
+      updateUI();       // Assicurati che questa funzione esista
+    } else {
+      // Credenziali errate
+      loginError.textContent = '❌ Username o password errati';
+      loginError.classList.remove('hidden');
+    }
+  } catch (error) {
+    console.error('Errore di rete:', error);
+    loginError.textContent = 'Errore di connessione al server';
+    loginError.classList.remove('hidden');
+  } finally {
+    // Riabilita il pulsante
+    loginButton.disabled = false;
+    loginButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Accedi';
+  }
+}
             
             const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
             console.log('👥 Utenti disponibili:', users.length);
