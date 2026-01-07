@@ -4945,45 +4945,41 @@
                 
                 // Disabilita input campi quando non ha permessi editOrders
                 if (!perms.editOrders && !perms.editTabella) {
+                    // Lista completa ID filtri da NON disabilitare
+                    const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
+                                      'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
+                    
                     // Funzione per disabilitare inputs dopo il render
                     window.disableEditInputs = function() {
-                        // Disabilita input taglie, sconto, ecc
+                        // Disabilita input taglie, sconto, ecc (MA NON I FILTRI!)
                         document.querySelectorAll('input.edit-order-btn, select.edit-order-btn').forEach(el => {
+                            // NON disabilitare i filtri
+                            if (filterIds.includes(el.id)) return;
+                            
                             el.disabled = true;
                             el.style.backgroundColor = '#f3f4f6';
                             el.style.cursor = 'not-allowed';
                             el.style.color = '#6b7280';
                         });
                         
-                        // Disabilita select STATO
-                        document.querySelectorAll('select.status-select').forEach(el => {
-                            el.disabled = true;
-                            el.style.cursor = 'not-allowed';
-                            el.style.opacity = '0.6';
-                        });
-                        
-                        // Disabilita select TIPO ORDINE (KIT)
-                        document.querySelectorAll('select[onchange*="updateOrderType"]').forEach(el => {
-                            el.disabled = true;
-                            el.style.cursor = 'not-allowed';
-                            el.style.opacity = '0.6';
-                            el.style.backgroundColor = '#f3f4f6';
-                        });
-                        
-                        // Disabilita select ANNO/RUOLO
-                        document.querySelectorAll('select[onchange*="updateOrderField"]').forEach(el => {
-                            el.disabled = true;
-                            el.style.cursor = 'not-allowed';
-                            el.style.opacity = '0.6';
-                            el.style.backgroundColor = '#f3f4f6';
-                        });
-                        
-                        // Disabilita input inventario (giacenze)
-                        document.querySelectorAll('input.inv-input').forEach(el => {
-                            el.disabled = true;
-                            el.style.backgroundColor = '#f3f4f6';
-                            el.style.cursor = 'not-allowed';
-                            el.style.color = '#6b7280';
+                        // Disabilita TUTTI gli input e select tranne i filtri
+                        document.querySelectorAll('input, select').forEach(el => {
+                            // NON disabilitare i filtri
+                            if (filterIds.includes(el.id)) return;
+                            // NON disabilitare elementi già gestiti o non nella tabella
+                            if (el.type === 'button' || el.type === 'submit') return;
+                            
+                            // Disabilita solo se è nella tabella/area dati
+                            const isInTable = el.closest('table') || el.closest('.tab-content');
+                            if (isInTable && !el.closest('.glass-effect')) {
+                                el.disabled = true;
+                                el.style.cursor = 'not-allowed';
+                                el.style.opacity = '0.6';
+                                if (el.tagName === 'INPUT') {
+                                    el.style.backgroundColor = '#f3f4f6';
+                                    el.style.color = '#6b7280';
+                                }
+                            }
                         });
                         
                         // Disabilita pulsante "X Capi" ma lascialo visibile
