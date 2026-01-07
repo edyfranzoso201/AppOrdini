@@ -4768,7 +4768,7 @@
         // Inizializza utente admin di default
         async function initializeDefaultUsers() {
             try {
-                const response = await fetch('/api/users?action=list');
+                const response = await fetch('/api/users');
                 const data = await response.json();
                 const users = data.users || [];
                 
@@ -4990,7 +4990,7 @@
             }
             
             try {
-                const response = await fetch('/api/users?action=list');
+                const response = await fetch('/api/users');
                 const data = await response.json();
                 const users = data.users || [];
             
@@ -5218,7 +5218,7 @@
         // Modifica ruolo utente
         async function editUser(username) {
             try {
-                const response = await fetch('/api/users?action=list');
+                const response = await fetch('/api/users');
                 const data = await response.json();
                 const users = data.users || [];
                 const user = users.find(u => u.username === username);
