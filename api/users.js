@@ -7,12 +7,18 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      // Get all users
-      const users = await redis.get(USERS_KEY);
+      // Get all users (senza passwords per sicurezza)
+      const users = await redis.get(USERS_KEY) || [];
+      const safeUsers = users.map(u => ({
+        username: u.username,
+        name: u.name,
+        role: u.role,
+        createdAt: u.createdAt
+      }));
       
       return res.status(200).json({
         success: true,
-        data: users || []
+        users: safeUsers
       });
       
     } else if (req.method === 'POST') {
