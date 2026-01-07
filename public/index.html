@@ -4772,6 +4772,13 @@
         async function initializeDefaultUsers() {
             try {
                 const response = await fetch('/api/users');
+                
+                // Verifica che la risposta sia OK prima di parsare JSON
+                if (!response.ok) {
+                    console.warn('⚠️ API users non disponibile, skip inizializzazione');
+                    return;
+                }
+                
                 const data = await response.json();
                 const users = data.users || [];
                 
@@ -4798,7 +4805,8 @@
                     console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
                 }
             } catch (error) {
-                console.error('Error initializing users:', error);
+                // Silenzioso: l'errore è normale se l'API non è ancora pronta
+                console.warn('⚠️ Impossibile inizializzare utenti:', error.message);
             }
         }
         
@@ -4920,6 +4928,28 @@
                     quickIdContainer.style.display = 'none';
                 }
             }
+            
+            // ASSICURA che i filtri siano sempre visibili per TUTTI
+            setTimeout(() => {
+                const filtersContainer = document.querySelector('.p-3.border-b.bg-gray-50');
+                if (filtersContainer) {
+                    filtersContainer.style.display = 'flex';
+                    filtersContainer.style.visibility = 'visible';
+                    filtersContainer.style.opacity = '1';
+                }
+                
+                // Mostra tutti gli elementi di filtro
+                const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
+                                  'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
+                filterIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = '';
+                        el.style.visibility = 'visible';
+                        el.disabled = false;
+                    }
+                });
+            }, 200);
             
             // Disabilita campi editabili per utenti senza permessi
             if (!perms.editOrders || !perms.deleteOrders || !perms.downloadGoogleForm) {
