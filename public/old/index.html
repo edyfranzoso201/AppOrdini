@@ -4645,7 +4645,8 @@
                     resetData: true,
                     manageUsers: true,
                     viewDistinta: true,
-                    viewTabella: true
+                    viewTabella: true,
+                    useQuickIdFilters: true
                 }
             },
             VIEWER: {
@@ -4718,7 +4719,8 @@
                     manageUsers: false,
                     viewDistinta: false, // Non vede Distinta
                     viewTabella: true, // SOLO Tabella
-                    editTabella: true // Permesso speciale per modificare celle tabella
+                    editTabella: true, // Permesso speciale per modificare celle tabella
+                    useQuickIdFilters: true // Può usare Quick ID filters
                 }
             },
             TABELLA_FULL: {
@@ -4739,7 +4741,8 @@
                     viewTabella: true, // Vede Tabella Ordini
                     editTabella: true, // Può modificare celle
                     highlightCells: true, // Può evidenziare celle
-                    downloadGoogleForm: true // Può scaricare Google Form
+                    downloadGoogleForm: true, // Può scaricare Google Form
+                    useQuickIdFilters: true // Può usare Quick ID filters
                 }
             },
             TABELLA_READONLY: {
@@ -4910,6 +4913,14 @@
                 }
             }
             
+            // Nascondi Quick ID filters se non ha permesso
+            if (!perms.useQuickIdFilters) {
+                const quickIdContainer = document.querySelector('[id="quickIdButtons"]')?.parentElement;
+                if (quickIdContainer) {
+                    quickIdContainer.style.display = 'none';
+                }
+            }
+            
             // Disabilita campi editabili per utenti senza permessi
             if (!perms.editOrders || !perms.deleteOrders || !perms.downloadGoogleForm) {
                 const style = document.createElement('style');
@@ -4949,6 +4960,22 @@
                             el.disabled = true;
                             el.style.cursor = 'not-allowed';
                             el.style.opacity = '0.6';
+                        });
+                        
+                        // Disabilita select TIPO ORDINE (KIT)
+                        document.querySelectorAll('select[onchange*="updateOrderType"]').forEach(el => {
+                            el.disabled = true;
+                            el.style.cursor = 'not-allowed';
+                            el.style.opacity = '0.6';
+                            el.style.backgroundColor = '#f3f4f6';
+                        });
+                        
+                        // Disabilita select ANNO/RUOLO
+                        document.querySelectorAll('select[onchange*="updateOrderField"]').forEach(el => {
+                            el.disabled = true;
+                            el.style.cursor = 'not-allowed';
+                            el.style.opacity = '0.6';
+                            el.style.backgroundColor = '#f3f4f6';
                         });
                         
                         // Disabilita input inventario (giacenze)
