@@ -4565,32 +4565,36 @@
             XLSX.writeFile(wb, "OrderFlow_BACKUP_" + new Date().toISOString().slice(0,10) + ".xlsx");
         }
 
-        // ===== INIZIALIZZAZIONE =====
-        
-// IMPORTANTE: Check login first, then load data
-        const savedUser = localStorage.getItem('orderFlowCurrentUser');
-        if (savedUser) {
-            try {
-                currentUser = JSON.parse(savedUser);
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
-                
-                // Load data then initialize UI
-                loadData().then(() => {
-                    initSelect();
-                    updateUI();
-                    applyUserPermissions();
-                    startClock();
-                });
-            } catch (error) {
-                console.error('Error loading user:', error);
-                localStorage.removeItem('orderFlowCurrentUser');
-                document.getElementById('loginScreen').style.display = 'flex';
-            }
-        } else {
-            document.getElementById('loginScreen').style.display = 'flex';
+// ===== INIZIALIZZAZIONE =====
+// Inizializza la variabile currentUser
+let currentUser = null;
+
+// Funzione per caricare l'utente salvato
+async function loadSavedUser() {
+    const savedUser = localStorage.getItem('orderFlowCurrentUser');
+    if (savedUser) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            // Carica i dati e inizializza l'interfaccia
+            await loadData();
+            initSelect();
+            updateUI();
+            applyUserPermissions();
             startClock();
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading saved user:', error);
+            localStorage.removeItem('orderFlowCurrentUser');
+            document.getElementById('loginScreen').style.display = 'flex';
         }
+    } else {
+        document.getElementById('loginScreen').style.display = 'flex';
+        startClock();
+    }
+}
+// Esegui il caricamento dell'utente salvato
+loadSavedUser();
         
         // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
         
