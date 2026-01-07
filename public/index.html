@@ -5441,18 +5441,6 @@
             return role.permissions[action] === true;
         }
         
-        // Auto-login se sessione attiva
-        const savedUser = localStorage.getItem('orderFlowCurrentUser');
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-            document.getElementById('loginScreen').classList.add('hidden');
-            applyUserPermissions();
-            // Disabilita campi dopo l'applicazione permessi
-            setTimeout(() => {
-                if (window.disableEditInputs) window.disableEditInputs();
-            }, 200);
-        }
-        
         // ===== FINE SISTEMA UTENTI =====
         
         // ===== QUICK ID BUTTONS =====
