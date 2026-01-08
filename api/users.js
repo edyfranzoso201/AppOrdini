@@ -13,8 +13,22 @@ const DEFAULT_USERS = [
   }
 ];
 
+// Aggiungi header CORS
+function setCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 export default async function handler(req, res) {
+  // Gestisci preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    setCorsHeaders(res);
+    return res.status(200).end();
+  }
+
   const redis = getRedis();
+  setCorsHeaders(res);
   
   try {
     if (req.method === 'GET') {
