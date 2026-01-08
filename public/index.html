@@ -1770,6 +1770,46 @@
             }
         }
 
+        async function saveData() {
+            try {
+                // Salva ordini
+                await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'save',
+                        orders: orders,
+                        lastOrderId: lastOrderId,
+                        currentPrefix: currentPrefix,
+                        highlightedSizeCells: highlightedSizeCells
+                    })
+                });
+                
+                // Salva inventario
+                await fetch('/api/inventory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'save',
+                        inventory: inventory
+                    })
+                });
+                
+                // Salva configurazione
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'save',
+                        globalItems: globalItems,
+                        globalKitTypes: globalKitTypes
+                    })
+                });
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
         function updateOrderField(id, field, value) { 
             const o = orders.find(x => x.id === id);
             if (!o) return; 
@@ -4357,6 +4397,10 @@
 
         // ===== INIZIALIZZAZIONE =====
         
+        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
+        
+        let currentUser = null;
+        
         // IMPORTANTE: Inizializza utenti PRIMA di caricare i dati
         // Check if user is logged in
         const savedUser = localStorage.getItem('orderFlowCurrentUser');
@@ -4383,10 +4427,6 @@
             startClock();
         } initSelect();
         updateUI(); startClock();
-        
-        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
-        
-        let currentUser = null;
         
         // Definizione ruoli
         const USER_ROLES = {
