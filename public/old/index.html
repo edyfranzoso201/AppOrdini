@@ -371,7 +371,7 @@
                             <option value="desc">ID Decrescente (10..1)</option>
                         </select>
                         <select id="filterStatus" onchange="renderTable()" class="text-sm border rounded px-2">
-                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Pagato">Pagato</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
+                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Pagato">Pagato</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegna Parziale">Consegna Parziale</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
                         </select>
                         <input type="text" id="filterRoleYear" onkeyup="renderTable()" placeholder="Anno/Ruolo..." class="text-sm border rounded px-3 py-1 w-32">
                         <select id="filterSize" onchange="renderTable()" class="text-sm border rounded px-2">
@@ -866,6 +866,46 @@
         </div>
     </div>
 
+    <!-- Popup Consegna Parziale -->
+    <div id="partialDeliveryPopup" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-box-open text-amber-600"></i>
+                    Consegna Parziale - Cosa Manca?
+                </h2>
+                <button onclick="closePartialDeliveryPopup()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+                <p class="text-sm text-amber-800">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Nota:</strong> Inserisci l'abbigliamento mancante per questa consegna parziale. 
+                    Esempio: "Maglia 2XL, Pantaloni M"
+                </p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">📝 Articoli Mancanti</label>
+                <textarea id="partialDeliveryNote" rows="5" class="w-full border rounded p-3 text-sm focus:ring-2 focus:ring-amber-300 outline-none resize-none" placeholder="Es: Maglia M, Pantaloncini L, Calze 39/42..."></textarea>
+                <p class="text-xs text-gray-500 mt-1">
+                    💡 Puoi anche specificare quantità: "2x Maglia M, 1x Pantaloni L"
+                </p>
+            </div>
+            
+            <div class="flex gap-2 justify-end">
+                <button onclick="closePartialDeliveryPopup()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 font-bold transition">
+                    Annulla
+                </button>
+                <button onclick="savePartialDeliveryNote()" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 font-bold transition">
+                    <i class="fas fa-save mr-2"></i>Salva Nota
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SIZE_ORDER = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "6 ANNI", "8 ANNI", "10 ANNI", "12 ANNI", "14 ANNI", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "03 BIMBO", "05 ADULTO", "UNICA"];
         const SOCKS_BLUE_DEFAULT = "Calzettoni di Allenamento WULGAR Blu Marine 618 (7€)";
@@ -1000,6 +1040,7 @@
             { value: 'In Lavorazione', label: 'In Lavorazione', color: 'bg-blue-100 text-blue-800' }, 
             { value: 'Pagato', label: 'Pagato', color: 'bg-green-700 text-white' }, 
             { value: 'Ordine Arrivato', label: 'Arrivato', color: 'bg-orange-100 text-orange-800' },
+            { value: 'Consegna Parziale', label: 'Consegna Parziale', color: 'bg-amber-100 text-amber-800' },
             { value: 'Consegnato', label: 'Consegnato', color: 'bg-gray-700 text-white' },
             { value: 'Scomposto', label: 'Scomposto', color: 'bg-teal-100 text-teal-800' },
             { value: 'Ordine annullato', label: 'Annullato', color: 'bg-red-100 text-red-800' }, 
@@ -2926,12 +2967,59 @@
                 } else {
                     o.status = 'Nuovo';
                 }
+            } else if (newStatus === 'Consegna Parziale') {
+                // Apri popup per inserire cosa manca
+                openPartialDeliveryPopup(id);
             } else { 
                 o.status = newStatus;
-                o.linkedId = null; 
+                o.linkedId = null;
+                o.partialDeliveryNote = null; // Reset nota consegna parziale
             } 
             updateUI(); 
             renderMatrices();
+        }
+
+        // Popup Consegna Parziale
+        let currentPartialDeliveryOrderId = null;
+        
+        function openPartialDeliveryPopup(orderId) {
+            currentPartialDeliveryOrderId = orderId;
+            const order = orders.find(o => o.id === orderId);
+            
+            if (order) {
+                // Aggiorna stato immediatamente
+                order.status = 'Consegna Parziale';
+                
+                // Mostra nota esistente se presente
+                document.getElementById('partialDeliveryNote').value = order.partialDeliveryNote || '';
+                document.getElementById('partialDeliveryPopup').classList.add('active');
+            }
+        }
+        
+        function closePartialDeliveryPopup() {
+            document.getElementById('partialDeliveryPopup').classList.remove('active');
+            currentPartialDeliveryOrderId = null;
+        }
+        
+        function savePartialDeliveryNote() {
+            if (!currentPartialDeliveryOrderId) return;
+            
+            const note = document.getElementById('partialDeliveryNote').value.trim();
+            const order = orders.find(o => o.id === currentPartialDeliveryOrderId);
+            
+            if (order) {
+                order.partialDeliveryNote = note;
+                
+                // Se la nota è vuota, chiedi conferma
+                if (!note) {
+                    const confirm = window.confirm('⚠️ Nessuna nota inserita. Vuoi confermare comunque?');
+                    if (!confirm) return;
+                }
+                
+                showQuickNotification('✅ Nota consegna parziale salvata', 'success');
+                closePartialDeliveryPopup();
+                updateUI();
+            }
         }
 
         function updateLinkedId(id, newLinkedId) {
@@ -3217,8 +3305,9 @@
                             <option value="In Lavorazione" ${o.status==='In Lavorazione'?'selected':''}>In Lavorazione</option>
                             <option value="Ordine Arrivato" ${o.status==='Ordine Arrivato'?'selected':''}>Arrivato</option>
                             <option value="Pagato" ${o.status==='Pagato'?'selected':''}>Pagato</option>
+                            <option value="Consegna Parziale" ${o.status==='Consegna Parziale'?'selected':''}>Consegna Parziale</option>
                             <option value="Consegnato" ${o.status==='Consegnato'?'selected':''}>Consegnato</option>
-                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegnato') ?
+                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegna Parziale' && o.status !== 'Consegnato') ?
                             `<option value="${o.status}" selected disabled>${o.status}</option>` : ''}
                         </select>
                     </div>`;
@@ -3236,9 +3325,23 @@
                             </div>
                         </div>`;
                     } else {
-                        statusInfo = `<select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
-                            ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
-                        </select>`;
+                        // Controlla se c'è una nota di consegna parziale
+                        const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
+                        
+                        statusInfo = `
+                        <div class="flex flex-col gap-1">
+                            <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
+                                ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
+                            </select>
+                            ${hasPartialNote ? `
+                            <div class="bg-amber-50 border border-amber-300 rounded p-1.5 cursor-pointer hover:bg-amber-100 transition" onclick="openPartialDeliveryPopup(${o.id})" title="Clicca per modificare">
+                                <div class="text-[10px] font-bold text-amber-800 flex items-center gap-1">
+                                    <i class="fas fa-box-open"></i>
+                                    <span>Manca:</span>
+                                </div>
+                                <div class="text-[10px] text-amber-700 mt-0.5 line-clamp-2">${o.partialDeliveryNote}</div>
+                            </div>` : ''}
+                        </div>`;
                     }
                 }
 
