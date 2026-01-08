@@ -1769,46 +1769,35 @@
                 alert('Errore nel caricamento dei dati');
             }
         }
+async function saveData() {
+    try {
+        const fullData = {
+            action: 'save',  // <--- QUESTA RIGA È OBBLIGATORIA PER I TUOI FILE JS
+            orders: orders || [],
+            lastOrderId: lastOrderId || 0,
+            currentPrefix: currentPrefix || 'R68-',
+            highlightedSizeCells: highlightedSizeCells || {}
+        };
 
-        async function saveData() {
-            try {
-                // Salva ordini
-                await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'save',
-                        orders: orders,
-                        lastOrderId: lastOrderId,
-                        currentPrefix: currentPrefix,
-                        highlightedSizeCells: highlightedSizeCells
-                    })
-                });
-                
-                // Salva inventario
-                await fetch('/api/inventory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'save',
-                        inventory: inventory
-                    })
-                });
-                
-                // Salva configurazione
-                await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'save',
-                        globalItems: globalItems,
-                        globalKitTypes: globalKitTypes
-                    })
-                });
-            } catch (error) {
-                console.error('Error saving data:', error);
-            }
+        const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log("✅ Salvataggio completato");
+        } else {
+            console.error("Errore server:", result.error);
         }
+        
+    } catch (error) {
+        console.error("Errore salvataggio:", error);
+        alert("⚠️ Attenzione: Impossibile salvare i dati online!");
+    }
+}
 
         function updateOrderField(id, field, value) { 
             const o = orders.find(x => x.id === id);
