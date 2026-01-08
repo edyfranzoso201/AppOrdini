@@ -4565,30 +4565,16 @@
             }
         };
         
-        // Inizializza utente admin di default
-        function initializeDefaultUsers() {
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            console.log('🔍 Utenti esistenti:', users.length);
-            
-            if (users.length === 0) {
-                // Crea admin di default
-                const defaultAdmin = {
-                    username: 'admin',
-                    password: 'admin123',
-                    role: 'admin',
-                    name: 'Amministratore',
-                    createdAt: new Date().toISOString()
-                };
-                users.push(defaultAdmin);
-                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
-                console.log('✅ Utente admin creato:', defaultAdmin);
-            } else {
-                console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
-            }
+        // Inizializzazione utenti - ora gestita da Redis
+        // Non serve più initializeDefaultUsers() locale
+        async function initializeDefaultUsers() {
+            // Gli utenti sono gestiti dal database Redis
+            // Questa funzione non fa più nulla localmente
+            console.log('ℹ️ Utenti gestiti da Redis server');
         }
         
-        // Login
-        function performLogin() {
+        // Login - USA API REDIS
+        async function performLogin() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             const errorDiv = document.getElementById('loginError');
@@ -4601,32 +4587,54 @@
                 return;
             }
             
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            console.log('👥 Utenti disponibili:', users.length);
-            console.log('📋 Lista utenti:', users.map(u => ({username: u.username, role: u.role})));
-            
-            const user = users.find(u => u.username === username && u.password === password);
-            
-            if (user) {
-                console.log('✅ Login riuscito:', user.username);
-                currentUser = user;
-                localStorage.setItem('orderFlowCurrentUser', JSON.stringify(user));
-                document.getElementById('loginScreen').classList.add('hidden');
-                applyUserPermissions();
-                initQuickIdButtons();
+            try {
+                // Chiama API Redis per il login
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'login',
+                        username: username,
+                        password: password
+                    })
+                });
                 
-                // Disabilita campi se necessario
-                setTimeout(() => {
-                    if (window.disableEditInputs) window.disableEditInputs();
-                }, 200);
+                const result = await response.json();
+                console.log('📡 Risposta server:', result);
                 
-                // Log login
-                logActivity('LOGIN', `Accesso effettuato`);
-                
-                showQuickNotification(`Benvenuto, ${user.name}!`, 'success');
-            } else {
-                console.log('❌ Login fallito - credenziali errate');
-                errorDiv.textContent = '❌ Username o password errati';
+                if (result.success && result.user) {
+                    console.log('✅ Login riuscito:', result.user.username);
+                    currentUser = result.user;
+                    // Salva utente corrente in localStorage (solo per sessione)
+                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(result.user));
+                    
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('appContainer').style.display = 'block';
+                    
+                    // Carica dati e inizializza UI
+                    await loadData();
+                    initSelect();
+                    updateUI();
+                    applyUserPermissions();
+                    initQuickIdButtons();
+                    
+                    // Disabilita campi se necessario
+                    setTimeout(() => {
+                        if (window.disableEditInputs) window.disableEditInputs();
+                    }, 200);
+                    
+                    // Log login
+                    logActivity('LOGIN', `Accesso effettuato`);
+                    
+                    showQuickNotification(`Benvenuto, ${result.user.name}!`, 'success');
+                } else {
+                    console.log('❌ Login fallito - credenziali errate');
+                    errorDiv.textContent = '❌ ' + (result.error || 'Username o password errati');
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('❌ Errore connessione:', error);
+                errorDiv.textContent = '❌ Errore di connessione al server';
                 errorDiv.classList.remove('hidden');
             }
         }
@@ -4771,101 +4779,109 @@
             }
         }
         
-        // Gestione utenti (solo admin)
-        function openUserManagement() {
+        // Gestione utenti (solo admin) - USA API REDIS
+        async function openUserManagement() {
             if (!currentUser || currentUser.role !== 'admin') {
                 alert('⚠️ Accesso negato. Solo gli amministratori possono gestire gli utenti.');
                 return;
             }
             
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            try {
+                // Carica utenti da Redis
+                const response = await fetch('/api/users');
+                const result = await response.json();
+                const users = result.users || [];
             
-            let html = `
-                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="event.target === this && closeUserManagement()">
-                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
-                        <div class="flex justify-between items-center mb-4 pb-4 border-b">
-                            <h2 class="text-2xl font-bold text-gray-900">
-                                <i class="fas fa-users text-indigo-600 mr-2"></i>
-                                Gestione Utenti
-                            </h2>
-                            <button onclick="closeUserManagement()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <button onclick="openAddUserForm()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold mr-2">
-                                <i class="fas fa-user-plus mr-2"></i>Nuovo Utente
-                            </button>
-                            <button onclick="openActivityLog()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
-                                <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
-                            </button>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nome</th>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ruolo</th>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Creato il</th>
-                                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Azioni</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-            `;
-            
-            users.forEach(user => {
-                const role = USER_ROLES[user.role.toUpperCase()] || USER_ROLES.VIEWER;
-                const isCurrentUser = user.username === currentUser.username;
+                let html = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="event.target === this && closeUserManagement()">
+                        <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                            <div class="flex justify-between items-center mb-4 pb-4 border-b">
+                                <h2 class="text-2xl font-bold text-gray-900">
+                                    <i class="fas fa-users text-indigo-600 mr-2"></i>
+                                    Gestione Utenti
+                                </h2>
+                                <button onclick="closeUserManagement()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <button onclick="openAddUserForm()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold mr-2">
+                                    <i class="fas fa-user-plus mr-2"></i>Nuovo Utente
+                                </button>
+                                <button onclick="openActivityLog()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                                    <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
+                                </button>
+                            </div>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nome</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ruolo</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Creato il</th>
+                                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                users.forEach(user => {
+                    const role = USER_ROLES[user.role.toUpperCase()] || USER_ROLES.VIEWER;
+                    const isCurrentUser = user.username === currentUser.username;
+                    
+                    html += `
+                        <tr class="${isCurrentUser ? 'bg-blue-50' : ''}">
+                            <td class="px-4 py-3 text-sm font-bold">${user.username}</td>
+                            <td class="px-4 py-3 text-sm">${user.name}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="px-2 py-1 rounded text-xs font-bold ${
+                                    user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                                    user.role === 'viewer_full' ? 'bg-green-100 text-green-800' :
+                                    user.role === 'contributor' ? 'bg-yellow-100 text-yellow-800' :
+                                    user.role === 'tabella_full' ? 'bg-cyan-100 text-cyan-800' :
+                                    user.role === 'tabella_readonly' ? 'bg-purple-100 text-purple-800' :
+                                    user.role === 'table_editor' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }">
+                                    ${role.name}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500">${user.createdAt ? new Date(user.createdAt).toLocaleDateString('it-IT') : '-'}</td>
+                            <td class="px-4 py-3 text-center">
+                                ${isCurrentUser ? `
+                                    <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                ` : `
+                                    <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <button onclick="editUser('${user.username}')" class="text-orange-600 hover:text-orange-800 mx-1" title="Modifica ruolo">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteUser('${user.username}')" class="text-red-600 hover:text-red-800 mx-1" title="Elimina utente">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                `}
+                            </td>
+                        </tr>
+                    `;
+                });
                 
                 html += `
-                    <tr class="${isCurrentUser ? 'bg-blue-50' : ''}">
-                        <td class="px-4 py-3 text-sm font-bold">${user.username}</td>
-                        <td class="px-4 py-3 text-sm">${user.name}</td>
-                        <td class="px-4 py-3 text-sm">
-                            <span class="px-2 py-1 rounded text-xs font-bold ${
-                                user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                                user.role === 'viewer_full' ? 'bg-green-100 text-green-800' :
-                                user.role === 'contributor' ? 'bg-yellow-100 text-yellow-800' :
-                                user.role === 'tabella_full' ? 'bg-cyan-100 text-cyan-800' :
-                                user.role === 'tabella_readonly' ? 'bg-purple-100 text-purple-800' :
-                                user.role === 'table_editor' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
-                            }">
-                                ${role.name}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-500">${new Date(user.createdAt).toLocaleDateString('it-IT')}</td>
-                        <td class="px-4 py-3 text-center">
-                            ${isCurrentUser ? `
-                                <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
-                                    <i class="fas fa-key"></i>
-                                </button>
-                            ` : `
-                                <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
-                                    <i class="fas fa-key"></i>
-                                </button>
-                                <button onclick="editUser('${user.username}')" class="text-orange-600 hover:text-orange-800 mx-1" title="Modifica ruolo">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="deleteUser('${user.username}')" class="text-red-600 hover:text-red-800 mx-1" title="Elimina utente">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            `}
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', html);
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', html);
+            } catch (error) {
+                console.error('Errore caricamento utenti:', error);
+                alert('❌ Errore nel caricamento degli utenti');
+            }
         }
         
         function closeUserManagement() {
@@ -4918,7 +4934,7 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
         
-        function saveNewUser() {
+        async function saveNewUser() {
             const username = document.getElementById('newUserUsername').value.trim();
             const name = document.getElementById('newUserName').value.trim();
             const password = document.getElementById('newUserPassword').value;
@@ -4929,36 +4945,40 @@
                 return;
             }
             
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            
-            if (users.find(u => u.username === username)) {
-                alert('⚠️ Username già esistente');
-                return;
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'create',
+                        username,
+                        password,
+                        name,
+                        role
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
+                    
+                    // Chiudi modals
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    
+                    showQuickNotification('✅ Utente creato con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert('❌ ' + (result.error || 'Errore nella creazione utente'));
+                }
+            } catch (error) {
+                console.error('Errore creazione utente:', error);
+                alert('❌ Errore di connessione al server');
             }
-            
-            users.push({
-                username,
-                password,
-                role,
-                name,
-                createdAt: new Date().toISOString()
-            });
-            
-            localStorage.setItem('orderFlowUsers', JSON.stringify(users));
-            
-            logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
-            
-            // Chiudi modals
-            document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-            
-            showQuickNotification('✅ Utente creato con successo!', 'success');
-            openUserManagement();
         }
         
-        function deleteUser(username) {
+        async function deleteUser(username) {
             if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) return;
-            
-            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
             
             // Non permettere eliminazione admin corrente
             if (currentUser && currentUser.username === username) {
@@ -4966,20 +4986,40 @@
                 return;
             }
             
-            users = users.filter(u => u.username !== username);
-            localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        username
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    logActivity('DELETE_USER', `Eliminato utente: ${username}`);
             
-            logActivity('DELETE_USER', `Eliminato utente: ${username}`);
-            
-            closeUserManagement();
-            showQuickNotification('✅ Utente eliminato', 'success');
-            openUserManagement();
+                    closeUserManagement();
+                    showQuickNotification('✅ Utente eliminato', 'success');
+                    openUserManagement();
+                } else {
+                    alert('❌ ' + (result.error || 'Errore eliminazione utente'));
+                }
+            } catch (error) {
+                console.error('Errore eliminazione utente:', error);
+                alert('❌ Errore di connessione al server');
+            }
         }
         
-        // Modifica ruolo utente
-        function editUser(username) {
-            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            const user = users.find(u => u.username === username);
+        // Modifica ruolo utente - USA API REDIS
+        async function editUser(username) {
+            try {
+                const response = await fetch('/api/users');
+                const result = await response.json();
+                const users = result.users || [];
+                const user = users.find(u => u.username === username);
             
             if (!user) {
                 alert('⚠️ Utente non trovato');
@@ -5020,9 +5060,13 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            } catch (error) {
+                console.error('Errore caricamento utente:', error);
+                alert('❌ Errore di connessione al server');
+            }
         }
         
-        function saveEditUser(username) {
+        async function saveEditUser(username) {
             const newName = document.getElementById('editUserName').value.trim();
             const newRole = document.getElementById('editUserRole').value;
             
@@ -5031,21 +5075,34 @@
                 return;
             }
             
-            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            const userIndex = users.findIndex(u => u.username === username);
-            
-            if (userIndex !== -1) {
-                users[userIndex].name = newName;
-                users[userIndex].role = newRole;
-                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'edit',
+                        username,
+                        name: newName,
+                        role: newRole
+                    })
+                });
                 
-                logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
+                const result = await response.json();
                 
-                // Chiudi modals
-                document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-                
-                showQuickNotification('✅ Utente modificato con successo!', 'success');
-                openUserManagement();
+                if (result.success) {
+                    logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
+                    
+                    // Chiudi modals
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    
+                    showQuickNotification('✅ Utente modificato con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert('❌ ' + (result.error || 'Errore modifica utente'));
+                }
+            } catch (error) {
+                console.error('Errore modifica utente:', error);
+                alert('❌ Errore di connessione al server');
             }
         }
         
@@ -5082,7 +5139,7 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
         
-        function saveNewPassword(username) {
+        async function saveNewPassword(username) {
             const pass1 = document.getElementById('newPassword1').value;
             const pass2 = document.getElementById('newPassword2').value;
             
@@ -5101,24 +5158,31 @@
                 return;
             }
             
-            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
-            const userIndex = users.findIndex(u => u.username === username);
-            
-            if (userIndex !== -1) {
-                users[userIndex].password = pass1;
-                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update',
+                        username,
+                        newPassword: pass1
+                    })
+                });
                 
-                // Se è l'utente corrente, aggiorna anche la sessione
-                if (currentUser && currentUser.username === username) {
-                    currentUser.password = pass1;
-                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
+                const result = await response.json();
+                
+                if (result.success) {
+                    logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
+                    
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    showQuickNotification('✅ Password aggiornata con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert('❌ ' + (result.error || 'Errore aggiornamento password'));
                 }
-                
-                logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
-                
-                document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-                showQuickNotification('✅ Password aggiornata con successo!', 'success');
-                openUserManagement();
+            } catch (error) {
+                console.error('Errore aggiornamento password:', error);
+                alert('❌ Errore di connessione al server');
             }
         }
         
