@@ -4408,7 +4408,6 @@
             try {
                 currentUser = JSON.parse(savedUser);
                 document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('appContainer').style.display = 'block';
                 loadData().then(() => {
                     initSelect();
                     updateUI();
@@ -4608,8 +4607,9 @@
                     // Salva utente corrente in localStorage (solo per sessione)
                     localStorage.setItem('orderFlowCurrentUser', JSON.stringify(result.user));
                     
+                    // Nascondi schermata login
                     document.getElementById('loginScreen').classList.add('hidden');
-                    document.getElementById('appContainer').style.display = 'block';
+                    document.getElementById('loginScreen').style.display = 'none';
                     
                     // Carica dati e inizializza UI
                     await loadData();
