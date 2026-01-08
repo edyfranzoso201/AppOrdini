@@ -2,7 +2,7 @@ import { getRedis, KEYS } from './lib/redis.js';
 
 const USERS_KEY = 'orderflow:users';
 
-// Utenti di default da creare se il database è vuoto
+// Utenti di default da creare al primo avvio o dopo un reset
 const DEFAULT_USERS = [
   {
     username: 'admin',
@@ -10,40 +10,38 @@ const DEFAULT_USERS = [
     name: 'Amministratore',
     role: 'admin',
     createdAt: new Date().toISOString()
-  },
-  {
-    username: 'edy',
-    password: 'edy123',
-    name: 'Edy',
-    role: 'admin',
-    createdAt: new Date().toISOString()
   }
 ];
-
-async function initializeDefaultUsers(redis) {
-  const users = await redis.get(USERS_KEY) || [];
-  
-  // Se non ci sono utenti, crea gli utenti di default
-  if (users.length === 0) {
-    await redis.set(USERS_KEY, DEFAULT_USERS);
-    console.log('✅ Utenti di default creati:', DEFAULT_USERS.map(u => u.username).join(', '));
-    return DEFAULT_USERS;
-  }
-  
-  return users;
-}
 
 export default async function handler(req, res) {
   const redis = getRedis();
   
   try {
     if (req.method === 'GET') {
+      const { action } = req.query;
+      
+      // RESET UTENTI - Cancella tutti e ricrea quelli di default
+      if (action === 'reset') {
+        await redis.set(USERS_KEY, DEFAULT_USERS);
+        
+        return res.status(200).json({
+          success: true,
+          message: '✅ Utenti resettati! Utente di default creato: admin / admin123',
+          users: DEFAULT_USERS.map(u => ({
+            username: u.username,
+            name: u.name,
+            role: u.role
+          }))
+        });
+      }
+      
       // Get all users (senza passwords per sicurezza)
       let users = await redis.get(USERS_KEY) || [];
       
-      // Inizializza utenti di default se necessario
+      // Se non ci sono utenti, crea quelli di default
       if (users.length === 0) {
-        users = await initializeDefaultUsers(redis);
+        users = DEFAULT_USERS;
+        await redis.set(USERS_KEY, users);
       }
       
       const safeUsers = users.map(u => ({
@@ -65,9 +63,10 @@ export default async function handler(req, res) {
         // Login user
         let users = await redis.get(USERS_KEY) || [];
         
-        // Inizializza utenti di default se necessario
+        // Se non ci sono utenti, crea quelli di default
         if (users.length === 0) {
-          users = await initializeDefaultUsers(redis);
+          users = DEFAULT_USERS;
+          await redis.set(USERS_KEY, users);
         }
         
         const user = users.find(u => u.username === username && u.password === password);
