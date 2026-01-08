@@ -1761,7 +1761,7 @@
                 }
                 if (globalItems.length === 0) globalItems = [...DEFAULT_ITEMS_LIST];
                 if (Object.keys(globalKitTypes).length === 0) globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-                repairAllImportKeys();
+                // repairAllImportKeys(); // Funzione non più definita - disabilitata temporaneamente
                 renderKitFilterOptions();
                 await saveData();
             } catch (error) {
