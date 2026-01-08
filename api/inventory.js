@@ -1,18 +1,16 @@
 import { getRedis, KEYS } from './lib/redis.js';
 
-const INVENTORY_KEY = 'orderflow:inventory';
-
 export default async function handler(req, res) {
   const redis = getRedis();
   
   try {
     if (req.method === 'GET') {
       // Get inventory
-      const inventory = await redis.get(INVENTORY_KEY);
+      const data = await redis.get(KEYS.INVENTORY);
       
       return res.status(200).json({
         success: true,
-        data: { inventory: inventory || {} }
+        data: data || { inventory: {} }
       });
       
     } else if (req.method === 'POST') {
@@ -20,7 +18,10 @@ export default async function handler(req, res) {
       
       if (action === 'save') {
         // Save inventory
-        await redis.set(INVENTORY_KEY, inventory || {});
+        await redis.set(KEYS.INVENTORY, {
+          inventory: inventory || {},
+          updatedAt: new Date().toISOString()
+        });
         
         return res.status(200).json({
           success: true,
