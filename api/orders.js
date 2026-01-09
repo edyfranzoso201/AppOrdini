@@ -1,3 +1,14 @@
+export default async function handler(req, res) {
+  const redis = getRedis();
+
+  // Headers esistenti...
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // --- AGGIUNGI QUESTA RIGA ---
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  // ---------------------------
+  
+  // ... resto del codice
 import { getRedis, KEYS } from './lib/redis.js';
 
 export default async function handler(req, res) {
