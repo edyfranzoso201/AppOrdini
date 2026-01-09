@@ -2115,6 +2115,8 @@
                         highlightedSizeCells
                     })
                 });
+                // Registra nel log
+                logActivity('Salvataggio dati', `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`);
                 
                 // Save inventory
                 await fetch('/api/inventory', {
@@ -2142,7 +2144,24 @@
                 console.error('Error saving data:', error);
             }
         }
-
+// Funzione per registrare un'azione nello storico
+async function logActivity(action, details = '') {
+    if (!currentUser) return;
+    
+    try {
+        await fetch('/api/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user: currentUser.name,
+                action: action,
+                details: details
+            })
+        });
+    } catch (error) {
+        console.warn('⚠️ Impossibile salvare il log:', error);
+    }
+}
         function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
         return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
         
