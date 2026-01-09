@@ -313,9 +313,9 @@
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
-                    <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" placeholder="Inserisci password">
+                    <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" placeholder="Inserisci password" onkeypress="if(event.key==='Enter') performLogin()">
                 </div>
-                <button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition">
+                <button onclick="performLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>Accedi
                 </button>
                 <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
@@ -341,7 +341,12 @@
             <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
                 <i class="fas fa-users"></i>
             </button>
-            <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
+            <button onclick="showActivityLogModal()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-bold transition text-sm flex items-center gap-2">
+                    <i class="fas fa-clipboard-list"></i>
+                    Log Attività
+                </button>
+                
+                <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
             <button onclick="clearAllOrders()" id="btnReset" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-eraser"></i></button>
@@ -364,14 +369,14 @@
             <div class="bg-white rounded shadow overflow-hidden h-full flex flex-col">
                 <div class="p-3 border-b bg-gray-50 flex flex-col gap-2">
                     <h2 class="font-bold text-blue-900 text-sm">Filtri & Ricerca</h2>
-                    <div id="filtersContainer" class="flex gap-2 flex-wrap">
+                    <div class="flex gap-2 flex-wrap">
                         <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Cerca Cliente..." class="text-sm border rounded px-3 py-1 w-48">
                         <select id="sortOrder" onchange="renderTable()" class="text-sm border rounded px-2 font-bold bg-gray-50 text-blue-900">
                             <option value="asc">ID Crescente (1..10)</option>
                             <option value="desc">ID Decrescente (10..1)</option>
                         </select>
                         <select id="filterStatus" onchange="renderTable()" class="text-sm border rounded px-2">
-                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Pagato">Pagato</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegna Parziale">Consegna Parziale</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
+                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Pagato">Pagato</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
                         </select>
                         <input type="text" id="filterRoleYear" onkeyup="renderTable()" placeholder="Anno/Ruolo..." class="text-sm border rounded px-3 py-1 w-32">
                         <select id="filterSize" onchange="renderTable()" class="text-sm border rounded px-2">
@@ -866,46 +871,6 @@
         </div>
     </div>
 
-    <!-- Popup Consegna Parziale -->
-    <div id="partialDeliveryPopup" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fas fa-box-open text-amber-600"></i>
-                    Consegna Parziale - Cosa Manca?
-                </h2>
-                <button onclick="closePartialDeliveryPopup()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-            
-            <div class="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-                <p class="text-sm text-amber-800">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    <strong>Nota:</strong> Inserisci l'abbigliamento mancante per questa consegna parziale. 
-                    Esempio: "Maglia 2XL, Pantaloni M"
-                </p>
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-sm font-bold text-gray-700 mb-2">📝 Articoli Mancanti</label>
-                <textarea id="partialDeliveryNote" rows="5" class="w-full border rounded p-3 text-sm focus:ring-2 focus:ring-amber-300 outline-none resize-none" placeholder="Es: Maglia M, Pantaloncini L, Calze 39/42..."></textarea>
-                <p class="text-xs text-gray-500 mt-1">
-                    💡 Puoi anche specificare quantità: "2x Maglia M, 1x Pantaloni L"
-                </p>
-            </div>
-            
-            <div class="flex gap-2 justify-end">
-                <button onclick="closePartialDeliveryPopup()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 font-bold transition">
-                    Annulla
-                </button>
-                <button onclick="savePartialDeliveryNote()" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 font-bold transition">
-                    <i class="fas fa-save mr-2"></i>Salva Nota
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script>
         const SIZE_ORDER = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "6 ANNI", "8 ANNI", "10 ANNI", "12 ANNI", "14 ANNI", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "03 BIMBO", "05 ADULTO", "UNICA"];
         const SOCKS_BLUE_DEFAULT = "Calzettoni di Allenamento WULGAR Blu Marine 618 (7€)";
@@ -1040,7 +1005,6 @@
             { value: 'In Lavorazione', label: 'In Lavorazione', color: 'bg-blue-100 text-blue-800' }, 
             { value: 'Pagato', label: 'Pagato', color: 'bg-green-700 text-white' }, 
             { value: 'Ordine Arrivato', label: 'Arrivato', color: 'bg-orange-100 text-orange-800' },
-            { value: 'Consegna Parziale', label: 'Consegna Parziale', color: 'bg-amber-100 text-amber-800' },
             { value: 'Consegnato', label: 'Consegnato', color: 'bg-gray-700 text-white' },
             { value: 'Scomposto', label: 'Scomposto', color: 'bg-teal-100 text-teal-800' },
             { value: 'Ordine annullato', label: 'Annullato', color: 'bg-red-100 text-red-800' }, 
@@ -1769,164 +1733,17 @@
         }
         
         async function loadData() {
-    try {
-        // Load orders
-        const ordersRes = await fetch('/api/orders');
-        if (ordersRes.ok) {
-            const ordersData = await ordersRes.json();
-            if (ordersData.success && ordersData.data) {
-                orders = ordersData.data.orders || [];
-                lastOrderId = ordersData.data.lastOrderId || 0;
-                currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-            }
-        }
-        
-        // Load inventory
-        const invRes = await fetch('/api/inventory');
-        if (invRes.ok) {
-            const invData = await invRes.json();
-            if (invData.success && invData.data) {
-                inventory = invData.data.inventory || {};
-            }
-        }
-        
-        // Load config
-        const configRes = await fetch('/api/config');
-        if (configRes.ok) {
-            const configData = await configRes.json();
-            if (configData.success && configData.data) {
-                globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
-                globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-            }
-        }
-        
-        // Initialize defaults if empty
-        if (globalItems.length === 0) {
-            globalItems = [...DEFAULT_ITEMS_LIST];
-        }
-        if (Object.keys(globalKitTypes).length === 0) {
-            globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-        }
-        
-        // Repair import keys
-        repairAllImportKeys();
-        renderKitFilterOptions();
-        await saveData();
-    } catch (error) {
-        console.error('Error loading data:', error);
-        alert('Errore nel caricamento dei dati');
-    }
-}
-        
-        // ===== SISTEMA NOTIFICHE =====
-        function showQuickNotification(message, type = 'info') {
-            // Crea elemento notifica
-            const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 z-[10000] px-6 py-3 rounded-lg shadow-lg text-white font-bold flex items-center gap-2 transition-all';
-            
-            // Colore in base al tipo
-            const colors = {
-                'success': 'bg-green-600',
-                'error': 'bg-red-600',
-                'warning': 'bg-yellow-600',
-                'info': 'bg-blue-600'
-            };
-            notification.classList.add(colors[type] || colors.info);
-            
-            // Icona in base al tipo
-            const icons = {
-                'success': '✅',
-                'error': '❌',
-                'warning': '⚠️',
-                'info': 'ℹ️'
-            };
-            
-            notification.innerHTML = `
-                <span class="text-xl">${icons[type] || icons.info}</span>
-                <span>${message}</span>
-            `;
-            
-            // Aggiungi al body
-            document.body.appendChild(notification);
-            
-            // Animazione entrata
-            setTimeout(() => {
-                notification.style.transform = 'translateX(0)';
-                notification.style.opacity = '1';
-            }, 10);
-            
-            // Rimuovi dopo 3 secondi
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-        
-        // ===== SISTEMA AUTO-REFRESH =====
-        let autoRefreshInterval = null;
-        let lastDataHash = null;
-        
-        // Calcola un hash semplice dei dati per rilevare modifiche
-        function getDataHash() {
-            return JSON.stringify({
-                ordersCount: orders.length,
-                lastOrderId: lastOrderId,
-                ordersData: orders.map(o => ({
-                    id: o.id,
-                    status: o.status,
-                    itemsCount: o.itemsList?.length || 0
-                }))
-            });
-        }
-        
-        // Funzione di auto-refresh silenziosa
-        async function autoRefreshData() {
             try {
-                // Salva posizione scroll
-                const scrollPos = window.scrollY;
-                
-                // Carica dati senza chiamare saveData
                 const ordersRes = await fetch('/api/orders');
                 if (ordersRes.ok) {
                     const ordersData = await ordersRes.json();
                     if (ordersData.success && ordersData.data) {
-                        const newHash = JSON.stringify({
-                            ordersCount: ordersData.data.orders?.length || 0,
-                            lastOrderId: ordersData.data.lastOrderId || 0,
-                            ordersData: (ordersData.data.orders || []).map(o => ({
-                                id: o.id,
-                                status: o.status,
-                                itemsCount: o.itemsList?.length || 0
-                            }))
-                        });
-                        
-                        // Controlla se ci sono modifiche
-                        if (lastDataHash && newHash !== lastDataHash) {
-                            console.log('🔄 Dati aggiornati da altro utente');
-                            
-                            // Aggiorna i dati
-                            orders = ordersData.data.orders || [];
-                            lastOrderId = ordersData.data.lastOrderId || 0;
-                            currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                            highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-                            
-                            // Re-render UI
-                            updateUI();
-                            
-                            // Mostra notifica
-                            showQuickNotification('🔄 Dati aggiornati', 'info');
-                            
-                            // Ripristina scroll
-                            setTimeout(() => window.scrollTo(0, scrollPos), 100);
-                        }
-                        
-                        lastDataHash = newHash;
+                        orders = ordersData.data.orders || [];
+                        lastOrderId = ordersData.data.lastOrderId || 0;
+                        currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                        highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
                     }
                 }
-                
-                // Carica anche inventory
                 const invRes = await fetch('/api/inventory');
                 if (invRes.ok) {
                     const invData = await invRes.json();
@@ -1934,239 +1751,53 @@
                         inventory = invData.data.inventory || {};
                     }
                 }
-                
-            } catch (error) {
-                console.warn('⚠️ Auto-refresh error:', error);
-            }
-        }
-        
-        // Avvia auto-refresh
-        function startAutoRefresh() {
-            // Ferma eventuale refresh precedente
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            
-            // Inizializza hash
-            lastDataHash = getDataHash();
-            
-            // Avvia polling ogni 30 secondi
-            autoRefreshInterval = setInterval(autoRefreshData, 30000);
-            console.log('✅ Auto-refresh attivo (ogni 30 secondi)');
-        }
-        
-        // Ferma auto-refresh
-        function stopAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
-                console.log('⏸️ Auto-refresh fermato');
-            }
-        }
-        
-        // ===== FINE SISTEMA AUTO-REFRESH =====
-        
-        // NUOVA FUNZIONE: Ripara tutti gli importKey per evitare duplicati all'importazione
-        function repairAllImportKeys() {
-            let repairedCount = 0;
-            orders.forEach(o => {
-                if (o.timestamp) {
-                    const oldKey = o.importKey;
-                    // USA TIMESTAMP ESATTO (NON arrotondare)
-                    o.importKey = o.timestamp;
-                    if (oldKey !== o.importKey) {
-                        repairedCount++;
+                const configRes = await fetch('/api/config');
+                if (configRes.ok) {
+                    const configData = await configRes.json();
+                    if (configData.success && configData.data) {
+                        globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
+                        globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
                     }
-                } else if (o.displayId && !o.importKey) {
-                    // Se non ha timestamp, usa displayId come fallback
-                    o.importKey = o.displayId;
                 }
-            });
-            
-            if (repairedCount > 0) {
-                console.log(`🔧 Riparati automaticamente ${repairedCount} importKey al caricamento`);
-            }
-        }
-        
-        // FUNZIONE HELPER: Normalizza qualsiasi timestamp al formato YYYY-MM-DD HH:mm:00.000
-        function normalizeTimestampToMinute(timestamp) {
-            if (!timestamp || typeof timestamp !== 'string') {
-                return timestamp;
-            }
-            
-            // Formato 1: YYYY-MM-DD HH:mm:ss.ms → YYYY-MM-DD HH:mm:00.000
-            let match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):\d{2}\.\d{3}$/);
-            if (match) {
-                return match[1] + ':00.000';
-            }
-            
-            // Formato 2: YYYY-MM-DD HH:mm:ss (senza millisecondi) → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):\d{2}$/);
-            if (match) {
-                return match[1] + ':00.000';
-            }
-            
-            // Formato 3: DD/MM/YYYY HH.mm.ss → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2})\.(\d{2})\.\d{2}$/);
-            if (match) {
-                const day = match[1];
-                const month = match[2];
-                const year = match[3];
-                const hour = match[4].padStart(2, '0');
-                const minute = match[5];
-                return `${year}-${month}-${day} ${hour}:${minute}:00.000`;
-            }
-            
-            // Formato 4: DD/MM/YYYY HH:mm:ss → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2}):\d{2}$/);
-            if (match) {
-                const day = match[1];
-                const month = match[2];
-                const year = match[3];
-                const hour = match[4].padStart(2, '0');
-                const minute = match[5];
-                return `${year}-${month}-${day} ${hour}:${minute}:00.000`;
-            }
-            
-            // Formato 5: Già normalizzato YYYY-MM-DD HH:mm:00.000 → mantieni così
-            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):00\.000$/);
-            if (match) {
-                return timestamp; // Già corretto
-            }
-            
-            // Formato 6: YYYY-MM-DD HH:mm (senza secondi) → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})$/);
-            if (match) {
-                return match[1] + ':00.000';
-            }
-            
-            // Se non matcha nessun pattern, prova a estrarre almeno YYYY-MM-DD HH:mm
-            match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
-            if (match) {
-                return `${match[1]}-${match[2]}-${match[3]} ${match[4]}:${match[5]}:00.000`;
-            }
-            
-            // Fallback: restituisci così com'è
-            console.warn(`⚠️ Timestamp non riconosciuto: "${timestamp}"`);
-            return timestamp;
-        }
-        
-        // NUOVA FUNZIONE: Riparazione manuale degli importKey (con messaggio)
-        function manualRepairImportKeys() {
-            if (!confirm('🔧 RIPARA IMPORTKEY\n\nQuesta funzione aggiorna tutti gli importKey per evitare duplicati durante l\'importazione.\n\nUSA IL TIMESTAMP ESATTO (mantiene secondi e millisecondi).\n\nContinuare?')) {
-                return;
-            }
-            
-            let repairedCount = 0;
-            let noTimestampCount = 0;
-            
-            orders.forEach(o => {
-                if (o.timestamp) {
-                    const oldKey = o.importKey;
-                    
-                    // USA TIMESTAMP ESATTO (NON arrotondare)
-                    o.importKey = o.timestamp;
-                    
-                    if (oldKey !== o.importKey) {
-                        repairedCount++;
-                    }
-                } else if (o.displayId && !o.importKey) {
-                    // Se non ha timestamp, usa displayId come fallback
-                    o.importKey = o.displayId;
-                    noTimestampCount++;
-                }
-            });
-            
-            saveData();
-            
-            let msg = `✅ RIPARAZIONE COMPLETATA!\n\n`;
-            msg += `📊 Totale ordini: ${orders.length}\n`;
-            msg += `🔧 ImportKey riparati: ${repairedCount}\n`;
-            if (noTimestampCount > 0) {
-                msg += `⚠️ Ordini senza timestamp (usato displayId): ${noTimestampCount}\n`;
-            }
-            msg += `\n✅ Tutti gli importKey ora usano il timestamp ESATTO.\n`;
-            msg += `(secondi e millisecondi mantenuti)\n`;
-            msg += `Esempio: 2025-09-22 14:12:38.000 rimane così\n\n`;
-            msg += `I prossimi import non dovrebbero creare duplicati.`;
-            
-            alert(msg);
-        }
-        
-        async function saveData() {
-            try {
-                // Save orders
-                await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        orders,
-                        lastOrderId,
-                        currentPrefix,
-                        highlightedSizeCells
-                    })
-                });
-                
-                // Save inventory
-                await fetch('/api/inventory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        inventory 
-                    })
-                });
-                
-                // Save config
-                await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        globalItems,
-                        globalKitTypes
-                    })
-                });
-                
-                console.log('Data saved successfully');
+                if (globalItems.length === 0) globalItems = [...DEFAULT_ITEMS_LIST];
+                if (Object.keys(globalKitTypes).length === 0) globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                // repairAllImportKeys(); // Funzione non più definita - disabilitata temporaneamente
+                renderKitFilterOptions();
+                await saveData();
             } catch (error) {
-                console.error('Error saving data:', error);
+                console.error('Error loading data:', error);
+                alert('Errore nel caricamento dei dati');
             }
         }
+async function saveData() {
+    try {
+        const fullData = {
+            action: 'save',  // <--- QUESTA RIGA È OBBLIGATORIA PER I TUOI FILE JS
+            orders: orders || [],
+            lastOrderId: lastOrderId || 0,
+            currentPrefix: currentPrefix || 'R68-',
+            highlightedSizeCells: highlightedSizeCells || {}
+        };
 
-        function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
-        return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
+        const response = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullData)
+        });
+
+        const result = await response.json();
         
-        function updatePrefixAndID() { 
-            const inputEl = document.getElementById('startPrefixInput');
-            const input = inputEl.value.trim(); 
-            if(!input) { inputEl.value = ''; return; }
-            const match = input.match(/^(\d{4}[A]?_)((\d+))$/i);
-            if(match){ 
-                const newPrefix=match[1].toUpperCase();
-                const newStartId=parseInt(match[2]); 
-                if(newPrefix!==currentPrefix){ currentPrefix=newPrefix; lastOrderId=newStartId-1; alert(`Nuovo Prefisso: ${currentPrefix} impostato.`); } 
-                else if(newStartId-1>lastOrderId){ lastOrderId=newStartId-1; alert(`ID Sequenza aggiornato.`); } 
-                else { alert(`Nessuna modifica.`); }
-                saveData(); inputEl.value = '';
-            } else { alert('ERRORE: Formato ID non valido.'); }
-        }
-
-        function updateOrderType(id, newType) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-            o.type = newType;
-            updateUI();
+        if (result.success) {
+            console.log("✅ Salvataggio completato");
+        } else {
+            console.error("Errore server:", result.error);
         }
         
-        function updateContactInfo(field, val) {
-            const o = orders.find(x => x.id === currentEditId);
-            if (!o) return;
-            if (field === 'email') o.email = val.trim();
-            if (field === 'phone') o.phone = val.trim();
-            saveData();
-        }
+    } catch (error) {
+        console.error("Errore salvataggio:", error);
+        alert("⚠️ Attenzione: Impossibile salvare i dati online!");
+    }
+}
 
         function updateOrderField(id, field, value) { 
             const o = orders.find(x => x.id === id);
@@ -2268,23 +1899,30 @@
             try { 
                 const file = e.target.files[0]; 
                 const reader = new FileReader(); 
-                reader.onload = function(e) { 
-                    try { 
-                        const data = new Uint8Array(e.target.result); 
-                        const wb = XLSX.read(data, {type: 'array'}); 
-                        
-                        // Leggi primo foglio (ordini)
-                        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}); 
-                        processImport(rows, wb); // Passa anche workbook per leggere magazzino
-                    } catch(err) { 
-                        alert(`ERRORE FILE: ${err.message}`); 
-                    } 
-                }; 
-                reader.readAsArrayBuffer(file); 
-            } catch (err) { 
-                alert(`ERRORE IMPORT: ${err.message}`); 
-            }
-        });
+         // Cerca la parte dove leggi il file (FileReader)
+reader.onload = async function(e) {
+    try {
+        const importedData = JSON.parse(e.target.result);
+        
+        // 1. Aggiorna le variabili locali
+        orders = importedData.orders || [];
+        lastOrderId = importedData.lastOrderId || 0;
+        currentPrefix = importedData.currentPrefix || 'R68-';
+        highlightedSizeCells = importedData.highlightedSizeCells || {};
+        
+        // Aggiorna l'interfaccia visiva
+        if (typeof updateUI === 'function') updateUI();
+        
+        // --- 2. PUNTO FONDAMENTALE MANCANTE ---
+        // Forza il salvataggio immediato sul server
+        console.log("Backup caricato, avvio salvataggio sul server...");
+        await saveData(); 
+        alert("✅ Backup importato e salvato sul server!");
+        
+    } catch (error) {
+        alert("Errore nell'importazione del file");
+    }
+};
 
         function processImport(rows, wb) {
             if (!rows || rows.length < 2) return alert("File vuoto.");
@@ -2967,59 +2605,12 @@
                 } else {
                     o.status = 'Nuovo';
                 }
-            } else if (newStatus === 'Consegna Parziale') {
-                // Apri popup per inserire cosa manca
-                openPartialDeliveryPopup(id);
             } else { 
                 o.status = newStatus;
-                o.linkedId = null;
-                o.partialDeliveryNote = null; // Reset nota consegna parziale
+                o.linkedId = null; 
             } 
             updateUI(); 
             renderMatrices();
-        }
-
-        // Popup Consegna Parziale
-        let currentPartialDeliveryOrderId = null;
-        
-        function openPartialDeliveryPopup(orderId) {
-            currentPartialDeliveryOrderId = orderId;
-            const order = orders.find(o => o.id === orderId);
-            
-            if (order) {
-                // Aggiorna stato immediatamente
-                order.status = 'Consegna Parziale';
-                
-                // Mostra nota esistente se presente
-                document.getElementById('partialDeliveryNote').value = order.partialDeliveryNote || '';
-                document.getElementById('partialDeliveryPopup').classList.add('active');
-            }
-        }
-        
-        function closePartialDeliveryPopup() {
-            document.getElementById('partialDeliveryPopup').classList.remove('active');
-            currentPartialDeliveryOrderId = null;
-        }
-        
-        function savePartialDeliveryNote() {
-            if (!currentPartialDeliveryOrderId) return;
-            
-            const note = document.getElementById('partialDeliveryNote').value.trim();
-            const order = orders.find(o => o.id === currentPartialDeliveryOrderId);
-            
-            if (order) {
-                order.partialDeliveryNote = note;
-                
-                // Se la nota è vuota, chiedi conferma
-                if (!note) {
-                    const confirm = window.confirm('⚠️ Nessuna nota inserita. Vuoi confermare comunque?');
-                    if (!confirm) return;
-                }
-                
-                showQuickNotification('✅ Nota consegna parziale salvata', 'success');
-                closePartialDeliveryPopup();
-                updateUI();
-            }
         }
 
         function updateLinkedId(id, newLinkedId) {
@@ -3175,57 +2766,7 @@
             }
         }
 
-        // ===== SISTEMA MEMORIZZAZIONE FILTRI =====
-        function saveFiltersState() {
-            try {
-                const filtersState = {
-                    searchInput: document.getElementById('searchInput')?.value || '',
-                    sortOrder: document.getElementById('sortOrder')?.value || 'asc',
-                    filterStatus: document.getElementById('filterStatus')?.value || 'all',
-                    filterRoleYear: document.getElementById('filterRoleYear')?.value || '',
-                    filterSize: document.getElementById('filterSize')?.value || 'all',
-                    filterKitType: document.getElementById('filterKitType')?.value || 'all',
-                    filterItem: document.getElementById('filterItem')?.value || 'all',
-                    filterMinId: document.getElementById('filterMinId')?.value || '',
-                    filterMaxId: document.getElementById('filterMaxId')?.value || ''
-                };
-                localStorage.setItem('orderflow_filters', JSON.stringify(filtersState));
-            } catch (e) {
-                console.warn('⚠️ Impossibile salvare filtri:', e);
-            }
-        }
-        
-        function restoreFiltersState() {
-            try {
-                const saved = localStorage.getItem('orderflow_filters');
-                if (!saved) return;
-                
-                const filtersState = JSON.parse(saved);
-                
-                // Ripristina ogni filtro
-                Object.keys(filtersState).forEach(key => {
-                    const element = document.getElementById(key);
-                    if (element && filtersState[key]) {
-                        element.value = filtersState[key];
-                    }
-                });
-                
-                console.log('✅ Filtri ripristinati:', filtersState);
-            } catch (e) {
-                console.warn('⚠️ Impossibile ripristinare filtri:', e);
-            }
-        }
-        
-        function clearFiltersState() {
-            localStorage.removeItem('orderflow_filters');
-            console.log('🗑️ Filtri cancellati');
-        }
-        // ===== FINE SISTEMA MEMORIZZAZIONE FILTRI =====
-        
         function renderTable() {
-            // Salva stato filtri
-            saveFiltersState();
-            
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             const filterStatus = document.getElementById('filterStatus').value; 
@@ -3305,9 +2846,8 @@
                             <option value="In Lavorazione" ${o.status==='In Lavorazione'?'selected':''}>In Lavorazione</option>
                             <option value="Ordine Arrivato" ${o.status==='Ordine Arrivato'?'selected':''}>Arrivato</option>
                             <option value="Pagato" ${o.status==='Pagato'?'selected':''}>Pagato</option>
-                            <option value="Consegna Parziale" ${o.status==='Consegna Parziale'?'selected':''}>Consegna Parziale</option>
                             <option value="Consegnato" ${o.status==='Consegnato'?'selected':''}>Consegnato</option>
-                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegna Parziale' && o.status !== 'Consegnato') ?
+                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegnato') ?
                             `<option value="${o.status}" selected disabled>${o.status}</option>` : ''}
                         </select>
                     </div>`;
@@ -3325,23 +2865,9 @@
                             </div>
                         </div>`;
                     } else {
-                        // Controlla se c'è una nota di consegna parziale
-                        const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
-                        
-                        statusInfo = `
-                        <div class="flex flex-col gap-1">
-                            <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
-                                ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
-                            </select>
-                            ${hasPartialNote ? `
-                            <div class="bg-amber-50 border border-amber-300 rounded p-1.5 cursor-pointer hover:bg-amber-100 transition" onclick="openPartialDeliveryPopup(${o.id})" title="Clicca per modificare">
-                                <div class="text-[10px] font-bold text-amber-800 flex items-center gap-1">
-                                    <i class="fas fa-box-open"></i>
-                                    <span>Manca:</span>
-                                </div>
-                                <div class="text-[10px] text-amber-700 mt-0.5 line-clamp-2">${o.partialDeliveryNote}</div>
-                            </div>` : ''}
-                        </div>`;
+                        statusInfo = `<select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
+                            ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
+                        </select>`;
                     }
                 }
 
@@ -3893,9 +3419,7 @@
         }
 
         function initSelect() { 
-            const sel = document.getElementById('addItemSelect');
-            if (!sel) return; // Protezione
-            sel.innerHTML = ''; 
+            const sel = document.getElementById('addItemSelect'); sel.innerHTML = ''; 
             [...globalItems].filter(i => i && typeof i === 'string').forEach(i => { 
                 const opt = document.createElement('option');
                 opt.value = i; 
@@ -3905,13 +3429,10 @@
                 sel.appendChild(opt); 
             }); 
             const sizeSel = document.getElementById('filterSize');
-            if (sizeSel) {
-                SIZE_ORDER.forEach(s => sizeSel.innerHTML += `<option value="${s}">${s}</option>`);
-            }
+            SIZE_ORDER.forEach(s => sizeSel.innerHTML += `<option value="${s}">${s}</option>`);
             
             // Popola filtro articoli
             const itemSel = document.getElementById('filterItem');
-            if (!itemSel) return; // Protezione
             const currentItemFilter = itemSel.value; // Preserva selezione corrente
             itemSel.innerHTML = '<option value="all">🔍 Cerca Capo...</option>';
             [...globalItems].filter(item => item && typeof item === 'string').sort().forEach(item => {
@@ -3946,7 +3467,6 @@
         function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
         function updateUI() { 
             populateGestioneOrdiniIdSelects();
-            restoreFiltersState(); // Ripristina filtri salvati
             renderTable(); 
             renderChart(); 
             saveData(); 
@@ -4873,62 +4393,35 @@
 
         // ===== INIZIALIZZAZIONE =====
         
-        // Dichiarazione variabili globali
+        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
+        
         let currentUser = null;
         
-        // IMPORTANTE: Check login first, then load data - DOPO che il DOM è pronto
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inizializza utenti di default
-            initializeDefaultUsers();
-            
-            // Setup event listeners per login
-            const loginButton = document.getElementById('loginButton');
-            const loginPassword = document.getElementById('loginPassword');
-            
-            if (loginButton) {
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Accedi';
-                loginButton.addEventListener('click', performLogin);
-            }
-            
-            if (loginPassword) {
-                loginPassword.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') performLogin();
+        // IMPORTANTE: Inizializza utenti PRIMA di caricare i dati
+        // Check if user is logged in
+        const savedUser = localStorage.getItem('orderFlowCurrentUser');
+        if (savedUser) {
+            try {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('loginScreen').style.display = 'none';
+                loadData().then(() => {
+                    initSelect();
+                    updateUI();
+                    applyUserPermissions();
+                    initQuickIdButtons();
+                    startClock();
                 });
-            }
-            
-            // Auto-login se sessione attiva
-            const savedUser = localStorage.getItem('orderFlowCurrentUser');
-            if (savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    const loginScreen = document.getElementById('loginScreen');
-                    const appContainer = document.getElementById('appContainer');
-                    
-                    if (loginScreen) loginScreen.style.display = 'none';
-                    if (appContainer) appContainer.style.display = 'block';
-                    
-                    // Load data then initialize UI
-                    loadData().then(() => {
-                        initSelect();
-                        updateUI();
-                        applyUserPermissions();
-                        startClock();
-                        startAutoRefresh(); // Avvia auto-refresh anche per auto-login
-                    });
-                } catch (error) {
-                    console.error('Error loading user:', error);
-                    localStorage.removeItem('orderFlowCurrentUser');
-                    const loginScreen = document.getElementById('loginScreen');
-                    if (loginScreen) loginScreen.style.display = 'flex';
-                }
-            } else {
-                const loginScreen = document.getElementById('loginScreen');
-                if (loginScreen) loginScreen.style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading user:', error);
+                localStorage.removeItem('orderFlowCurrentUser');
+                document.getElementById('loginScreen').style.display = 'flex';
                 startClock();
             }
-        });
-        
-        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
+        } else {
+            document.getElementById('loginScreen').style.display = 'flex';
+            startClock();
+        } initSelect();
+        updateUI(); startClock();
         
         // Definizione ruoli
         const USER_ROLES = {
@@ -4947,9 +4440,7 @@
                     resetData: true,
                     manageUsers: true,
                     viewDistinta: true,
-                    viewTabella: true,
-                    useQuickIdFilters: true,
-                    downloadGoogleForm: true
+                    viewTabella: true
                 }
             },
             VIEWER: {
@@ -4994,38 +4485,16 @@
                 permissions: {
                     viewAll: true,
                     viewDashboard: false,
-                    createOrders: false,
+                    createOrders: false, // Può solo importare
                     editOrders: false,
                     deleteOrders: false,
-                    importGoogle: false,
+                    importGoogle: true, // Può importare da Google
                     importExcel: false,
                     exportBackup: false,
                     resetData: false,
                     manageUsers: false,
                     viewDistinta: true,
-                    viewTabella: true,
-                    downloadGoogleForm: true,
-                    editStatus: false
-                }
-            },
-            CONTRIBUTOR_ADVANCED: {
-                id: 'contributor_advanced',
-                name: 'Contributore Avanzato (Google Form + Stato)',
-                permissions: {
-                    viewAll: true,
-                    viewDashboard: false,
-                    createOrders: false,
-                    editOrders: false,
-                    deleteOrders: false,
-                    importGoogle: false,
-                    importExcel: false,
-                    exportBackup: false,
-                    resetData: false,
-                    manageUsers: false,
-                    viewDistinta: true,
-                    viewTabella: true,
-                    downloadGoogleForm: true,
-                    editStatus: true // Può modificare SOLO lo stato
+                    viewTabella: true
                 }
             },
             TABLE_EDITOR: {
@@ -5044,8 +4513,7 @@
                     manageUsers: false,
                     viewDistinta: false, // Non vede Distinta
                     viewTabella: true, // SOLO Tabella
-                    editTabella: true, // Permesso speciale per modificare celle tabella
-                    useQuickIdFilters: true // Può usare Quick ID filters
+                    editTabella: true // Permesso speciale per modificare celle tabella
                 }
             },
             TABELLA_FULL: {
@@ -5066,8 +4534,7 @@
                     viewTabella: true, // Vede Tabella Ordini
                     editTabella: true, // Può modificare celle
                     highlightCells: true, // Può evidenziare celle
-                    downloadGoogleForm: true, // Può scaricare Google Form
-                    useQuickIdFilters: true // Può usare Quick ID filters
+                    downloadGoogleForm: true // Può scaricare Google Form
                 }
             },
             TABELLA_READONLY: {
@@ -5093,96 +4560,78 @@
             }
         };
         
-        // Inizializza utente admin di default
+        // Inizializzazione utenti - ora gestita da Redis
+        // Non serve più initializeDefaultUsers() locale
         async function initializeDefaultUsers() {
-            try {
-                const response = await fetch('/api/users');
-                
-                // Verifica che la risposta sia OK prima di parsare JSON
-                if (!response.ok) {
-                    console.warn('⚠️ API users non disponibile, skip inizializzazione');
-                    return;
-                }
-                
-                const data = await response.json();
-                const users = data.users || [];
-                
-                console.log('🔍 Utenti esistenti:', users.length);
-                
-                if (users.length === 0) {
-                    // Crea admin di default
-                    const createResponse = await fetch('/api/users', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'create',
-                            username: 'admin',
-                            password: 'admin123',
-                            role: 'admin',
-                            name: 'Amministratore'
-                        })
-                    });
-                    
-                    if (createResponse.ok) {
-                        console.log('✅ Utente admin creato');
-                    }
-                } else {
-                    console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
-                }
-            } catch (error) {
-                // Silenzioso: l'errore è normale se l'API non è ancora pronta
-                console.warn('⚠️ Impossibile inizializzare utenti:', error.message);
-            }
+            // Gli utenti sono gestiti dal database Redis
+            // Questa funzione non fa più nulla localmente
+            console.log('ℹ️ Utenti gestiti da Redis server');
         }
         
-        // Login
+        // Login - USA API REDIS
         async function performLogin() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
-            const loginButton = document.getElementById('loginButton');
+            const errorDiv = document.getElementById('loginError');
+            
+            console.log('🔐 Tentativo login:', username);
             
             if (!username || !password) {
-                alert('Inserisci username e password');
+                errorDiv.textContent = '⚠️ Inserisci username e password';
+                errorDiv.classList.remove('hidden');
                 return;
             }
             
-            loginButton.disabled = true;
-            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
-            
             try {
+                // Chiama API Redis per il login
                 const response = await fetch('/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'login', username, password })
+                    body: JSON.stringify({
+                        action: 'login',
+                        username: username,
+                        password: password
+                    })
                 });
                 
-                const data = await response.json();
+                const result = await response.json();
+                console.log('📡 Risposta server:', result);
                 
-                if (data.success && data.user) {
-                    currentUser = data.user;
-                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
+                if (result.success && result.user) {
+                    console.log('✅ Login riuscito:', result.user.username);
+                    currentUser = result.user;
+                    // Salva utente corrente in localStorage (solo per sessione)
+                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(result.user));
                     
-                    const loginScreen = document.getElementById('loginScreen');
-                    const appContainer = document.getElementById('appContainer');
+                    // Nascondi schermata login
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('loginScreen').style.display = 'none';
                     
-                    if (loginScreen) loginScreen.style.display = 'none';
-                    if (appContainer) appContainer.style.display = 'block';
-                    
+                    // Carica dati e inizializza UI
                     await loadData();
+                    initSelect();
                     updateUI();
                     applyUserPermissions();
+                    initQuickIdButtons();
                     
-                    // Avvia auto-refresh per sincronizzazione multi-utente
-                    startAutoRefresh();
+                    // Disabilita campi se necessario
+                    setTimeout(() => {
+                        if (window.disableEditInputs) window.disableEditInputs();
+                    }, 200);
+                    
+                    // Log login
+                    logActivity('LOGIN', `Accesso effettuato`);
+                    
+                    showQuickNotification(`Benvenuto, ${result.user.name}!`, 'success');
                 } else {
-                    alert('Credenziali non valide');
+                    console.log('❌ Login fallito - credenziali errate');
+                    errorDiv.textContent = '❌ ' + (result.error || 'Username o password errati');
+                    errorDiv.classList.remove('hidden');
                 }
             } catch (error) {
-                console.error('Login error:', error);
-                alert('Errore di connessione al server');
-            } finally {
-                loginButton.disabled = false;
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+                console.error('❌ Errore connessione:', error);
+                errorDiv.textContent = '❌ Errore di connessione al server';
+                errorDiv.classList.remove('hidden');
             }
         }
         
@@ -5249,79 +4698,6 @@
                 }
             }
             
-            // Nascondi Quick ID filters se non ha permesso
-            if (!perms.useQuickIdFilters) {
-                const quickIdContainer = document.querySelector('[id="quickIdButtons"]')?.parentElement;
-                if (quickIdContainer) {
-                    quickIdContainer.style.display = 'none';
-                }
-            }
-            
-            // ASSICURA che i filtri siano sempre visibili per TUTTI
-            const ensureFiltersVisible = () => {
-                // Forza visibilità del container principale
-                const filtersContainer = document.getElementById('filtersContainer');
-                if (filtersContainer) {
-                    filtersContainer.style.cssText += 'display: flex !important; visibility: visible !important; opacity: 1 !important; flex-wrap: wrap !important;';
-                }
-                
-                // Forza anche il parent
-                const filterSection = document.querySelector('.p-3.border-b.bg-gray-50');
-                if (filterSection) {
-                    filterSection.style.cssText += 'display: flex !important; visibility: visible !important;';
-                }
-                
-                // Mostra tutti gli elementi di filtro
-                const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
-                                  'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
-                filterIds.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.style.cssText += 'display: inline-block !important; visibility: visible !important; pointer-events: auto !important;';
-                        el.disabled = false;
-                    }
-                });
-                
-                console.log('✅ Filtri forzati visibili');
-            };
-            
-            // Esegui immediatamente e dopo timeout
-            setTimeout(ensureFiltersVisible, 0);
-            setTimeout(ensureFiltersVisible, 100);
-            setTimeout(ensureFiltersVisible, 500);
-            setTimeout(ensureFiltersVisible, 1000);
-            setTimeout(ensureFiltersVisible, 2000);
-            
-            // Aggiungi CSS globale per forzare la visibilità dei filtri
-            const filterStyle = document.createElement('style');
-            filterStyle.id = 'filterVisibilityStyle';
-            filterStyle.textContent = `
-                /* Forza visibilità sezione filtri */
-                .p-3.border-b.bg-gray-50 { 
-                    display: flex !important; 
-                    visibility: visible !important; 
-                    opacity: 1 !important; 
-                }
-                #filtersContainer {
-                    display: flex !important;
-                    flex-wrap: wrap !important;
-                    gap: 0.5rem !important;
-                    visibility: visible !important;
-                }
-                #filtersContainer * {
-                    visibility: visible !important;
-                }
-                /* Forza visibilità singoli filtri */
-                #searchInput, #sortOrder, #filterStatus, #filterRoleYear, 
-                #filterSize, #filterKitType, #filterItem, #filterMinId, #filterMaxId {
-                    display: inline-block !important;
-                    visibility: visible !important;
-                    pointer-events: auto !important;
-                    opacity: 1 !important;
-                }
-            `;
-            document.head.appendChild(filterStyle);
-            
             // Disabilita campi editabili per utenti senza permessi
             if (!perms.editOrders || !perms.deleteOrders || !perms.downloadGoogleForm) {
                 const style = document.createElement('style');
@@ -5346,45 +4722,29 @@
                 
                 // Disabilita input campi quando non ha permessi editOrders
                 if (!perms.editOrders && !perms.editTabella) {
-                    // Lista completa ID filtri da NON disabilitare
-                    const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
-                                      'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
-                    
                     // Funzione per disabilitare inputs dopo il render
                     window.disableEditInputs = function() {
-                        // Disabilita input taglie, sconto, ecc (MA NON I FILTRI!)
+                        // Disabilita input taglie, sconto, ecc
                         document.querySelectorAll('input.edit-order-btn, select.edit-order-btn').forEach(el => {
-                            // NON disabilitare i filtri
-                            if (filterIds.includes(el.id)) return;
-                            
                             el.disabled = true;
                             el.style.backgroundColor = '#f3f4f6';
                             el.style.cursor = 'not-allowed';
                             el.style.color = '#6b7280';
                         });
                         
-                        // Disabilita TUTTI gli input e select tranne i filtri
-                        document.querySelectorAll('input, select').forEach(el => {
-                            // NON disabilitare i filtri
-                            if (filterIds.includes(el.id)) return;
-                            // NON disabilitare elementi già gestiti o non nella tabella
-                            if (el.type === 'button' || el.type === 'submit') return;
-                            // NON disabilitare elementi nella sezione "Filtri & Ricerca"
-                            if (el.closest('.p-3.border-b.bg-gray-50')) return;
-                            // NON disabilitare select STATO se l'utente ha editStatus
-                            if (perms.editStatus && el.classList.contains('status-select')) return;
-                            
-                            // Disabilita solo se è nella tabella/area dati
-                            const isInTable = el.closest('table') || el.closest('.tab-content');
-                            if (isInTable && !el.closest('.glass-effect')) {
-                                el.disabled = true;
-                                el.style.cursor = 'not-allowed';
-                                el.style.opacity = '0.6';
-                                if (el.tagName === 'INPUT') {
-                                    el.style.backgroundColor = '#f3f4f6';
-                                    el.style.color = '#6b7280';
-                                }
-                            }
+                        // Disabilita select STATO
+                        document.querySelectorAll('select.status-select').forEach(el => {
+                            el.disabled = true;
+                            el.style.cursor = 'not-allowed';
+                            el.style.opacity = '0.6';
+                        });
+                        
+                        // Disabilita input inventario (giacenze)
+                        document.querySelectorAll('input.inv-input').forEach(el => {
+                            el.disabled = true;
+                            el.style.backgroundColor = '#f3f4f6';
+                            el.style.cursor = 'not-allowed';
+                            el.style.color = '#6b7280';
                         });
                         
                         // Disabilita pulsante "X Capi" ma lascialo visibile
@@ -5415,7 +4775,7 @@
             }
         }
         
-        // Gestione utenti (solo admin)
+        // Gestione utenti (solo admin) - USA API REDIS
         async function openUserManagement() {
             if (!currentUser || currentUser.role !== 'admin') {
                 alert('⚠️ Accesso negato. Solo gli amministratori possono gestire gli utenti.');
@@ -5423,99 +4783,100 @@
             }
             
             try {
+                // Carica utenti da Redis
                 const response = await fetch('/api/users');
-                const data = await response.json();
-                const users = data.users || [];
+                const result = await response.json();
+                const users = result.users || [];
             
-            let html = `
-                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="event.target === this && closeUserManagement()">
-                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
-                        <div class="flex justify-between items-center mb-4 pb-4 border-b">
-                            <h2 class="text-2xl font-bold text-gray-900">
-                                <i class="fas fa-users text-indigo-600 mr-2"></i>
-                                Gestione Utenti
-                            </h2>
-                            <button onclick="closeUserManagement()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <button onclick="openAddUserForm()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold mr-2">
-                                <i class="fas fa-user-plus mr-2"></i>Nuovo Utente
-                            </button>
-                            <button onclick="openActivityLog()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
-                                <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
-                            </button>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nome</th>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ruolo</th>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Creato il</th>
-                                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Azioni</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-            `;
-            
-            users.forEach(user => {
-                const role = USER_ROLES[user.role.toUpperCase()] || USER_ROLES.VIEWER;
-                const isCurrentUser = user.username === currentUser.username;
+                let html = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="event.target === this && closeUserManagement()">
+                        <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                            <div class="flex justify-between items-center mb-4 pb-4 border-b">
+                                <h2 class="text-2xl font-bold text-gray-900">
+                                    <i class="fas fa-users text-indigo-600 mr-2"></i>
+                                    Gestione Utenti
+                                </h2>
+                                <button onclick="closeUserManagement()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <button onclick="openAddUserForm()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold mr-2">
+                                    <i class="fas fa-user-plus mr-2"></i>Nuovo Utente
+                                </button>
+                                <button onclick="openActivityLog()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                                    <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
+                                </button>
+                            </div>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nome</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ruolo</th>
+                                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Creato il</th>
+                                            <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                users.forEach(user => {
+                    const role = USER_ROLES[user.role.toUpperCase()] || USER_ROLES.VIEWER;
+                    const isCurrentUser = user.username === currentUser.username;
+                    
+                    html += `
+                        <tr class="${isCurrentUser ? 'bg-blue-50' : ''}">
+                            <td class="px-4 py-3 text-sm font-bold">${user.username}</td>
+                            <td class="px-4 py-3 text-sm">${user.name}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="px-2 py-1 rounded text-xs font-bold ${
+                                    user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                                    user.role === 'viewer_full' ? 'bg-green-100 text-green-800' :
+                                    user.role === 'contributor' ? 'bg-yellow-100 text-yellow-800' :
+                                    user.role === 'tabella_full' ? 'bg-cyan-100 text-cyan-800' :
+                                    user.role === 'tabella_readonly' ? 'bg-purple-100 text-purple-800' :
+                                    user.role === 'table_editor' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }">
+                                    ${role.name}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500">${user.createdAt ? new Date(user.createdAt).toLocaleDateString('it-IT') : '-'}</td>
+                            <td class="px-4 py-3 text-center">
+                                ${isCurrentUser ? `
+                                    <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                ` : `
+                                    <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <button onclick="editUser('${user.username}')" class="text-orange-600 hover:text-orange-800 mx-1" title="Modifica ruolo">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteUser('${user.username}')" class="text-red-600 hover:text-red-800 mx-1" title="Elimina utente">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                `}
+                            </td>
+                        </tr>
+                    `;
+                });
                 
                 html += `
-                    <tr class="${isCurrentUser ? 'bg-blue-50' : ''}">
-                        <td class="px-4 py-3 text-sm font-bold">${user.username}</td>
-                        <td class="px-4 py-3 text-sm">${user.name}</td>
-                        <td class="px-4 py-3 text-sm">
-                            <span class="px-2 py-1 rounded text-xs font-bold ${
-                                user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                                user.role === 'viewer_full' ? 'bg-green-100 text-green-800' :
-                                user.role === 'contributor' ? 'bg-yellow-100 text-yellow-800' :
-                                user.role === 'tabella_full' ? 'bg-cyan-100 text-cyan-800' :
-                                user.role === 'tabella_readonly' ? 'bg-purple-100 text-purple-800' :
-                                user.role === 'table_editor' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
-                            }">
-                                ${role.name}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-500">${new Date(user.createdAt).toLocaleDateString('it-IT')}</td>
-                        <td class="px-4 py-3 text-center">
-                            ${isCurrentUser ? `
-                                <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
-                                    <i class="fas fa-key"></i>
-                                </button>
-                            ` : `
-                                <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
-                                    <i class="fas fa-key"></i>
-                                </button>
-                                <button onclick="editUser('${user.username}')" class="text-orange-600 hover:text-orange-800 mx-1" title="Modifica ruolo">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="deleteUser('${user.username}')" class="text-red-600 hover:text-red-800 mx-1" title="Elimina utente">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            `}
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', html);
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', html);
             } catch (error) {
-                console.error('Error loading users:', error);
-                alert('Errore nel caricamento degli utenti');
+                console.error('Errore caricamento utenti:', error);
+                alert('❌ Errore nel caricamento degli utenti');
             }
         }
         
@@ -5548,7 +4909,6 @@
                                     <option value="viewer">Visualizzazione (senza Dashboard)</option>
                                     <option value="viewer_full">Visualizzazione (con Dashboard)</option>
                                     <option value="contributor">Contributore (Google Form)</option>
-                                    <option value="contributor_advanced">Contributore Avanzato (Form + Stato)</option>
                                     <option value="table_editor">Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full">Tabella Completa</option>
                                     <option value="tabella_readonly">Tabella Solo Lettura</option>
@@ -5589,14 +4949,14 @@
                         action: 'create',
                         username,
                         password,
-                        role,
-                        name
+                        name,
+                        role
                     })
                 });
                 
-                const data = await response.json();
+                const result = await response.json();
                 
-                if (data.success) {
+                if (result.success) {
                     logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
                     
                     // Chiudi modals
@@ -5605,11 +4965,11 @@
                     showQuickNotification('✅ Utente creato con successo!', 'success');
                     openUserManagement();
                 } else {
-                    alert(`⚠️ ${data.error || 'Errore nella creazione utente'}`);
+                    alert('❌ ' + (result.error || 'Errore nella creazione utente'));
                 }
             } catch (error) {
-                console.error('Error creating user:', error);
-                alert('Errore di connessione al server');
+                console.error('Errore creazione utente:', error);
+                alert('❌ Errore di connessione al server');
             }
         }
         
@@ -5632,29 +4992,29 @@
                     })
                 });
                 
-                const data = await response.json();
+                const result = await response.json();
                 
-                if (data.success) {
+                if (result.success) {
                     logActivity('DELETE_USER', `Eliminato utente: ${username}`);
-                    
+            
                     closeUserManagement();
                     showQuickNotification('✅ Utente eliminato', 'success');
                     openUserManagement();
                 } else {
-                    alert(`⚠️ ${data.error || 'Errore nell\'eliminazione utente'}`);
+                    alert('❌ ' + (result.error || 'Errore eliminazione utente'));
                 }
             } catch (error) {
-                console.error('Error deleting user:', error);
-                alert('Errore di connessione al server');
+                console.error('Errore eliminazione utente:', error);
+                alert('❌ Errore di connessione al server');
             }
         }
         
-        // Modifica ruolo utente
+        // Modifica ruolo utente - USA API REDIS
         async function editUser(username) {
             try {
                 const response = await fetch('/api/users');
-                const data = await response.json();
-                const users = data.users || [];
+                const result = await response.json();
+                const users = result.users || [];
                 const user = users.find(u => u.username === username);
             
             if (!user) {
@@ -5677,7 +5037,6 @@
                                     <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Visualizzazione (senza Dashboard)</option>
                                     <option value="viewer_full" ${user.role === 'viewer_full' ? 'selected' : ''}>Visualizzazione (con Dashboard)</option>
                                     <option value="contributor" ${user.role === 'contributor' ? 'selected' : ''}>Contributore (Google Form)</option>
-                                    <option value="contributor_advanced" ${user.role === 'contributor_advanced' ? 'selected' : ''}>Contributore Avanzato (Form + Stato)</option>
                                     <option value="table_editor" ${user.role === 'table_editor' ? 'selected' : ''}>Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full" ${user.role === 'tabella_full' ? 'selected' : ''}>Tabella Completa</option>
                                     <option value="tabella_readonly" ${user.role === 'tabella_readonly' ? 'selected' : ''}>Tabella Solo Lettura</option>
@@ -5698,8 +5057,8 @@
             `;
             document.body.insertAdjacentHTML('beforeend', html);
             } catch (error) {
-                console.error('Error loading user:', error);
-                alert('Errore nel caricamento utente');
+                console.error('Errore caricamento utente:', error);
+                alert('❌ Errore di connessione al server');
             }
         }
         
@@ -5724,9 +5083,9 @@
                     })
                 });
                 
-                const data = await response.json();
+                const result = await response.json();
                 
-                if (data.success) {
+                if (result.success) {
                     logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
                     
                     // Chiudi modals
@@ -5735,11 +5094,11 @@
                     showQuickNotification('✅ Utente modificato con successo!', 'success');
                     openUserManagement();
                 } else {
-                    alert(`⚠️ ${data.error || 'Errore nella modifica utente'}`);
+                    alert('❌ ' + (result.error || 'Errore modifica utente'));
                 }
             } catch (error) {
-                console.error('Error editing user:', error);
-                alert('Errore di connessione al server');
+                console.error('Errore modifica utente:', error);
+                alert('❌ Errore di connessione al server');
             }
         }
         
@@ -5806,20 +5165,20 @@
                     })
                 });
                 
-                const data = await response.json();
+                const result = await response.json();
                 
-                if (data.success) {
+                if (result.success) {
                     logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
                     
                     document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
                     showQuickNotification('✅ Password aggiornata con successo!', 'success');
                     openUserManagement();
                 } else {
-                    alert(`⚠️ ${data.error || 'Errore nell\'aggiornamento password'}`);
+                    alert('❌ ' + (result.error || 'Errore aggiornamento password'));
                 }
             } catch (error) {
-                console.error('Error updating password:', error);
-                alert('Errore di connessione al server');
+                console.error('Errore aggiornamento password:', error);
+                alert('❌ Errore di connessione al server');
             }
         }
         
@@ -5947,12 +5306,25 @@
             return role.permissions[action] === true;
         }
         
+        // Auto-login gestito nel blocco di inizializzazione precedente (riga 4362)
+        
         // ===== FINE SISTEMA UTENTI =====
         
         // ===== QUICK ID BUTTONS =====
         
         // Inizializza i Quick ID buttons in TUTTE le sezioni
         function initQuickIdButtons() {
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'Amministratore')) {
+                const cont = document.getElementById('quickIdButtonsContainer');
+                if (cont) cont.style.display = 'none';
+                const btn = document.getElementById('quickIdConfigBtn');
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+            const cont = document.getElementById('quickIdButtonsContainer');
+            if (cont) cont.style.display = 'flex';
+            const btn = document.getElementById('quickIdConfigBtn');
+            if (btn) btn.style.display = 'inline-flex';
             const quickIdFilters = JSON.parse(localStorage.getItem('quickIdFilters') || '{}');
             
             // IDs dei container in tutte e 3 le sezioni
