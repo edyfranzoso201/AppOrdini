@@ -1870,22 +1870,24 @@
         
        // Calcola un hash semplice dei dati per rilevare modifiche
        function getDataHash() {
-          return JSON.stringify({
-                ordersCount: orders.length,
-                lastOrderId: lastOrderId,
-                ordersData: orders.map(o => ({
-                id: o.id,
-                status: o.status,
-                itemsCount: o.itemsList?.length || 0,
-                mainSize: o.mainSize,
-                sockSize: o.sockSize,
-                notes: o.notes,
-                kitType: o.kitType,
-                customer: o.customer
-                 })),
-                 inventoryKeys: Object.keys(inventory).sort().join('|')
-             });
-         }
+         return JSON.stringify({
+           ordersCount: orders.length,
+           lastOrderId: lastOrderId,
+           ordersData: orders.map(o => ({
+             id: o.id,
+             status: o.status,
+             customer: o.customer,
+             kitType: o.kitType,
+             mainSize: o.mainSize,
+             sockSize: o.sockSize,
+             notes: o.notes,
+             itemsCount: o.itemsList?.length || 0,
+             linkedId: o.linkedId,
+             partialDeliveryNote: o.partialDeliveryNote
+           })),
+           inventoryKeys: Object.keys(inventory).sort().join('|')
+         });
+       }
         
         // Funzione di auto-refresh silenziosa
         async function autoRefreshData() {
