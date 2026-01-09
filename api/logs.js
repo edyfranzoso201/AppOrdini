@@ -9,8 +9,8 @@ await redis.connect();
 export default async function handler(req, res) {
     try {
         if (req.method === 'POST') {
-            // Aggiungi un controllo di sicurezza
-            const { user, action, details } = req.body || {};
+            // Aggiungi un nuovo log
+            const { user, action, details } = req.body;
             
             const newLog = {
                 id: Date.now().toString(),
