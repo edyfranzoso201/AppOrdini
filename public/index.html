@@ -1769,41 +1769,205 @@
             
             alert(`✅ Correzione completata!\n\n🕐 Ordini corretti (-1h): ${correctedCount}\n📊 Totale: ${orders.length}`);
         }
+        // ===== FUNZIONI MANCANTI CHE DEVI AGGIUNGERE =====
+
+// Gestione permessi (semplificata per ora)
+function checkPermission(permission) {
+    // Per ora permette tutto - puoi modificare in seguito
+    return true;
+}
+
+// Gestione utenti (placeholder)
+function openUserManagement() {
+    alert('👥 Gestione utenti - Funzione in sviluppo');
+}
+
+// Visualizza log attività
+async function openActivityLog() {
+    try {
+        const response = await fetch('/api/logs');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                const logs = data.logs || [];
+                let logText = '📋 LOG ATTIVITÀ (ultimi 20):\n\n';
+                logs.slice(0, 20).forEach(log => {
+                    const date = new Date(log.timestamp).toLocaleString('it-IT');
+                    logText += `📅 ${date}\n👤 ${log.user || 'Sistema'}\n📝 ${log.action}\n${log.description ? `ℹ️ ${log.description}\n` : ''}${log.details ? `🔍 ${JSON.stringify(log.details)}\n` : ''}━━━━━━━━━━━━━━━━━━\n`;
+                });
+                alert(logText);
+            } else {
+                alert('❌ Errore nel caricamento dei log');
+            }
+        } else {
+            alert('❌ Impossibile connettersi al server log');
+        }
+    } catch (error) {
+        console.error('Errore apertura log:', error);
+        alert('⚠️ Errore nel caricamento dei log. Controlla la console.');
+    }
+}
+
+// Configurazione Quick ID (placeholder)
+function openQuickIdConfig() {
+    alert('⚙️ Configurazione Quick ID - Funzione in sviluppo\n\nPuoi configurare gli intervalli ID rapidi qui.');
+}
+
+// Reset tutti i filtri ID
+function resetAllIdFilters() {
+    // Gestione Ordini
+    const filterMinId = document.getElementById('filterMinId');
+    const filterMaxId = document.getElementById('filterMaxId');
+    if (filterMinId) filterMinId.value = '';
+    if (filterMaxId) filterMaxId.value = '';
+    
+    // Distinta & Magazzino
+    const matrixMinId = document.getElementById('matrixMinId');
+    const matrixMaxId = document.getElementById('matrixMaxId');
+    if (matrixMinId) matrixMinId.value = '';
+    if (matrixMaxId) matrixMaxId.value = '';
+    
+    // Tabella Stampabile
+    const tabellaMinId = document.getElementById('tabellaOrdiniMinId');
+    const tabellaMaxId = document.getElementById('tabellaOrdiniMaxId');
+    if (tabellaMinId) tabellaMinId.value = '';
+    if (tabellaMaxId) tabellaMaxId.value = '';
+    
+    // Rendi visibili i pulsanti Quick ID se ci sono
+    renderTable();
+    renderMatrices();
+    renderTabellaOrdini();
+    
+    alert('✅ Tutti i filtri ID sono stati resettati');
+}
+
+// Esporta backup
+function exportBackup() {
+    const backupData = {
+        timestamp: new Date().toISOString(),
+        orders: orders,
+        inventory: inventory,
+        config: {
+            globalItems: globalItems,
+            globalKitTypes: globalKitTypes
+        },
+        metadata: {
+            totalOrders: orders.length,
+            totalInventoryItems: Object.keys(inventory).length,
+            version: 'R68'
+        }
+    };
+    
+    const dataStr = JSON.stringify(backupData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `orderflow_backup_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    logActivity('EXPORT_BACKUP', 'Esportato backup completo sistema');
+    alert('✅ Backup esportato con successo!');
+}
+
+// Logout
+function logout() {
+    if (confirm('Sei sicuro di voler uscire?')) {
+        // Rimuove i dati di login
+        localStorage.removeItem('orderflow_loggedIn');
+        localStorage.removeItem('orderflow_user');
         
+        // Mostra schermata login
+        document.getElementById('loginScreen').style.display = 'flex';
+        
+        logActivity('LOGOUT', 'Utente disconnesso');
+    }
+}
+// ===== FINE FUNZIONI MANCANTI =====
         async function loadData() {
     try {
-        // Load orders
-        const ordersRes = await fetch('/api/orders');
-        if (ordersRes.ok) {
-            const ordersData = await ordersRes.json();
-            if (ordersData.success && ordersData.data) {
-                orders = ordersData.data.orders || [];
-                lastOrderId = ordersData.data.lastOrderId || 0;
-                currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+        console.log('🔄 Caricamento dati...');
+        
+        // 1. Carica da localStorage come fallback immediato
+        const savedOrders = localStorage.getItem('orderFlow_orders');
+        const savedInventory = localStorage.getItem('orderFlow_inventory');
+        const savedConfig = localStorage.getItem('orderFlow_config');
+        
+        if (savedOrders) {
+            try {
+                const parsed = JSON.parse(savedOrders);
+                orders = parsed.orders || [];
+                lastOrderId = parsed.lastOrderId || 0;
+                currentPrefix = parsed.currentPrefix || DEFAULT_ID_PREFIX;
+                highlightedSizeCells = parsed.highlightedSizeCells || {};
+                console.log('📦 Ordini caricati da localStorage:', orders.length);
+            } catch (e) {
+                console.warn('⚠️ Errore parsing localStorage ordini:', e);
             }
         }
         
-        // Load inventory
-        const invRes = await fetch('/api/inventory');
-        if (invRes.ok) {
-            const invData = await invRes.json();
-            if (invData.success && invData.data) {
-                inventory = invData.data.inventory || {};
+        if (savedInventory) {
+            try {
+                inventory = JSON.parse(savedInventory);
+                console.log('🏭 Inventario caricato da localStorage:', Object.keys(inventory).length);
+            } catch (e) {
+                console.warn('⚠️ Errore parsing localStorage inventario:', e);
             }
         }
         
-        // Load config
-        const configRes = await fetch('/api/config');
-        if (configRes.ok) {
-            const configData = await configRes.json();
-            if (configData.success && configData.data) {
-                globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
-                globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+        if (savedConfig) {
+            try {
+                const config = JSON.parse(savedConfig);
+                globalItems = config.globalItems || [...DEFAULT_ITEMS_LIST];
+                globalKitTypes = config.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                console.log('⚙️ Config caricata da localStorage');
+            } catch (e) {
+                console.warn('⚠️ Errore parsing localStorage config:', e);
             }
         }
         
-        // Initialize defaults if empty
+        // 2. Poi prova a caricare dal server (se disponibile)
+        try {
+            // Load orders
+            const ordersRes = await fetch('/api/orders');
+            if (ordersRes.ok) {
+                const ordersData = await ordersRes.json();
+                if (ordersData.success && ordersData.data) {
+                    orders = ordersData.data.orders || [];
+                    lastOrderId = ordersData.data.lastOrderId || 0;
+                    currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                    highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                    console.log('📦 Ordini caricati dal server:', orders.length);
+                }
+            }
+            
+            // Load inventory
+            const invRes = await fetch('/api/inventory');
+            if (invRes.ok) {
+                const invData = await invRes.json();
+                if (invData.success && invData.data) {
+                    inventory = invData.data.inventory || {};
+                    console.log('🏭 Inventario caricato dal server:', Object.keys(inventory).length);
+                }
+            }
+            
+            // Load config
+            const configRes = await fetch('/api/config');
+            if (configRes.ok) {
+                const configData = await configRes.json();
+                if (configData.success && configData.data) {
+                    globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
+                    globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                    console.log('⚙️ Config caricata dal server');
+                }
+            }
+        } catch (serverError) {
+            console.warn('⚠️ Server non disponibile, uso localStorage:', serverError.message);
+        }
+        
+        // 3. Inizializza defaults se tutto è vuoto
         if (globalItems.length === 0) {
             globalItems = [...DEFAULT_ITEMS_LIST];
         }
@@ -1811,13 +1975,20 @@
             globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
         }
         
-        // Repair import keys
+        // 4. Procedure finali
         repairAllImportKeys();
         renderKitFilterOptions();
-        await saveData();
+        
+        console.log('✅ Dati caricati. Ordini:', orders.length, 'Inventario:', Object.keys(inventory).length);
+        
     } catch (error) {
-        console.error('Error loading data:', error);
-        alert('Errore nel caricamento dei dati');
+        console.error('❌ Errore critico nel caricamento:', error);
+        // Fallback ultima spiaggia
+        globalItems = [...DEFAULT_ITEMS_LIST];
+        globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+        orders = [];
+        inventory = {};
+        alert('⚠️ Errore caricamento dati. Sistema avviato in modalità locale.');
     }
 }
         
@@ -2104,48 +2275,92 @@
         }
         
         async function saveData() {
-            try {
-                // Save orders
-                await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        orders,
-                        lastOrderId,
-                        currentPrefix,
-                        highlightedSizeCells
-                    })
-                });
-                // Registra nel log
-                logActivity('Salvataggio dati', `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`);
-                
-                // Save inventory
-                await fetch('/api/inventory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        inventory 
-                    })
-                });
-                
-                // Save config
-                await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        globalItems,
-                        globalKitTypes
-                    })
-                });
-                
-                console.log('Data saved successfully');
-            } catch (error) {
-                console.error('Error saving data:', error);
-            }
+    try {
+        console.log('💾 Inizio salvataggio dati...');
+        
+        // 1. Salva PRIMA in localStorage (garantisce disponibilità immediata)
+        localStorage.setItem('orderFlow_orders', JSON.stringify({
+            orders,
+            lastOrderId,
+            currentPrefix,
+            highlightedSizeCells
+        }));
+        
+        localStorage.setItem('orderFlow_inventory', JSON.stringify(inventory));
+        
+        localStorage.setItem('orderFlow_config', JSON.stringify({
+            globalItems,
+            globalKitTypes
+        }));
+        
+        console.log('✅ Dati salvati in localStorage');
+        
+        // 2. Poi prova a salvare sul server (senza attendere)
+        try {
+            // Salva orders sul server (in background)
+            fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'save', 
+                    orders,
+                    lastOrderId,
+                    currentPrefix,
+                    highlightedSizeCells
+                })
+            }).then(res => {
+                if (res.ok) console.log('📦 Ordini salvati sul server');
+                else console.warn('⚠️ Errore salvataggio ordini sul server');
+            }).catch(e => {
+                console.warn('🌐 Server non raggiungibile per ordini:', e.message);
+            });
+            
+            // Salva inventory sul server
+            fetch('/api/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'save', 
+                    inventory 
+                })
+            }).then(res => {
+                if (res.ok) console.log('🏭 Inventario salvato sul server');
+                else console.warn('⚠️ Errore salvataggio inventario sul server');
+            }).catch(e => {
+                console.warn('🌐 Server non raggiungibile per inventario:', e.message);
+            });
+            
+            // Salva config sul server
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'save', 
+                    globalItems,
+                    globalKitTypes
+                })
+            }).then(res => {
+                if (res.ok) console.log('⚙️ Config salvata sul server');
+                else console.warn('⚠️ Errore salvataggio config sul server');
+            }).catch(e => {
+                console.warn('🌐 Server non raggiungibile per config:', e.message);
+            });
+            
+        } catch (serverError) {
+            console.warn('🌐 Errore durante salvataggio server:', serverError.message);
         }
+        
+        // 3. Registra nel log attività
+        try {
+            logActivity('Salvataggio dati', `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`);
+        } catch (logError) {
+            console.warn('📝 Errore log attività:', logError);
+        }
+        
+    } catch (error) {
+        console.error('❌ Errore critico durante salvataggio:', error);
+    }
+}
       // Funzione per registrare un'azione nello storico
        function logActivity(action, description, details = {}) {
         const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
