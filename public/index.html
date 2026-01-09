@@ -5116,39 +5116,31 @@ async function loadData() {
         // Carica ordini
         const ordersRes = await fetch('/api/orders');
         const ordersData = await ordersRes.json();
-        if (ordersData.success) {
-            orders = ordersData.orders || [];
-            console.log(`✅ Caricati ${orders.length} ordini`);
-        } else {
-            console.error('❌ Errore caricamento ordini:', ordersData.error);
-        }
+        // Accetta sia { success, orders } che direttamente l'array
+        orders = Array.isArray(ordersData) ? ordersData : (ordersData.orders || []);
+        console.log(`✅ Caricati ${orders.length} ordini`);
 
         // Carica inventario
         const inventoryRes = await fetch('/api/inventory');
         const inventoryData = await inventoryRes.json();
-        if (inventoryData.success) {
-            inventory = inventoryData.inventory || [];
-            console.log(`✅ Caricati ${inventory.length} articoli inventario`);
-        } else {
-            console.error('❌ Errore caricamento inventario:', inventoryData.error);
-        }
+        inventory = Array.isArray(inventoryData) ? inventoryData : (inventoryData.inventory || []);
+        console.log(`✅ Caricati ${inventory.length} articoli inventario`);
 
         // Carica configurazione
         const configRes = await fetch('/api/config');
         const configData = await configRes.json();
-        if (configData.success) {
-            config = configData.config || {};
-            console.log('✅ Configurazione caricata');
-        } else {
-            console.error('❌ Errore caricamento configurazione:', configData.error);
-        }
+        config = (typeof configData === 'object' && !Array.isArray(configData)) 
+            ? (configData.config || {}) 
+            : {};
+        globalItems = config.globalItems || [...DEFAULT_ITEMS_LIST];
+        globalKitTypes = config.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+        console.log('✅ Configurazione caricata');
 
         // Aggiorna UI
         updateUI();
         initSelect();
         applyUserPermissions();
         initQuickIdButtons();
-
         showQuickNotification('Dati caricati con successo!', 'success');
 
     } catch (error) {
