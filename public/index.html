@@ -2999,17 +2999,16 @@
             } else if (newStatus === 'Consegna Parziale') {
                 // Apri popup per inserire cosa manca
                 openPartialDeliveryPopup(id);
-            } else { 
-                o.status = newStatus;
-                o.linkedId = null;
-                o.partialDeliveryNote = null; // Reset nota consegna parziale
-            } 
-            updateUI(); 
-            renderMatrices();
+            } else {
+    o.status = newStatus;
+    o.linkedId = null;
+    o.partialDeliveryNote = null; // Reset nota consegna parziale
         }
-                // Registra nel log il cambio di stato
+        updateUI();
+        renderMatrices();
+                // 👇 AGGIUNGI QUESTA RIGA QUI
                 logActivity('CHANGE_STATUS', `Stato cambiato a "${newStatus}" per ordine: ${o.displayId}`);
-
+    }
                 // Popup Consegna Parziale
                 let currentPartialDeliveryOrderId = null;
         
