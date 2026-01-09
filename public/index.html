@@ -5135,56 +5135,55 @@
             }
         }
         
-        // Login
-        async function performLogin() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const loginButton = document.getElementById('loginButton');
-            
-            if (!username || !password) {
-                alert('Inserisci username e password');
-                return;
-            }
-            
-            loginButton.disabled = true;
-            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
-            
-            try {
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'login', username, password })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success && data.user) {
-                    currentUser = data.user;
-                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
-                    
-                    const loginScreen = document.getElementById('loginScreen');
-                    const appContainer = document.getElementById('appContainer');
-                    
-                    if (loginScreen) loginScreen.style.display = 'none';
-                    if (appContainer) appContainer.style.display = 'block';
-                    
-                    await loadData();
-                    updateUI();
-                    applyUserPermissions();
-                    
-                    // Avvia auto-refresh per sincronizzazione multi-utente
-                    startAutoRefresh();
-                } else {
-                    alert('Credenziali non valide');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('Errore di connessione al server');
-            } finally {
-                loginButton.disabled = false;
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
-            }
+async function performLogin() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    if (!username || !password) {
+        errorDiv.textContent = '⚠️ Inserisci username e password';
+        errorDiv.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        // Chiama API Redis per il login
+        const response = await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'login',
+                username: username,
+                password: password
+            })
+        });
+        const result = await response.json();
+
+        if (result.success && result.user) {
+            console.log('✅ Login riuscito:', result.user.username);
+            currentUser = result.user;
+            localStorage.setItem('orderFlowCurrentUser', JSON.stringify(result.user));
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('loginScreen').style.display = 'none';
+
+            // Carica dati e inizializza UI
+            await loadData();
+            initSelect();
+            updateUI();
+            applyUserPermissions();
+            initQuickIdButtons();
+            showQuickNotification(`Benvenuto, ${result.user.name}!`, 'success');
+        } else {
+            console.log('❌ Login fallito - credenziali errate');
+            errorDiv.textContent = '❌ ' + (result.error || 'Username o password errati');
+            errorDiv.classList.remove('hidden');
         }
+    } catch (error) {
+        console.error('❌ Errore connessione:', error);
+        errorDiv.textContent = '❌ Errore di connessione al server';
+        errorDiv.classList.remove('hidden');
+    }
+}
         
         // Logout
         function logout() {
