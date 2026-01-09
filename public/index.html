@@ -1770,26 +1770,49 @@
         
         async function loadData() {
     try {
-        // Load orders
+        // Carica ordini
         const ordersRes = await fetch('/api/orders');
-        if (ordersRes.ok) {
-            const ordersData = await ordersRes.json();
-            if (ordersData.success && ordersData.data) {
-                orders = ordersData.data.orders || [];
-                lastOrderId = ordersData.data.lastOrderId || 0;
-                currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-            }
+        const ordersData = await ordersRes.json();
+        if (ordersData.success) {
+            orders = ordersData.orders || [];
+            console.log(`✅ Caricati ${orders.length} ordini`);
+        } else {
+            console.error('❌ Errore caricamento ordini:', ordersData.error);
         }
-        
-        // Load inventory
-        const invRes = await fetch('/api/inventory');
-        if (invRes.ok) {
-            const invData = await invRes.json();
-            if (invData.success && invData.data) {
-                inventory = invData.data.inventory || {};
-            }
+
+        // Carica inventario
+        const inventoryRes = await fetch('/api/inventory');
+        const inventoryData = await inventoryRes.json();
+        if (inventoryData.success) {
+            inventory = inventoryData.inventory || [];
+            console.log(`✅ Caricati ${inventory.length} articoli inventario`);
+        } else {
+            console.error('❌ Errore caricamento inventario:', inventoryData.error);
         }
+
+        // Carica configurazione
+        const configRes = await fetch('/api/config');
+        const configData = await configRes.json();
+        if (configData.success) {
+            config = configData.config || {};
+            console.log('✅ Configurazione caricata');
+        } else {
+            console.error('❌ Errore caricamento configurazione:', configData.error);
+        }
+
+        // Aggiorna UI
+        updateUI();
+        initSelect();
+        applyUserPermissions();
+        initQuickIdButtons();
+
+        showQuickNotification('Dati caricati con successo!', 'success');
+
+    } catch (error) {
+        console.error('❌ Errore generale nel caricamento dei dati:', error);
+        showQuickNotification('Errore nel caricamento dei dati', 'error');
+    }
+}
         
         // Load config
         const configRes = await fetch('/api/config');
