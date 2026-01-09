@@ -5134,16 +5134,21 @@ async function loadData() {
         inventory = Array.isArray(inventoryData) ? inventoryData : (inventoryData.inventory || []);
         console.log(`✅ Caricati ${inventory.length} articoli inventario`);
 
-        // Carica configurazione
+// Funzione per caricare la configurazione
+async function loadConfig() {
+    try {
         const configRes = await fetch('/api/config');
-        const configData = await configRes.json();
-        config = (typeof configData === 'object' && !Array.isArray(configData)) 
-            ? (configData.config || {}) 
-            : {};
-        globalItems = config.globalItems || [...DEFAULT_ITEMS_LIST];
-        globalKitTypes = config.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-        console.log('✅ Configurazione caricata');
-
+        if (configRes.ok) {
+            const configData = await configRes.json();
+            if (configData.success && configData.data) {
+                globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
+                globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+            }
+        }
+    } catch (error) {
+        console.error('❌ Errore caricamento configurazione:', error);
+    }
+}
         // Aggiorna UI
         updateUI();
         initSelect();
