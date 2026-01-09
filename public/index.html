@@ -1899,23 +1899,30 @@ async function saveData() {
             try { 
                 const file = e.target.files[0]; 
                 const reader = new FileReader(); 
-                reader.onload = function(e) { 
-                    try { 
-                        const data = new Uint8Array(e.target.result); 
-                        const wb = XLSX.read(data, {type: 'array'}); 
-                        
-                        // Leggi primo foglio (ordini)
-                        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}); 
-                        processImport(rows, wb); // Passa anche workbook per leggere magazzino
-                    } catch(err) { 
-                        alert(`ERRORE FILE: ${err.message}`); 
-                    } 
-                }; 
-                reader.readAsArrayBuffer(file); 
-            } catch (err) { 
-                alert(`ERRORE IMPORT: ${err.message}`); 
-            }
-        });
+         // Cerca la parte dove leggi il file (FileReader)
+reader.onload = async function(e) {
+    try {
+        const importedData = JSON.parse(e.target.result);
+        
+        // 1. Aggiorna le variabili locali
+        orders = importedData.orders || [];
+        lastOrderId = importedData.lastOrderId || 0;
+        currentPrefix = importedData.currentPrefix || 'R68-';
+        highlightedSizeCells = importedData.highlightedSizeCells || {};
+        
+        // Aggiorna l'interfaccia visiva
+        if (typeof updateUI === 'function') updateUI();
+        
+        // --- 2. PUNTO FONDAMENTALE MANCANTE ---
+        // Forza il salvataggio immediato sul server
+        console.log("Backup caricato, avvio salvataggio sul server...");
+        await saveData(); 
+        alert("✅ Backup importato e salvato sul server!");
+        
+    } catch (error) {
+        alert("Errore nell'importazione del file");
+    }
+};
 
         function processImport(rows, wb) {
             if (!rows || rows.length < 2) return alert("File vuoto.");
