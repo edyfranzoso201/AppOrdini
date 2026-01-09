@@ -1,3 +1,9 @@
 {
-  "version": 2
+  "version": 2,
+  "routes": [
+    { "src": "/api/orders", "dest": "/api/orders.js" },
+    { "src": "/api/users", "dest": "/api/users.js" },
+    { "src": "/api/inventory", "dest": "/api/inventory.js" },
+    { "src": "/api/logs", "dest": "/api/logs.js" }
+  ]
 }
