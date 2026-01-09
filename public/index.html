@@ -4938,6 +4938,7 @@
                     // Load data then initialize UI
                     loadData().then(() => {
                         initSelect();
+                        resetFiltersToDefault();
                         updateUI();
                         applyUserPermissions();
                         startClock();
@@ -5212,7 +5213,37 @@
                 loginButton.disabled = false;
                 loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
             }
-        }
+        }// Reimposta tutti i filtri ai valori predefiniti (mostra tutti gli ordini)
+function resetFiltersToDefault() {
+    // Stato → "Tutti"
+    const filterStatus = document.getElementById('filterStatus');
+    if (filterStatus) filterStatus.value = 'all';
+    
+    // Anno/Ruolo → "Tutti"
+    const filterRoleYear = document.getElementById('filterRoleYear');
+    if (filterRoleYear) filterRoleYear.value = '';
+    
+    // ID minimo / massimo → vuoti
+    const filterMinId = document.getElementById('filterMinId');
+    if (filterMinId) filterMinId.value = '';
+    const filterMaxId = document.getElementById('filterMaxId');
+    if (filterMaxId) filterMaxId.value = '';
+    
+    // Taglia, Kit, Articolo, Cliente → vuoti
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+    
+    const filterSize = document.getElementById('filterSize');
+    if (filterSize) filterSize.value = 'all';
+    
+    const filterKitType = document.getElementById('filterKitType');
+    if (filterKitType) filterKitType.value = 'all';
+    
+    const filterItem = document.getElementById('filterItem');
+    if (filterItem) filterItem.value = 'all';
+    
+    console.log('✅ Filtri reimpostati a "Tutti"');
+}
         
         // Logout
         function logout() {
