@@ -4,12 +4,21 @@ const redis = createClient({
     url: process.env.REDIS_URL,
 });
 
+// Gestione errori Redis (opzionale ma utile)
+redis.on('error', (err) => {
+    console.error('❌ Errore connessione Redis:', err);
+});
+
+// Connessione asincrona
 await redis.connect();
 
 export default async function handler(req, res) {
+    // Imposta sempre Content-Type JSON
+    res.setHeader('Content-Type', 'application/json');
+
     try {
         if (req.method === 'POST') {
-            // Protezione: assicurati che req.body esista
+            // Protezione: req.body potrebbe essere undefined
             const { user, action, details } = req.body || {};
 
             const newLog = {
@@ -26,8 +35,9 @@ export default async function handler(req, res) {
             if (existingLogs) {
                 try {
                     logs = JSON.parse(existingLogs);
-                } catch (e) {
-                    console.error('Errore parsing logs esistenti:', e);
+                } catch (parseError) {
+                    console.warn('⚠️ Impossibile parsare i log esistenti, parto da zero.');
+                    logs = [];
                 }
             }
 
@@ -51,8 +61,10 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, logs });
         }
     } catch (error) {
-        // Gestione globale degli errori: sempre risposta JSON valida
-        console.error('❌ Errore nell\'API /api/logs:', error);
+        // 🛡️ Gestione globale degli errori: sempre risposta JSON valida
+        console.error('❌ Errore nell\'API /api/logs:', error.message || error);
+
+        // Risposta sempre in JSON, mai HTML
         return res.status(500).json({
             success: false,
             error: 'Errore interno del server'
