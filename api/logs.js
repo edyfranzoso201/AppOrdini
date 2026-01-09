@@ -1,81 +1,38 @@
-import { createClient } from 'redis';
-
-const redis = createClient({
-  url: process.env.REDIS_URL,
-});
-
-// Gestione errori Redis
-redis.on('error', (err) => {
-  console.error('❌ Errore connessione Redis:', err);
-});
-
-let redisReady = false;
-async function getRedis() {
-  if (!redisReady) {
-    await redis.connect();
-    redisReady = true;
-  }
-  return redis;
-}
+// api/logs.js
+import { getRedis, KEYS } from './lib/redis.js';
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const redis = getRedis();
+
   try {
-    const redisClient = await getRedis();
-
-    if (req.method === 'POST') {
-      // Aggiungi un nuovo log
-      const { user, action, details } = req.body || {};
-
-      const newLog = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        user: user || 'Utente sconosciuto',
-        action: action || 'Azione sconosciuta',
-        details: details || '',
-      };
-
-      // Leggi i log esistenti da Redis
-      let logs = [];
-      const existingLogs = await redisClient.get('activity_logs');
-
-      if (existingLogs) {
-        try {
-          logs = JSON.parse(existingLogs);
-        } catch (parseError) {
-          console.warn('⚠️ Impossibile parsare i log esistenti, parto da zero.');
-          logs = [];
-        }
-      }
-
-      // Aggiungi il nuovo log in cima
-      logs.unshift(newLog);
-
-      // Mantieni solo gli ultimi 50
-      if (logs.length > 50) {
-        logs = logs.slice(0, 50);
-      }
-
-      // Salva su Redis
-      await redisClient.set('activity_logs', JSON.stringify(logs));
-
-      return res.status(200).json({ success: true });
-    }
-
-    // GET: restituisce gli ultimi log
     if (req.method === 'GET') {
-      const logsStr = await redisClient.get('activity_logs');
-      const logs = logsStr ? JSON.parse(logsStr) : [];
+      const data = await redis.get(KEYS.ACTIVITY_LOG);
+      const logs = data
+        ? (typeof data === 'string' ? JSON.parse(data) : data)
+        : [];
       return res.status(200).json({ success: true, logs });
     }
 
-    // Metodi non consentiti
+    if (req.method === 'POST') {
+      const newLog = req.body;
+      const currentData = await redis.get(KEYS.ACTIVITY_LOG);
+      let logs = currentData
+        ? (typeof currentData === 'string' ? JSON.parse(currentData) : currentData)
+        : [];
+      logs.unshift(newLog);
+      await redis.set(KEYS.ACTIVITY_LOG, JSON.stringify(logs.slice(0, 50)));
+      return res.status(200).json({ success: true });
+    }
+
     return res.status(405).json({ success: false, error: 'Metodo non consentito' });
   } catch (error) {
-    // 🛡️ Gestione globale degli errori: sempre risposta JSON valida
-    console.error('❌ Errore nell\'API /api/logs:', error.message || error);
-    return res.status(500).json({
-      success: false,
-      error: 'Errore interno del server',
-    });
+    console.error('❌ Errore /api/logs:', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 }
