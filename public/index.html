@@ -3009,7 +3009,7 @@
         }
                 // Registra nel log il cambio di stato
                 logActivity('CHANGE_STATUS', `Stato cambiato a "${newStatus}" per ordine: ${o.displayId}`);
-                
+
                 // Popup Consegna Parziale
                 let currentPartialDeliveryOrderId = null;
         
@@ -5887,32 +5887,33 @@ function resetFiltersToDefault() {
         
         // ===== SISTEMA LOG ATTIVITÀ =====
         
-        function logActivity(action, description, details = {}) {
-            const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
-            
-            const logEntry = {
-                timestamp: new Date().toISOString(),
-                user: currentUser ? currentUser.username : 'Sistema',
-                userName: currentUser ? currentUser.name : 'Sistema',
-                action: action,
-                description: description,
-                details: details
-            };
-            
-            logs.unshift(logEntry); // Aggiungi all'inizio
-            
-            // Mantieni solo ultime 100 (mostriamo 20 ma ne salviamo di più)
-            if (logs.length > 100) {
-                logs.splice(100);
-            }
-            
-            localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
-        }
+        // Registra un'azione nello storico CONDIVISO (su Redis)
+        async function logActivity(action, details = '') {
+            if (!currentUser) return;
+    
+             try {
+               await fetch('/api/logs', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({
+                   user: currentUser.name,
+                   action: action,
+                   details: details
+                })
+             });
+          } catch (error) {
+               console.warn('⚠️ Impossibile salvare il log:', error);
+          }
+       }
         
-        function openActivityLog() {
-            const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
-            const recentLogs = logs.slice(0, 20); // Ultime 20 azioni
-            
+        // Mostra lo storico CONDIVISO da Redis
+async function openActivityLog() {
+    try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        
+        if (data.success && data.logs) {
+            const logs = data.logs.slice(0, 20); // Ultime 20 azioni
             let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" onclick="event.target === this && this.remove()">';
             html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">';
             html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
@@ -5922,8 +5923,8 @@ function resetFiltersToDefault() {
             html += '</h2>';
             html += '<button onclick="this.closest(\'.fixed\').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>';
             html += '</div>';
-            
-            if (recentLogs.length === 0) {
+
+            if (logs.length === 0) {
                 html += '<p class="text-gray-500 text-center py-8">Nessuna attività registrata</p>';
             } else {
                 html += '<div class="overflow-x-auto">';
@@ -5937,50 +5938,38 @@ function resetFiltersToDefault() {
                 html += '</tr>';
                 html += '</thead>';
                 html += '<tbody class="bg-white divide-y divide-gray-200">';
-            
-                recentLogs.forEach(log => {
+
+                const actionColors = {
+                    'CREATE_ORDER': 'bg-green-100 text-green-800',
+                    'EDIT_ORDER': 'bg-blue-100 text-blue-800',
+                    'DELETE_ORDER': 'bg-red-100 text-red-800',
+                    'IMPORT_GOOGLE': 'bg-purple-100 text-purple-800',
+                    'EXPORT_BACKUP': 'bg-teal-100 text-teal-800',
+                    'CREATE_USER': 'bg-green-100 text-green-800',
+                    'DELETE_USER': 'bg-red-100 text-red-800',
+                    'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
+                    'LOGIN': 'bg-blue-100 text-blue-800',
+                    'RESET_DATA': 'bg-red-100 text-red-800'
+                };
+
+                logs.forEach(log => {
                     const date = new Date(log.timestamp);
                     const dateStr = date.toLocaleDateString('it-IT');
                     const timeStr = date.toLocaleTimeString('it-IT');
-                    
-                    const actionColors = {
-                        'CREATE_ORDER': 'bg-green-100 text-green-800',
-                        'EDIT_ORDER': 'bg-blue-100 text-blue-800',
-                        'DELETE_ORDER': 'bg-red-100 text-red-800',
-                        'IMPORT_GOOGLE': 'bg-purple-100 text-purple-800',
-                        'EXPORT_BACKUP': 'bg-teal-100 text-teal-800',
-                        'CREATE_USER': 'bg-green-100 text-green-800',
-                        'DELETE_USER': 'bg-red-100 text-red-800',
-                        'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
-                        'LOGIN': 'bg-blue-100 text-blue-800',
-                        'RESET_DATA': 'bg-red-100 text-red-800'
-                    };
-                    
                     const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
-                    
-                    html += '<tr class="hover:bg-gray-50">';
-                    html += '<td class="px-4 py-3 text-sm text-gray-900">';
-                    html += '<div class="font-bold">' + dateStr + '</div>';
-                    html += '<div class="text-xs text-gray-500">' + timeStr + '</div>';
-                    html += '</td>';
-                    html += '<td class="px-4 py-3 text-sm">';
-                    html += '<div class="font-bold">' + log.userName + '</div>';
-                    html += '<div class="text-xs text-gray-500">' + log.user + '</div>';
-                    html += '</td>';
-                    html += '<td class="px-4 py-3">';
-                    html += '<span class="px-2 py-1 rounded text-xs font-bold ' + actionColor + '">';
-                    html += log.action.replace(/_/g, ' ');
-                    html += '</span>';
-                    html += '</td>';
-                    html += '<td class="px-4 py-3 text-sm text-gray-700">' + log.description + '</td>';
-                    html += '</tr>';
+                    html += `<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${log.user}</td>
+                        <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
+                    </tr>`;
                 });
-            
+
                 html += '</tbody>';
                 html += '</table>';
                 html += '</div>';
             }
-            
+
             html += '<div class="mt-4 pt-4 border-t text-center">';
             html += '<button onclick="clearActivityLog()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold">';
             html += '<i class="fas fa-trash mr-2"></i>Cancella LOG';
@@ -5988,17 +5977,30 @@ function resetFiltersToDefault() {
             html += '</div>';
             html += '</div>';
             html += '</div>';
-            
+
             document.body.insertAdjacentHTML('beforeend', html);
         }
+    } catch (error) {
+        console.error('Errore caricamento log:', error);
+        alert('❌ Impossibile caricare lo storico delle attività.');
+    }
+}
         
-        function clearActivityLog() {
-            if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
-            
-            localStorage.setItem('orderFlowActivityLog', JSON.stringify([]));
-            document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-            showQuickNotification('✅ LOG cancellato', 'success');
-        }
+        async function clearActivityLog() {
+    if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
+    
+    try {
+        await fetch('/api/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'clear' })
+        });
+        document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+        showQuickNotification('✅ LOG cancellato', 'success');
+    } catch (error) {
+        alert('❌ Errore durante la cancellazione del log.');
+    }
+}
         
         // ===== FINE SISTEMA LOG =====
         
