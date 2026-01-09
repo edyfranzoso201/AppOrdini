@@ -2148,21 +2148,21 @@
         }
       // Funzione per registrare un'azione nello storico
        function logActivity(action, description, details = {}) {
-           const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
-           const logEntry = {
-               timestamp: new Date().toISOString(),
-               user: currentUser ? currentUser.username : 'Sistema',
-               userName: currentUser ? currentUser.name : 'Sistema',
-               action: action,
-               description: description,
-               details: details
-           };
-           logs.unshift(logEntry);
-            if (logs.length > 100) {
-               logs.splice(100);
-           }
-           localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
-       }
+        const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
+        const logEntry = {
+        timestamp: new Date().toISOString(),
+        user: currentUser ? currentUser.username : 'Sistema',
+        userName: currentUser ? currentUser.name : 'Sistema',
+        action: action,
+        description: description,
+        details: details
+      };
+        logs.unshift(logEntry);
+        if (logs.length > 100) {
+        logs.splice(100);
+    }
+    localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
+        }
         function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
         return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
         
