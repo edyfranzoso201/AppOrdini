@@ -3971,10 +3971,10 @@
             document.getElementById('modalEmail').value = o.email || '';
             document.getElementById('modalPhone').value = o.phone || '';
             document.getElementById('modalTimestamp').value = o.timestamp || 'Non disponibile';
-            if (order.statusUpdatedAt) {
-           const formatted = new Date(order.statusUpdatedAt).toLocaleString('it-IT');
-           document.getElementById('modalTimestamp').value += ` | Stato: ${formatted}`;
-      }
+            if (o.statusUpdatedAt) {
+            const formatted = new Date(o.statusUpdatedAt).toLocaleString('it-IT');
+            document.getElementById('modalTimestamp').value += ` | Stato: ${formatted}`;
+       }
             o.itemsList.forEach((item, idx) => { tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2 text-xs" style="max-width: 300px; word-wrap: break-word; white-space: normal;">${item.name}</td><td class="p-2 text-center"><input type="text" value="${item.size}" onchange="updateItemSize(${idx}, this.value)" class="border rounded w-20 text-center font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-300 outline-none"></td><td class="p-2 text-center"><button onclick="delItem(${idx})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button></td></tr>`; });
             document.getElementById('itemModal').classList.add('active'); 
         }
