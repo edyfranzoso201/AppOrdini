@@ -1768,7 +1768,9 @@
             alert(`✅ Correzione completata!\n\n🕐 Ordini corretti (-1h): ${correctedCount}\n📊 Totale: ${orders.length}`);
         }
         
-        // Load config
+// Funzione per caricare la configurazione
+async function loadConfig() {
+    try {
         const configRes = await fetch('/api/config');
         if (configRes.ok) {
             const configData = await configRes.json();
@@ -1777,6 +1779,12 @@
                 globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
             }
         }
+    } catch (error) {
+        console.error('❌ Errore caricamento configurazione:', error);
+    }
+}
+// Chiama la funzione
+loadConfig();
         
         // Initialize defaults if empty
         if (globalItems.length === 0) {
