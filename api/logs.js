@@ -1,16 +1,15 @@
-// /pages/api/logs.js o /app/api/logs/route.js (se App Router, la firma cambia)
 import { createClient } from 'redis';
 
 const redis = createClient({
   url: process.env.REDIS_URL,
 });
 
+// Gestione errori Redis
 redis.on('error', (err) => {
   console.error('❌ Errore connessione Redis:', err);
 });
 
 let redisReady = false;
-
 async function getRedis() {
   if (!redisReady) {
     await redis.connect();
@@ -24,6 +23,7 @@ export default async function handler(req, res) {
     const redisClient = await getRedis();
 
     if (req.method === 'POST') {
+      // Aggiungi un nuovo log
       const { user, action, details } = req.body || {};
 
       const newLog = {
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         details: details || '',
       };
 
-      // Leggi i log esistenti
+      // Leggi i log esistenti da Redis
       let logs = [];
       const existingLogs = await redisClient.get('activity_logs');
 
@@ -61,16 +61,17 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
-    // Metodo GET: restituisce i log
+    // GET: restituisce gli ultimi log
     if (req.method === 'GET') {
       const logsStr = await redisClient.get('activity_logs');
       const logs = logsStr ? JSON.parse(logsStr) : [];
       return res.status(200).json({ success: true, logs });
     }
 
-    // Metodi non supportati
+    // Metodi non consentiti
     return res.status(405).json({ success: false, error: 'Metodo non consentito' });
   } catch (error) {
+    // 🛡️ Gestione globale degli errori: sempre risposta JSON valida
     console.error('❌ Errore nell\'API /api/logs:', error.message || error);
     return res.status(500).json({
       success: false,
