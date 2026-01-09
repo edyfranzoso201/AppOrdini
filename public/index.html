@@ -2967,6 +2967,7 @@
             orders.push(newOrder);
             
             logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
+            logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
             
             updateUI(); 
         }
@@ -3006,9 +3007,11 @@
             updateUI(); 
             renderMatrices();
         }
-
-        // Popup Consegna Parziale
-        let currentPartialDeliveryOrderId = null;
+                // Registra nel log il cambio di stato
+                logActivity('CHANGE_STATUS', `Stato cambiato a "${newStatus}" per ordine: ${o.displayId}`);
+                
+                // Popup Consegna Parziale
+                let currentPartialDeliveryOrderId = null;
         
         function openPartialDeliveryPopup(orderId) {
             currentPartialDeliveryOrderId = orderId;
