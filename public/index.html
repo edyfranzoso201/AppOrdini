@@ -5901,34 +5901,39 @@ function resetFiltersToDefault() {
         
         // Registra un'azione nello storico CONDIVISO (su Redis)
         async function logActivity(action, details) {
-  const ignoredActions = ['SAVE', 'AUTOSAVE', 'Salvataggio dati'];
-  if (ignoredActions.includes(action)) return;
+        const ignoredActions = ['SAVE', 'AUTOSAVE', 'Salvataggio dati'];
+        if (ignoredActions.includes(action)) return; // <--- se qui c'è 'Salvataggio dati' NON verrà mai loggato
 
-  const user = typeof currentUser === 'string'
-    ? currentUser
-    : (currentUser && currentUser.username) || 'Amministratore';
+        const user = typeof currentUser === 'string'
+            ? currentUser
+            : (currentUser && currentUser.username) || 'Amministratore';
 
-  try {
-    await fetch('/api/logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user,
-        action,
-        details,
-        timestamp: new Date().toISOString()
-        })
-        });
+         try {
+            await fetch('/api/logs', {
+            method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user,
+                action,
+                details,
+            timestamp: new Date().toISOString()
+            })
+         });
         } catch (e) {
-            console.warn('Errore caricamento log:', e);
+         console.warn('Errore caricamento log:', e);
          }
         }
+
         
         // Mostra lo storico CONDIVISO da Redis
         async function openActivityLog() {
         try {
             const res = await fetch('/api/logs');
             const data = await res.json();
+            if (data.logs && data.logs.length > 0) {
+        console.log('DEBUG LOGS[0]:', JSON.stringify(data.logs[0], null, 2));
+        }
+
         // AGGIUNGI QUESTO
         console.log('DEBUG LOGS:', data.logs && data.logs[0]);
 
