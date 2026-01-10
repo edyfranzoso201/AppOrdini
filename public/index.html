@@ -2959,31 +2959,42 @@
         }
 
         function addNewOrder() {
-            if (!checkPermission('createOrders')) {
-                alert('⚠️ Non hai i permessi per creare nuovi ordini.');
-                return;
-            } 
-            const kitInfo = globalKitTypes['giocatore_completo'] || Object.values(globalKitTypes)[0]; 
-            const newOrder = { id: Date.now(), displayId: generateNewId(true), importKey: null, customer: "Nuovo Ordine", mainSize: "L", sockSize: "43/46", notes: "", itemsList: kitInfo.items.map(n => ({ name: n, size: n.includes("Calzettoni")?"43/46":(n.includes("Borsone")||n.includes("Zaino")||n.includes("Cappellino")||n.includes("Scaldacollo")||n.includes("Guanti")?"UNICA":"L") })), status: 'Nuovo', type: 'Giocatore', kitType: kitInfo.display, linkedId: null, discount: 0, email: "", phone: "", roleOrYear: "" };
-            orders.push(newOrder);
-            
-            logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
-            logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
-            
-            updateUI(); 
-        }
-        function deleteOrder(id) { 
-            if (confirm(`Eliminare?`)) { 
-                const order = orders.find(x => x.id === id);
-                const orderId = order ? order.displayId : 'N/A';
-                
-                orders = orders.filter(x => x.id !== id);
-                
-                logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
-                
-                updateUI(); 
-            } 
-        }
+    if (!checkPermission('createOrders')) {
+        alert('⚠️ Non hai i permessi per creare nuovi ordini.');
+        return;
+    }
+    const kitInfo = globalKitTypes['giocatore_completo'] || Object.values(globalKitTypes)[0];
+
+    const newOrder = {
+        id: Date.now(),
+        displayId: generateNewId(true),
+        importKey: null,
+        customer: "Nuovo Ordine",
+        mainSize: "L",
+        sockSize: "43/46",
+        notes: "",
+        itemsList: kitInfo.items.map(n => ({
+            name: n,
+            size: n.includes("Calzettoni") ? "43/46"
+                 : (n.includes("Borsone") || n.includes("Zaino") || n.includes("Cappellino") || n.includes("Scaldacollo") || n.includes("Guanti") ? "UNICA" : "L")
+        })),
+        status: 'Nuovo',
+        type: 'Giocatore',
+        kitType: kitInfo.display,
+        linkedId: null,
+        discount: 0,
+        email: "",
+        phone: "",
+        roleOrYear: ""
+     };
+
+     orders.push(newOrder);
+
+        // Log solo la creazione
+        logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
+
+        updateUI();
+    }
         
         function handleStatusChange(id, newStatus) {
   const o = orders.find(x => x.id === id);
