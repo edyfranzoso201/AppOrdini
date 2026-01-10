@@ -22,7 +22,6 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
   const { user, action, details, timestamp } = req.body;
 
-  // Costruisci un log "pulito" con timestamp garantito
   const newLog = {
     user,
     action,
@@ -40,7 +39,6 @@ export default async function handler(req, res) {
 
   return res.status(200).json({ success: true });
 }
-
 
     return res.status(405).json({ success: false, error: 'Metodo non consentito' });
   } catch (error) {
