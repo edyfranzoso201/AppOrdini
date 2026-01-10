@@ -6006,12 +6006,11 @@ async function openActivityLog() {
             html += '</div>';
 
             document.body.insertAdjacentHTML('beforeend', html);
+            } catch (error) {
+            console.error('Errore caricamento log:', error);
+            alert('❌ Impossibile caricare lo storico delle attività.');
+            }
         }
-    } catch (error) {
-        console.error('Errore caricamento log:', error);
-        alert('❌ Impossibile caricare lo storico delle attività.');
-    }
-}
         
         async function clearActivityLog() {
     if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
