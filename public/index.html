@@ -5906,7 +5906,7 @@ function resetFiltersToDefault() {
         if (ignoredActions.includes(action)) return;
 
         const user = typeof currentUser === 'string'
-        ? currentUser
+            ? currentUser
             : (currentUser && currentUser.username) || 'Amministratore';
 
         try {
@@ -5917,12 +5917,13 @@ function resetFiltersToDefault() {
                 user,
                 action,
                 details,
-            timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString()
+            })
             });
-        } catch (e) {
-          console.warn('Errore caricamento log:', e);
+            } catch (e) {
+            console.warn('Errore caricamento log:', e);
+            }
         }
-    }
         
         // Mostra lo storico CONDIVISO da Redis
 async function openActivityLog() {
