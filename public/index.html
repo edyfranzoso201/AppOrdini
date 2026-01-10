@@ -5917,18 +5917,20 @@ function resetFiltersToDefault() {
         action,
         details,
         timestamp: new Date().toISOString()
-      })
-    });
-  } catch (e) {
-    console.warn('Errore caricamento log:', e);
-  }
-}
+        })
+        });
+        } catch (e) {
+            console.warn('Errore caricamento log:', e);
+         }
+        }
         
         // Mostra lo storico CONDIVISO da Redis
-async function openActivityLog() {
-  try {
-    const res = await fetch('/api/logs');
-    const data = await res.json();
+        async function openActivityLog() {
+        try {
+            const res = await fetch('/api/logs');
+            const data = await res.json();
+        // AGGIUNGI QUESTO
+        console.log('DEBUG LOGS:', data.logs && data.logs[0]);
 
     if (data.success && data.logs) {
       const logs = data.logs.slice(0, 20); // ultime 20 azioni
