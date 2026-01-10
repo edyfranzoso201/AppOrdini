@@ -5901,27 +5901,28 @@ function resetFiltersToDefault() {
         
         // Registra un'azione nello storico CONDIVISO (su Redis)
         async function logActivity(action, details) {
-  // Azioni da NON loggare nei LOG (salvataggi automatici ecc.)
-  const ignoredActions = ['SAVE', 'AUTOSAVE', 'AUTOSAVE_ORDERS'];
+        // Azioni automatiche che NON vuoi vedere nel log
+        const ignoredActions = ['SAVE', 'AUTOSAVE', 'Salvataggio dati'];
+        if (ignoredActions.includes(action)) return;
 
-  if (ignoredActions.includes(action)) {
-    return; // esci senza chiamare l'API /api/logs
-  }
+        const user = typeof currentUser === 'string'
+        ? currentUser
+            : (currentUser && currentUser.username) || 'Amministratore';
 
-  try {
-    await fetch('/api/logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user: currentUser || 'Sistema',
-        action,
-        details,
-      }),
-    });
-  } catch (e) {
-    console.warn('Errore caricamento log:', e);
-  }
-}
+        try {
+            await fetch('/api/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user,
+                action,
+                details,
+            timestamp: new Date().toISOString()
+            });
+        } catch (e) {
+          console.warn('Errore caricamento log:', e);
+        }
+    }
         
         // Mostra lo storico CONDIVISO da Redis
 async function openActivityLog() {
@@ -5974,20 +5975,36 @@ async function openActivityLog() {
         html += '<tbody class="bg-white divide-y divide-gray-200">';
 
         logs.forEach(log => {
-          const d = log.timestamp ? new Date(log.timestamp) : null;
-          const isValid = d && !isNaN(d.getTime());
-          const dateStr = isValid ? d.toLocaleDateString('it-IT') : '';
-          const timeStr = isValid ? d.toLocaleTimeString('it-IT') : '';
-          const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
+        // Data/Ora
+        let dateStr = '';
+        let timeStr = '';
+        if (log.timestamp) {
+            const d = new Date(log.timestamp);
+            if (!isNaN(d.getTime())) {
+            dateStr = d.toLocaleDateString('it-IT');
+            timeStr = d.toLocaleTimeString('it-IT');
+            }
+        }
 
-          html += `
-            <tr class="hover:bg-gray-50">
-              <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
-              <td class="px-4 py-3 text-sm text-gray-700">${log.user || ''}</td>
-              <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
-              <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
-            </tr>`;
-        });
+  // Utente: se è oggetto, prova a usare proprietà note o JSON
+  let userDisplay = '';
+  if (typeof log.user === 'string') {
+    userDisplay = log.user;
+  } else if (log.user && typeof log.user === 'object') {
+    userDisplay = log.user.name || log.user.username || JSON.stringify(log.user);
+  }
+
+  const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
+
+  html += `
+    <tr class="hover:bg-gray-50">
+      <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
+      <td class="px-4 py-3 text-sm text-gray-700">${userDisplay}</td>
+      <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
+      <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
+    </tr>`;
+});
+
 
         html += '</tbody>';
         html += '</table>';
