@@ -5901,29 +5901,28 @@ function resetFiltersToDefault() {
         
         // Registra un'azione nello storico CONDIVISO (su Redis)
         async function logActivity(action, details) {
-        // Azioni automatiche che NON vuoi vedere nel log
-        const ignoredActions = ['SAVE', 'AUTOSAVE', 'Salvataggio dati'];
-        if (ignoredActions.includes(action)) return;
+  const ignoredActions = ['SAVE', 'AUTOSAVE', 'Salvataggio dati'];
+  if (ignoredActions.includes(action)) return;
 
-        const user = typeof currentUser === 'string'
-            ? currentUser
-            : (currentUser && currentUser.username) || 'Amministratore';
+  const user = typeof currentUser === 'string'
+    ? currentUser
+    : (currentUser && currentUser.username) || 'Amministratore';
 
-        try {
-            await fetch('/api/logs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user,
-                action,
-                details,
-                timestamp: new Date().toISOString()
-            })
-            });
-            } catch (e) {
-            console.warn('Errore caricamento log:', e);
-            }
-        }
+  try {
+    await fetch('/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user,
+        action,
+        details,
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch (e) {
+    console.warn('Errore caricamento log:', e);
+  }
+}
         
         // Mostra lo storico CONDIVISO da Redis
 async function openActivityLog() {
@@ -5976,24 +5975,20 @@ async function openActivityLog() {
         html += '<tbody class="bg-white divide-y divide-gray-200">';
 
         logs.forEach(log => {
-        // Data/Ora
-        let dateStr = '';
-        let timeStr = '';
-        if (log.timestamp) {
-            const d = new Date(log.timestamp);
-            if (!isNaN(d.getTime())) {
-            dateStr = d.toLocaleDateString('it-IT');
-            timeStr = d.toLocaleTimeString('it-IT');
-            }
-        }
+  let dateStr = '';
+  let timeStr = '';
 
-  // Utente: se è oggetto, prova a usare proprietà note o JSON
-  let userDisplay = '';
-  if (typeof log.user === 'string') {
-    userDisplay = log.user;
-  } else if (log.user && typeof log.user === 'object') {
-    userDisplay = log.user.name || log.user.username || JSON.stringify(log.user);
+  if (log.timestamp) {
+    const d = new Date(log.timestamp);
+    if (!isNaN(d.getTime())) {
+      dateStr = d.toLocaleDateString('it-IT');
+      timeStr = d.toLocaleTimeString('it-IT');
+    }
   }
+
+  const userDisplay = typeof log.user === 'string'
+    ? log.user
+    : (log.user && log.user.name) || '';
 
   const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
 
@@ -6005,7 +6000,6 @@ async function openActivityLog() {
       <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
     </tr>`;
 });
-
 
         html += '</tbody>';
         html += '</table>';
