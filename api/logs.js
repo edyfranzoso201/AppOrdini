@@ -20,15 +20,27 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const newLog = req.body;
-      const currentData = await redis.get(KEYS.ACTIVITY_LOG);
-      let logs = currentData
-        ? (typeof currentData === 'string' ? JSON.parse(currentData) : currentData)
-        : [];
-      logs.unshift(newLog);
-      await redis.set(KEYS.ACTIVITY_LOG, JSON.stringify(logs.slice(0, 50)));
-      return res.status(200).json({ success: true });
-    }
+  const { user, action, details, timestamp } = req.body;
+
+  // Costruisci un log "pulito" con timestamp garantito
+  const newLog = {
+    user,
+    action,
+    details,
+    timestamp: timestamp || new Date().toISOString()
+  };
+
+  const currentData = await redis.get(KEYS.ACTIVITY_LOG);
+  let logs = currentData
+    ? (typeof currentData === 'string' ? JSON.parse(currentData) : currentData)
+    : [];
+
+  logs.unshift(newLog);
+  await redis.set(KEYS.ACTIVITY_LOG, JSON.stringify(logs.slice(0, 50)));
+
+  return res.status(200).json({ success: true });
+}
+
 
     return res.status(405).json({ success: false, error: 'Metodo non consentito' });
   } catch (error) {
