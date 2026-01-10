@@ -5900,23 +5900,28 @@ function resetFiltersToDefault() {
         // ===== SISTEMA LOG ATTIVITÀ =====
         
         // Registra un'azione nello storico CONDIVISO (su Redis)
-        async function logActivity(action, details = '') {
-            if (!currentUser) return;
-    
-             try {
-               await fetch('/api/logs', {
-                   method: 'POST',
-                   headers: { 'Content-Type': 'application/json' },
-                   body: JSON.stringify({
-                   user: currentUser.name,
-                   action: action,
-                   details: details
-                })
-             });
-          } catch (error) {
-               console.warn('⚠️ Impossibile salvare il log:', error);
-          }
-       }
+        async function logActivity(action, details) {
+  // Azioni da NON loggare nei LOG (salvataggi automatici ecc.)
+  const ignoredActions = ['SAVE', 'AUTOSAVE', 'AUTOSAVE_ORDERS'];
+
+  if (ignoredActions.includes(action)) {
+    return; // esci senza chiamare l'API /api/logs
+  }
+
+  try {
+    await fetch('/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user: currentUser || 'Sistema',
+        action,
+        details,
+      }),
+    });
+  } catch (e) {
+    console.warn('Errore caricamento log:', e);
+  }
+}
         
         // Mostra lo storico CONDIVISO da Redis
 async function openActivityLog() {
