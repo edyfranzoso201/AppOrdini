@@ -5975,31 +5975,40 @@ async function openActivityLog() {
         html += '<tbody class="bg-white divide-y divide-gray-200">';
 
         logs.forEach(log => {
-  let dateStr = '';
-  let timeStr = '';
+        // Leggi il campo data: prova in quest'ordine
+        const rawTs = log.timestamp || log.time || log.date || log.createdAt;
 
-  if (log.timestamp) {
-    const d = new Date(log.timestamp);
-    if (!isNaN(d.getTime())) {
-      dateStr = d.toLocaleDateString('it-IT');
-      timeStr = d.toLocaleTimeString('it-IT');
-    }
-  }
+        let dateStr = '';
+        let timeStr = '';
 
-  const userDisplay = typeof log.user === 'string'
-    ? log.user
-    : (log.user && log.user.name) || '';
+        if (rawTs) {
+         const d = new Date(rawTs);
+            if (!isNaN(d.getTime())) {
+            dateStr = d.toLocaleDateString('it-IT');
+            timeStr = d.toLocaleTimeString('it-IT');
+            }
+        }
 
-  const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
+        // Utente come stringa “pulita”
+        let userDisplay = '';
+        if (typeof log.user === 'string') {
+         userDisplay = log.user;
+         } else if (log.user && typeof log.user === 'object') {
+            userDisplay = log.user.name || log.user.username || 'Amministratore';
+        } else {
+            userDisplay = 'Amministratore';
+        }
 
-  html += `
-    <tr class="hover:bg-gray-50">
-      <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
-      <td class="px-4 py-3 text-sm text-gray-700">${userDisplay}</td>
-      <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
-      <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
-    </tr>`;
-});
+        const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
+
+         html += `
+            <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${userDisplay}</td>
+            <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
+            </tr>`;
+        });
 
         html += '</tbody>';
         html += '</table>';
