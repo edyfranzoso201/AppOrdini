@@ -5925,92 +5925,108 @@ function resetFiltersToDefault() {
         
         // Mostra lo storico CONDIVISO da Redis
 async function openActivityLog() {
-    try {
-        const res = await fetch('/api/logs');
-        const data = await res.json();
-        function formatLogDate(ts) {
-    if (!ts) return '';
-    const d = new Date(ts);
-    return isNaN(d.getTime()) ? '' : d.toLocaleString('it-IT');
+  try {
+    const res = await fetch('/api/logs');
+    const data = await res.json();
+
+    if (data.success && data.logs) {
+      const logs = data.logs.slice(0, 20); // ultime 20 azioni
+
+      let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">';
+      html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">';
+      html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
+      html += '<h2 class="text-2xl font-bold text-gray-900">';
+      html += '<i class="fas fa-history text-blue-600 mr-2"></i>';
+      html += 'LOG Attività (Ultime 20 Azioni)';
+      html += '</h2>';
+      html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\">";
+      html += '<i class="fas fa-times text-2xl"></i>';
+      html += '</button>';
+      html += '</div>';
+
+      if (logs.length === 0) {
+        html += '<p class="text-gray-500 text-center py-8">Nessuna attività registrata</p>';
+      } else {
+        const actionColors = {
+          'CREATE_ORDER': 'bg-green-100 text-green-800',
+          'EDIT_ORDER': 'bg-blue-100 text-blue-800',
+          'DELETE_ORDER': 'bg-red-100 text-red-800',
+          'IMPORT_GOOGLE': 'bg-purple-100 text-purple-800',
+          'EXPORT_BACKUP': 'bg-teal-100 text-teal-800',
+          'CREATE_USER': 'bg-green-100 text-green-800',
+          'DELETE_USER': 'bg-red-100 text-red-800',
+          'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
+          'LOGIN': 'bg-blue-100 text-blue-800',
+          'RESET_DATA': 'bg-red-100 text-red-800',
+          'CHANGESTATUS': 'bg-indigo-100 text-indigo-800'
+        };
+
+        html += '<div class="overflow-x-auto">';
+        html += '<table class="min-w-full divide-y divide-gray-200">';
+        html += '<thead class="bg-gray-50">';
+        html += '<tr>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data/Ora</th>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Utente</th>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Azione</th>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Descrizione</th>';
+        html += '</tr>';
+        html += '</thead>';
+        html += '<tbody class="bg-white divide-y divide-gray-200">';
+
+        logs.forEach(log => {
+          const d = log.timestamp ? new Date(log.timestamp) : null;
+          const isValid = d && !isNaN(d.getTime());
+          const dateStr = isValid ? d.toLocaleDateString('it-IT') : '';
+          const timeStr = isValid ? d.toLocaleTimeString('it-IT') : '';
+          const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
+
+          html += `
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
+              <td class="px-4 py-3 text-sm text-gray-700">${log.user || ''}</td>
+              <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
+              <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
+            </tr>`;
+        });
+
+        html += '</tbody>';
+        html += '</table>';
+        html += '</div>';
+
+        html += '<div class="mt-4 pt-4 border-t text-center">';
+        html += '<button onclick="clearActivityLog()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold">';
+        html += '<i class="fas fa-trash mr-2"></i>Cancella LOG';
+        html += '</button>';
+        html += '</div>';
+      }
+
+      html += '</div>'; // chiude contenitore bianco
+      html += '</div>'; // chiude overlay
+
+      document.body.insertAdjacentHTML('beforeend', html);
     }
-        if (data.success && data.logs) {
-            const logs = data.logs.slice(0, 50); // Ultime 50 azioni
-            let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" onclick="event.target === this && this.remove()">';
-            html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">';
-            html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
-            html += '<h2 class="text-2xl font-bold text-gray-900">';
-            html += '<i class="fas fa-history text-blue-600 mr-2"></i>';
-            html += 'LOG Attività (Ultime 20 Azioni)';
-            html += '</h2>';
+  } catch (error) {
+    console.error('Errore caricamento log:', error);
+    alert('❌ Impossibile caricare lo storico delle attività.');
+  }
+}
 
-            // Bottone "Svuota"
-            html += '<div class="flex items-center gap-2">';
-            html += '<button onclick="clearLogs()" class="text-xs px-3 py-1 rounded bg-red-600 text-white font-bold hover:bg-red-700">Svuota log</button>';
+async function clearActivityLog() {
+  if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
 
-            // Bottone chiusura
-            html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\">";
-            html += '<i class="fas fa-times text-2xl"></i>';
-            html += '</button>';
-            html += '</div>';
-
-            if (logs.length === 0) {
-                html += '<p class="text-gray-500 text-center py-8">Nessuna attività registrata</p>';
-            } else {
-                html += '<div class="overflow-x-auto">';
-                html += '<table class="min-w-full divide-y divide-gray-200">';
-                html += '<thead class="bg-gray-50">';
-                html += '<tr>';
-                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data/Ora</th>';
-                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Utente</th>';
-                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Azione</th>';
-                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Descrizione</th>';
-                html += '</tr>';
-                html += '</thead>';
-                html += '<tbody class="bg-white divide-y divide-gray-200">';
-
-                const actionColors = {
-                    'CREATE_ORDER': 'bg-green-100 text-green-800',
-                    'EDIT_ORDER': 'bg-blue-100 text-blue-800',
-                    'DELETE_ORDER': 'bg-red-100 text-red-800',
-                    'IMPORT_GOOGLE': 'bg-purple-100 text-purple-800',
-                    'EXPORT_BACKUP': 'bg-teal-100 text-teal-800',
-                    'CREATE_USER': 'bg-green-100 text-green-800',
-                    'DELETE_USER': 'bg-red-100 text-red-800',
-                    'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
-                    'LOGIN': 'bg-blue-100 text-blue-800',
-                    'RESET_DATA': 'bg-red-100 text-red-800'
-                };
-
-                logs.forEach(log => {
-                const d = log.timestamp ? new Date(log.timestamp) : null;
-                const isValid = d && !isNaN(d.getTime());
-                const dateStr = isValid ? d.toLocaleDateString('it-IT') : '';
-                const timeStr = isValid ? d.toLocaleTimeString('it-IT') : '';
-                const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
-
-                 html += `
-                    <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${log.user || ''}</td>
-                    <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
-                    </tr>`;
-                });
-
-            html += '<div class="mt-4 pt-4 border-t text-center">';
-            html += '<button onclick="clearActivityLog()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold">';
-            html += '<i class="fas fa-trash mr-2"></i>Cancella LOG';
-            html += '</button>';
-            html += '</div>';
-            html += '</div>';
-            html += '</div>';
-
-            document.body.insertAdjacentHTML('beforeend', html);
-            } catch (error) {
-            console.error('Errore caricamento log:', error);
-            alert('❌ Impossibile caricare lo storico delle attività.');
-            }
-        }
+  try {
+    // per ora usa l'azione 'clear' via POST, come da tuo server
+    await fetch('/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clear' })
+    });
+    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+    showQuickNotification('✅ LOG cancellato', 'success');
+  } catch (error) {
+    alert('❌ Errore durante la cancellazione del log.');
+  }
+}
         
         async function clearActivityLog() {
     if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
