@@ -2975,8 +2975,9 @@
         notes: "",
         itemsList: kitInfo.items.map(n => ({
             name: n,
-            size: n.includes("Calzettoni") ? "43/46"
-                 : (n.includes("Borsone") || n.includes("Zaino") || n.includes("Cappellino") || n.includes("Scaldacollo") || n.includes("Guanti") ? "UNICA" : "L")
+            size: n.includes("Calzettoni")
+                ? "43/46"
+                : (n.includes("Borsone") || n.includes("Zaino") || n.includes("Cappellino") || n.includes("Scaldacollo") || n.includes("Guanti") ? "UNICA" : "L")
         })),
         status: 'Nuovo',
         type: 'Giocatore',
@@ -2986,49 +2987,32 @@
         email: "",
         phone: "",
         roleOrYear: ""
-     };
+    };
 
-     orders.push(newOrder);
+    orders.push(newOrder);
 
-        // Log solo la creazione
-        logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
+    logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
+
+    updateUI();
+}
+
+function deleteOrder(id) {
+    if (confirm('Eliminare?')) {
+        const order = orders.find(x => x.id === id);
+        const orderId = order ? order.displayId : 'N/A';
+
+        orders = orders.filter(x => x.id !== id);
+
+        logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
 
         updateUI();
     }
-        
-        function handleStatusChange(id, newStatus) {
-  const o = orders.find(x => x.id === id);
-  if (!o) return;
-
-  if (newStatus === 'Ordine trasferito ad altro ID') {
-    const t = prompt('Inserisci ID Destinazione es 2026A5');
-    if (t) {
-      o.status = newStatus;
-      o.linkedId = t.trim().toUpperCase();
-    } else {
-      return;
-    }
-  } else if (newStatus === 'Consegna Parziale') {
-    // Apri popup per inserire cosa manca
-    openPartialDeliveryPopup(id);
-  } else {
-    o.status = newStatus;
-    o.linkedId = null;
-    o.partialDeliveryNote = null;
-
-    // Data/ora ultimo cambio stato
-    o.statusUpdatedAt = new Date().toISOString();
-
-    // 👉 AGGIUNGI QUESTA RIGA: data/ora ultimo cambio stato
-    o.statusUpdatedAt = new Date().toISOString();
-
-    updateUI();
-    renderMatrices();
-
-    // LOG già presente (mantienilo)
-    logActivity('CHANGESTATUS', `Stato cambiato a ${newStatus} per ordine ${o.displayId}`);
-  }
 }
+
+        // Rende le funzioni disponibili agli onclick nel DOM
+        window.addNewOrder = addNewOrder;
+        window.deleteOrder = deleteOrder;
+
                 // Popup Consegna Parziale
                 let currentPartialDeliveryOrderId = null;
         
