@@ -313,9 +313,9 @@
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
-                    <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" placeholder="Inserisci password">
+                    <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" placeholder="Inserisci password" onkeypress="if(event.key==='Enter') performLogin()">
                 </div>
-                <button id="loginButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition">
+                <button onclick="performLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-bold transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>Accedi
                 </button>
                 <div id="loginError" class="mt-4 text-red-600 text-sm text-center hidden"></div>
@@ -340,10 +340,13 @@
         <div class="flex gap-1 items-center">
             <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
                 <i class="fas fa-users"></i>
-                <button onclick="openActivityLog()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
-                <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
             </button>
-            <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
+            <button onclick="showActivityLogModal()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-bold transition text-sm flex items-center gap-2">
+                    <i class="fas fa-clipboard-list"></i>
+                    Log Attività
+                </button>
+                
+                <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
             <button onclick="clearAllOrders()" id="btnReset" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-eraser"></i></button>
@@ -366,14 +369,14 @@
             <div class="bg-white rounded shadow overflow-hidden h-full flex flex-col">
                 <div class="p-3 border-b bg-gray-50 flex flex-col gap-2">
                     <h2 class="font-bold text-blue-900 text-sm">Filtri & Ricerca</h2>
-                    <div id="filtersContainer" class="flex gap-2 flex-wrap">
+                    <div class="flex gap-2 flex-wrap">
                         <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Cerca Cliente..." class="text-sm border rounded px-3 py-1 w-48">
                         <select id="sortOrder" onchange="renderTable()" class="text-sm border rounded px-2 font-bold bg-gray-50 text-blue-900">
                             <option value="asc">ID Crescente (1..10)</option>
                             <option value="desc">ID Decrescente (10..1)</option>
                         </select>
                         <select id="filterStatus" onchange="renderTable()" class="text-sm border rounded px-2">
-                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Pagato">Pagato</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegna Parziale">Consegna Parziale</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
+                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Pagato">Pagato</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
                         </select>
                         <input type="text" id="filterRoleYear" onkeyup="renderTable()" placeholder="Anno/Ruolo..." class="text-sm border rounded px-3 py-1 w-32">
                         <select id="filterSize" onchange="renderTable()" class="text-sm border rounded px-2">
@@ -868,46 +871,6 @@
         </div>
     </div>
 
-    <!-- Popup Consegna Parziale -->
-    <div id="partialDeliveryPopup" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fas fa-box-open text-amber-600"></i>
-                    Consegna Parziale - Cosa Manca?
-                </h2>
-                <button onclick="closePartialDeliveryPopup()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-            
-            <div class="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-                <p class="text-sm text-amber-800">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    <strong>Nota:</strong> Inserisci l'abbigliamento mancante per questa consegna parziale. 
-                    Esempio: "Maglia 2XL, Pantaloni M"
-                </p>
-            </div>
-            
-            <div class="mb-4">
-                <label class="block text-sm font-bold text-gray-700 mb-2">📝 Articoli Mancanti</label>
-                <textarea id="partialDeliveryNote" rows="5" class="w-full border rounded p-3 text-sm focus:ring-2 focus:ring-amber-300 outline-none resize-none" placeholder="Es: Maglia M, Pantaloncini L, Calze 39/42..."></textarea>
-                <p class="text-xs text-gray-500 mt-1">
-                    💡 Puoi anche specificare quantità: "2x Maglia M, 1x Pantaloni L"
-                </p>
-            </div>
-            
-            <div class="flex gap-2 justify-end">
-                <button onclick="closePartialDeliveryPopup()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 font-bold transition">
-                    Annulla
-                </button>
-                <button onclick="savePartialDeliveryNote()" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 font-bold transition">
-                    <i class="fas fa-save mr-2"></i>Salva Nota
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script>
         const SIZE_ORDER = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "6 ANNI", "8 ANNI", "10 ANNI", "12 ANNI", "14 ANNI", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "03 BIMBO", "05 ADULTO", "UNICA"];
         const SOCKS_BLUE_DEFAULT = "Calzettoni di Allenamento WULGAR Blu Marine 618 (7€)";
@@ -1042,7 +1005,6 @@
             { value: 'In Lavorazione', label: 'In Lavorazione', color: 'bg-blue-100 text-blue-800' }, 
             { value: 'Pagato', label: 'Pagato', color: 'bg-green-700 text-white' }, 
             { value: 'Ordine Arrivato', label: 'Arrivato', color: 'bg-orange-100 text-orange-800' },
-            { value: 'Consegna Parziale', label: 'Consegna Parziale', color: 'bg-amber-100 text-amber-800' },
             { value: 'Consegnato', label: 'Consegnato', color: 'bg-gray-700 text-white' },
             { value: 'Scomposto', label: 'Scomposto', color: 'bg-teal-100 text-teal-800' },
             { value: 'Ordine annullato', label: 'Annullato', color: 'bg-red-100 text-red-800' }, 
@@ -1598,7 +1560,6 @@
                     
                     // Aggiorna la visualizzazione
                     updateUI();
-                    resetFiltersToDefault();
                 })
                 .catch(error => {
                     console.error('❌ Errore durante l\'importazione:', error);
@@ -1772,172 +1733,17 @@
         }
         
         async function loadData() {
-    try {
-        // Load orders
-        const ordersRes = await fetch('/api/orders');
-        if (ordersRes.ok) {
-            const ordersData = await ordersRes.json();
-            if (ordersData.success && ordersData.data) {
-                orders = ordersData.data.orders || [];
-                lastOrderId = ordersData.data.lastOrderId || 0;
-                currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-            }
-        }
-        
-        // Load inventory
-        const invRes = await fetch('/api/inventory');
-        if (invRes.ok) {
-            const invData = await invRes.json();
-            if (invData.success && invData.data) {
-                inventory = invData.data.inventory || {};
-            }
-        }
-        
-        // Load config
-        const configRes = await fetch('/api/config');
-        if (configRes.ok) {
-            const configData = await configRes.json();
-            if (configData.success && configData.data) {
-                globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
-                globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-            }
-        }
-        
-        // Initialize defaults if empty
-        if (globalItems.length === 0) {
-            globalItems = [...DEFAULT_ITEMS_LIST];
-        }
-        if (Object.keys(globalKitTypes).length === 0) {
-            globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-        }
-        
-        // Repair import keys
-        repairAllImportKeys();
-        renderKitFilterOptions();
-        await saveData();
-    } catch (error) {
-        console.error('Error loading data:', error);
-        alert('Errore nel caricamento dei dati');
-    }
-}
-        
-        // ===== SISTEMA NOTIFICHE =====
-        function showQuickNotification(message, type = 'info') {
-            // Crea elemento notifica
-            const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 z-[10000] px-6 py-3 rounded-lg shadow-lg text-white font-bold flex items-center gap-2 transition-all';
-            
-            // Colore in base al tipo
-            const colors = {
-                'success': 'bg-green-600',
-                'error': 'bg-red-600',
-                'warning': 'bg-yellow-600',
-                'info': 'bg-blue-600'
-            };
-            notification.classList.add(colors[type] || colors.info);
-            
-            // Icona in base al tipo
-            const icons = {
-                'success': '✅',
-                'error': '❌',
-                'warning': '⚠️',
-                'info': 'ℹ️'
-            };
-            
-            notification.innerHTML = `
-                <span class="text-xl">${icons[type] || icons.info}</span>
-                <span>${message}</span>
-            `;
-            
-            // Aggiungi al body
-            document.body.appendChild(notification);
-            
-            // Animazione entrata
-            setTimeout(() => {
-                notification.style.transform = 'translateX(0)';
-                notification.style.opacity = '1';
-            }, 10);
-            
-            // Rimuovi dopo 3 secondi
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transform = 'translateX(100%)';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-        
-        // ===== SISTEMA AUTO-REFRESH =====
-        let autoRefreshInterval = null;
-        let lastDataHash = null;
-        
-       // Calcola un hash semplice dei dati per rilevare modifiche
-       function getDataHash() {
-         return JSON.stringify({
-           ordersCount: orders.length,
-           lastOrderId: lastOrderId,
-           ordersData: orders.map(o => ({
-             id: o.id,
-             status: o.status,
-             customer: o.customer,
-             kitType: o.kitType,
-             mainSize: o.mainSize,
-             sockSize: o.sockSize,
-             notes: o.notes,
-             itemsCount: o.itemsList?.length || 0,
-             linkedId: o.linkedId,
-             partialDeliveryNote: o.partialDeliveryNote
-           })),
-           inventoryKeys: Object.keys(inventory).sort().join('|')
-         });
-       }
-        
-        // Funzione di auto-refresh silenziosa
-        async function autoRefreshData() {
             try {
-                // Salva posizione scroll
-                const scrollPos = window.scrollY;
-                
-                // Carica dati senza chiamare saveData
                 const ordersRes = await fetch('/api/orders');
                 if (ordersRes.ok) {
                     const ordersData = await ordersRes.json();
                     if (ordersData.success && ordersData.data) {
-                        const newHash = JSON.stringify({
-                            ordersCount: ordersData.data.orders?.length || 0,
-                            lastOrderId: ordersData.data.lastOrderId || 0,
-                            ordersData: (ordersData.data.orders || []).map(o => ({
-                                id: o.id,
-                                status: o.status,
-                                itemsCount: o.itemsList?.length || 0
-                            }))
-                        });
-                        
-                        // Controlla se ci sono modifiche
-                        if (lastDataHash && newHash !== lastDataHash) {
-                            console.log('🔄 Dati aggiornati da altro utente');
-                            
-                            // Aggiorna i dati
-                            orders = ordersData.data.orders || [];
-                            lastOrderId = ordersData.data.lastOrderId || 0;
-                            currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                            highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-                            
-                            // Re-render UI
-                            updateUI();
-                            
-                            // Mostra notifica
-                            showQuickNotification('🔄 Dati aggiornati', 'info');
-                            
-                            // Ripristina scroll
-                            setTimeout(() => window.scrollTo(0, scrollPos), 100);
-                        }
-                        
-                        lastDataHash = newHash;
+                        orders = ordersData.data.orders || [];
+                        lastOrderId = ordersData.data.lastOrderId || 0;
+                        currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                        highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
                     }
                 }
-                
-                // Carica anche inventory
                 const invRes = await fetch('/api/inventory');
                 if (invRes.ok) {
                     const invData = await invRes.json();
@@ -1945,168 +1751,27 @@
                         inventory = invData.data.inventory || {};
                     }
                 }
-                
+                const configRes = await fetch('/api/config');
+                if (configRes.ok) {
+                    const configData = await configRes.json();
+                    if (configData.success && configData.data) {
+                        globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
+                        globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                    }
+                }
+                if (globalItems.length === 0) globalItems = [...DEFAULT_ITEMS_LIST];
+                if (Object.keys(globalKitTypes).length === 0) globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                repairAllImportKeys();
+                renderKitFilterOptions();
+                await saveData();
             } catch (error) {
-                console.warn('⚠️ Auto-refresh error:', error);
+                console.error('Error loading data:', error);
+                alert('Errore nel caricamento dei dati');
             }
         }
-        
-        // Avvia auto-refresh
-        function startAutoRefresh() {
-            // Ferma eventuale refresh precedente
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            
-            // Inizializza hash
-            lastDataHash = getDataHash();
-            
-            // Avvia polling ogni 30 secondi
-            autoRefreshInterval = setInterval(autoRefreshData, 30000);
-            console.log('✅ Auto-refresh attivo (ogni 30 secondi)');
-        }
-        
-        // Ferma auto-refresh
-        function stopAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
-                console.log('⏸️ Auto-refresh fermato');
-            }
-        }
-        
-        // ===== FINE SISTEMA AUTO-REFRESH =====
-        
-        // NUOVA FUNZIONE: Ripara tutti gli importKey per evitare duplicati all'importazione
-        function repairAllImportKeys() {
-            let repairedCount = 0;
-            orders.forEach(o => {
-                if (o.timestamp) {
-                    const oldKey = o.importKey;
-                    // USA TIMESTAMP ESATTO (NON arrotondare)
-                    o.importKey = o.timestamp;
-                    if (oldKey !== o.importKey) {
-                        repairedCount++;
-                    }
-                } else if (o.displayId && !o.importKey) {
-                    // Se non ha timestamp, usa displayId come fallback
-                    o.importKey = o.displayId;
-                }
-            });
-            
-            if (repairedCount > 0) {
-                console.log(`🔧 Riparati automaticamente ${repairedCount} importKey al caricamento`);
-            }
-        }
-        
-        // FUNZIONE HELPER: Normalizza qualsiasi timestamp al formato YYYY-MM-DD HH:mm:00.000
-        function normalizeTimestampToMinute(timestamp) {
-            if (!timestamp || typeof timestamp !== 'string') {
-                return timestamp;
-            }
-            
-            // Formato 1: YYYY-MM-DD HH:mm:ss.ms → YYYY-MM-DD HH:mm:00.000
-            let match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):\d{2}\.\d{3}$/);
-            if (match) {
-                return match[1] + ':00.000';
-            }
-            
-            // Formato 2: YYYY-MM-DD HH:mm:ss (senza millisecondi) → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):\d{2}$/);
-            if (match) {
-                return match[1] + ':00.000';
-            }
-            
-            // Formato 3: DD/MM/YYYY HH.mm.ss → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2})\.(\d{2})\.\d{2}$/);
-            if (match) {
-                const day = match[1];
-                const month = match[2];
-                const year = match[3];
-                const hour = match[4].padStart(2, '0');
-                const minute = match[5];
-                return `${year}-${month}-${day} ${hour}:${minute}:00.000`;
-            }
-            
-            // Formato 4: DD/MM/YYYY HH:mm:ss → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2}):\d{2}$/);
-            if (match) {
-                const day = match[1];
-                const month = match[2];
-                const year = match[3];
-                const hour = match[4].padStart(2, '0');
-                const minute = match[5];
-                return `${year}-${month}-${day} ${hour}:${minute}:00.000`;
-            }
-            
-            // Formato 5: Già normalizzato YYYY-MM-DD HH:mm:00.000 → mantieni così
-            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):00\.000$/);
-            if (match) {
-                return timestamp; // Già corretto
-            }
-            
-            // Formato 6: YYYY-MM-DD HH:mm (senza secondi) → YYYY-MM-DD HH:mm:00.000
-            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})$/);
-            if (match) {
-                return match[1] + ':00.000';
-            }
-            
-            // Se non matcha nessun pattern, prova a estrarre almeno YYYY-MM-DD HH:mm
-            match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
-            if (match) {
-                return `${match[1]}-${match[2]}-${match[3]} ${match[4]}:${match[5]}:00.000`;
-            }
-            
-            // Fallback: restituisci così com'è
-            console.warn(`⚠️ Timestamp non riconosciuto: "${timestamp}"`);
-            return timestamp;
-        }
-        
-        // NUOVA FUNZIONE: Riparazione manuale degli importKey (con messaggio)
-        function manualRepairImportKeys() {
-            if (!confirm('🔧 RIPARA IMPORTKEY\n\nQuesta funzione aggiorna tutti gli importKey per evitare duplicati durante l\'importazione.\n\nUSA IL TIMESTAMP ESATTO (mantiene secondi e millisecondi).\n\nContinuare?')) {
-                return;
-            }
-            
-            let repairedCount = 0;
-            let noTimestampCount = 0;
-            
-            orders.forEach(o => {
-                if (o.timestamp) {
-                    const oldKey = o.importKey;
-                    
-                    // USA TIMESTAMP ESATTO (NON arrotondare)
-                    o.importKey = o.timestamp;
-                    
-                    if (oldKey !== o.importKey) {
-                        repairedCount++;
-                    }
-                } else if (o.displayId && !o.importKey) {
-                    // Se non ha timestamp, usa displayId come fallback
-                    o.importKey = o.displayId;
-                    noTimestampCount++;
-                }
-            });
-            
-            saveData();
-            
-            let msg = `✅ RIPARAZIONE COMPLETATA!\n\n`;
-            msg += `📊 Totale ordini: ${orders.length}\n`;
-            msg += `🔧 ImportKey riparati: ${repairedCount}\n`;
-            if (noTimestampCount > 0) {
-                msg += `⚠️ Ordini senza timestamp (usato displayId): ${noTimestampCount}\n`;
-            }
-            msg += `\n✅ Tutti gli importKey ora usano il timestamp ESATTO.\n`;
-            msg += `(secondi e millisecondi mantenuti)\n`;
-            msg += `Esempio: 2025-09-22 14:12:38.000 rimane così\n\n`;
-            msg += `I prossimi import non dovrebbero creare duplicati.`;
-            
-            alert(msg);
-        }
-        
+
         async function saveData() {
             try {
-                // Save orders
                 await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2118,10 +1783,7 @@
                         highlightedSizeCells
                     })
                 });
-                // Registra nel log
-                logActivity('Salvataggio dati', `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`);
                 
-                // Save inventory
                 await fetch('/api/inventory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2131,7 +1793,6 @@
                     })
                 });
                 
-                // Save config
                 await fetch('/api/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2147,54 +1808,124 @@
                 console.error('Error saving data:', error);
             }
         }
-      // Funzione per registrare un'azione nello storico
-       function logActivity(action, description, details = {}) {
-        const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
-        const logEntry = {
-        timestamp: new Date().toISOString(),
-        user: currentUser ? currentUser.username : 'Sistema',
-        userName: currentUser ? currentUser.name : 'Sistema',
-        action: action,
-        description: description,
-        details: details
-      };
-        logs.unshift(logEntry);
-        if (logs.length > 100) {
-        logs.splice(100);
-    }
-    localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
-        }
-        function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
-        return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
-        
-        function updatePrefixAndID() { 
-            const inputEl = document.getElementById('startPrefixInput');
-            const input = inputEl.value.trim(); 
-            if(!input) { inputEl.value = ''; return; }
-            const match = input.match(/^(\d{4}[A]?_)((\d+))$/i);
-            if(match){ 
-                const newPrefix=match[1].toUpperCase();
-                const newStartId=parseInt(match[2]); 
-                if(newPrefix!==currentPrefix){ currentPrefix=newPrefix; lastOrderId=newStartId-1; alert(`Nuovo Prefisso: ${currentPrefix} impostato.`); } 
-                else if(newStartId-1>lastOrderId){ lastOrderId=newStartId-1; alert(`ID Sequenza aggiornato.`); } 
-                else { alert(`Nessuna modifica.`); }
-                saveData(); inputEl.value = '';
-            } else { alert('ERRORE: Formato ID non valido.'); }
+
+        // ============================================
+        // ACTIVITY LOG FUNCTIONS
+        // ============================================
+        async function logActivity(type, message, orderId = null, details = null) {
+            try {
+                await fetch('/api/activity-log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'add',
+                        type: type,
+                        message: message,
+                        user: currentUser ? currentUser.username : 'System',
+                        orderId: orderId,
+                        details: details
+                    })
+                });
+            } catch (error) {
+                console.error('Error logging activity:', error);
+            }
         }
 
-        function updateOrderType(id, newType) {
-            const o = orders.find(x => x.id === id);
-            if (!o) return;
-            o.type = newType;
-            updateUI();
+        async function loadActivityLog() {
+            try {
+                const response = await fetch('/api/activity-log');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        return data.data || [];
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading activity log:', error);
+            }
+            return [];
         }
-        
-        function updateContactInfo(field, val) {
-            const o = orders.find(x => x.id === currentEditId);
-            if (!o) return;
-            if (field === 'email') o.email = val.trim();
-            if (field === 'phone') o.phone = val.trim();
-            saveData();
+
+        async function clearActivityLog() {
+            if (!confirm('Sei sicuro di voler cancellare tutto il log delle attività?')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/activity-log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'clear' })
+                });
+                if (response.ok) {
+                    alert('Log cancellato con successo!');
+                    showActivityLogModal();
+                }
+            } catch (error) {
+                console.error('Error clearing log:', error);
+                alert('Errore durante la cancellazione del log');
+            }
+        }
+
+        async function showActivityLogModal() {
+            const logs = await loadActivityLog();
+            let logsHTML = '';
+            if (logs.length === 0) {
+                logsHTML = '<div class="text-center py-8 text-gray-500">Nessuna attività registrata</div>';
+            } else {
+                logsHTML = '<div class="overflow-x-auto"><table class="w-full"><thead class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white sticky top-0"><tr><th class="px-3 py-2 text-left text-xs">Data/Ora</th><th class="px-3 py-2 text-left text-xs">Tipo</th><th class="px-3 py-2 text-left text-xs">Utente</th><th class="px-3 py-2 text-left text-xs">Messaggio</th><th class="px-3 py-2 text-left text-xs">ID Ordine</th></tr></thead><tbody>';
+                logs.forEach((log, index) => {
+                    const typeColors = {
+                        'CREATE': 'bg-green-100 text-green-800',
+                        'UPDATE': 'bg-blue-100 text-blue-800',
+                        'DELETE': 'bg-red-100 text-red-800',
+                        'STATUS_CHANGE': 'bg-yellow-100 text-yellow-800',
+                        'LOGIN': 'bg-indigo-100 text-indigo-800',
+                        'LOGOUT': 'bg-gray-100 text-gray-800',
+                        'INFO': 'bg-gray-100 text-gray-800'
+                    };
+                    const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                    const typeClass = typeColors[log.type] || 'bg-gray-100 text-gray-800';
+                    logsHTML += `<tr class="${bgClass} hover:bg-gray-100 transition"><td class="px-3 py-2 text-xs whitespace-nowrap">${log.date}</td><td class="px-3 py-2"><span class="px-2 py-1 text-xs rounded-full ${typeClass} font-semibold">${log.type}</span></td><td class="px-3 py-2 text-xs">${log.user}</td><td class="px-3 py-2 text-xs">${log.message}</td><td class="px-3 py-2 text-xs">${log.orderId || '-'}</td></tr>`;
+                });
+                logsHTML += '</tbody></table></div>';
+            }
+            const modalHTML = `<div id="activityLogModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeActivityLogModal()"><div class="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()"><div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 flex justify-between items-center"><h2 class="text-2xl font-bold"><i class="fas fa-history mr-2"></i>Log Attività (Ultimi 50)</h2><div class="flex gap-2"><button onclick="clearActivityLog()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-bold transition"><i class="fas fa-trash mr-2"></i>Cancella Log</button><button onclick="closeActivityLogModal()" class="text-white hover:text-gray-200 text-3xl leading-none">×</button></div></div><div class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">${logsHTML}</div></div></div>`;
+            const existingModal = document.getElementById('activityLogModal');
+            if (existingModal) existingModal.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function closeActivityLogModal() {
+            const modal = document.getElementById('activityLogModal');
+            if (modal) modal.remove();
+        }
+
+        // ============================================
+        // STATUS HISTORY FUNCTIONS
+        // ============================================
+        function showStatusHistory(orderId) {
+            const order = orders.find(o => o.id === orderId || o.displayId === orderId);
+            if (!order) return;
+            let historyHTML = '';
+            if (!order.statusHistory || order.statusHistory.length === 0) {
+                historyHTML = '<div class="text-center py-8 text-gray-500">Nessuno storico disponibile</div>';
+            } else {
+                historyHTML = '<div class="space-y-3">';
+                [...order.statusHistory].reverse().forEach((change, index) => {
+                    const isFirst = index === 0;
+                    historyHTML += `<div class="flex items-start gap-4 ${isFirst ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50'} p-4 rounded"><div class="flex-shrink-0"><div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold"><i class="fas fa-exchange-alt"></i></div></div><div class="flex-1"><div class="flex justify-between items-start mb-1"><div><span class="px-3 py-1 bg-red-100 text-red-700 rounded text-sm font-semibold">${change.from}</span><i class="fas fa-arrow-right mx-2 text-gray-400"></i><span class="px-3 py-1 bg-green-100 text-green-700 rounded text-sm font-semibold">${change.to}</span></div>${isFirst ? '<span class="px-2 py-1 bg-blue-500 text-white text-xs rounded font-bold">ATTUALE</span>' : ''}</div><div class="text-sm text-gray-600 mt-2"><i class="fas fa-calendar mr-2"></i>${change.dateFormatted}<span class="mx-2">•</span><i class="fas fa-user mr-2"></i>${change.user}</div></div></div>`;
+                });
+                historyHTML += '</div>';
+            }
+            const modalHTML = `<div id="statusHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeStatusHistoryModal()"><div class="bg-white rounded-lg shadow-xl w-11/12 max-w-3xl max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()"><div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4 flex justify-between items-center"><h2 class="text-2xl font-bold"><i class="fas fa-history mr-2"></i>Storico Stati - Ordine ${order.displayId || order.id}</h2><button onclick="closeStatusHistoryModal()" class="text-white hover:text-gray-200 text-3xl leading-none">×</button></div><div class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]"><div class="mb-4 p-4 bg-gray-100 rounded"><div class="font-bold text-lg mb-1">${order.customer || 'Cliente sconosciuto'}</div><div class="text-sm text-gray-600"><span class="font-semibold">Stato Attuale:</span><span class="px-3 py-1 bg-green-100 text-green-700 rounded ml-2 font-bold">${order.status || 'Nuovo'}</span></div>${order.lastStatusChangeDate ? `<div class="text-sm text-gray-600 mt-1"><span class="font-semibold">Ultimo Cambio:</span> ${order.lastStatusChangeDate}</div>` : ''}</div>${historyHTML}</div></div></div>`;
+            const existingModal = document.getElementById('statusHistoryModal');
+            if (existingModal) existingModal.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function closeStatusHistoryModal() {
+            const modal = document.getElementById('statusHistoryModal');
+            if (modal) modal.remove();
         }
 
         function updateOrderField(id, field, value) { 
@@ -2959,101 +2690,49 @@
         }
 
         function addNewOrder() {
-    if (!checkPermission('createOrders')) {
-        alert('⚠️ Non hai i permessi per creare nuovi ordini.');
-        return;
-    }
-    const kitInfo = globalKitTypes['giocatore_completo'] || Object.values(globalKitTypes)[0];
-
-    const newOrder = {
-        id: Date.now(),
-        displayId: generateNewId(true),
-        importKey: null,
-        customer: "Nuovo Ordine",
-        mainSize: "L",
-        sockSize: "43/46",
-        notes: "",
-        itemsList: kitInfo.items.map(n => ({
-            name: n,
-            size: n.includes("Calzettoni")
-                ? "43/46"
-                : (n.includes("Borsone") || n.includes("Zaino") || n.includes("Cappellino") || n.includes("Scaldacollo") || n.includes("Guanti") ? "UNICA" : "L")
-        })),
-        status: 'Nuovo',
-        type: 'Giocatore',
-        kitType: kitInfo.display,
-        linkedId: null,
-        discount: 0,
-        email: "",
-        phone: "",
-        roleOrYear: ""
-    };
-
-    orders.push(newOrder);
-
-    logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
-
-    updateUI();
-}
-
-function deleteOrder(id) {
-    if (confirm('Eliminare?')) {
-        const order = orders.find(x => x.id === id);
-        const orderId = order ? order.displayId : 'N/A';
-
-        orders = orders.filter(x => x.id !== id);
-
-        logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
-
-        updateUI();
-    }
-}
-
-        // Rende le funzioni disponibili agli onclick nel DOM
-        window.addNewOrder = addNewOrder;
-        window.deleteOrder = deleteOrder;
-
-                // Popup Consegna Parziale
-                let currentPartialDeliveryOrderId = null;
-        
-        function openPartialDeliveryPopup(orderId) {
-            currentPartialDeliveryOrderId = orderId;
-            const order = orders.find(o => o.id === orderId);
+            if (!checkPermission('createOrders')) {
+                alert('⚠️ Non hai i permessi per creare nuovi ordini.');
+                return;
+            } 
+            const kitInfo = globalKitTypes['giocatore_completo'] || Object.values(globalKitTypes)[0]; 
+            const newOrder = { id: Date.now(), displayId: generateNewId(true), importKey: null, customer: "Nuovo Ordine", mainSize: "L", sockSize: "43/46", notes: "", itemsList: kitInfo.items.map(n => ({ name: n, size: n.includes("Calzettoni")?"43/46":(n.includes("Borsone")||n.includes("Zaino")||n.includes("Cappellino")||n.includes("Scaldacollo")||n.includes("Guanti")?"UNICA":"L") })), status: 'Nuovo', type: 'Giocatore', kitType: kitInfo.display, linkedId: null, discount: 0, email: "", phone: "", roleOrYear: "" };
+            orders.push(newOrder);
             
-            if (order) {
-                // Aggiorna stato immediatamente
-                order.status = 'Consegna Parziale';
+            logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
+            
+            updateUI(); 
+        }
+        function deleteOrder(id) { 
+            if (confirm(`Eliminare?`)) { 
+                const order = orders.find(x => x.id === id);
+                const orderId = order ? order.displayId : 'N/A';
                 
-                // Mostra nota esistente se presente
-                document.getElementById('partialDeliveryNote').value = order.partialDeliveryNote || '';
-                document.getElementById('partialDeliveryPopup').classList.add('active');
-            }
+                orders = orders.filter(x => x.id !== id);
+                
+                logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
+                
+                updateUI(); 
+            } 
         }
         
-        function closePartialDeliveryPopup() {
-            document.getElementById('partialDeliveryPopup').classList.remove('active');
-            currentPartialDeliveryOrderId = null;
-        }
-        
-        function savePartialDeliveryNote() {
-            if (!currentPartialDeliveryOrderId) return;
+        function handleStatusChange(id, newStatus) { 
+            const o = orders.find(x => x.id === id);
+            if (!o) return; 
             
-            const note = document.getElementById('partialDeliveryNote').value.trim();
-            const order = orders.find(o => o.id === currentPartialDeliveryOrderId);
-            
-            if (order) {
-                order.partialDeliveryNote = note;
-                
-                // Se la nota è vuota, chiedi conferma
-                if (!note) {
-                    const confirm = window.confirm('⚠️ Nessuna nota inserita. Vuoi confermare comunque?');
-                    if (!confirm) return;
+            if (newStatus === 'Ordine trasferito ad altro ID') { 
+                const t = prompt(`Inserisci ID Destinazione (es: 2026A_5):`);
+                if (t) { 
+                    o.status = newStatus;
+                    o.linkedId = t.trim().toUpperCase(); 
+                } else {
+                    o.status = 'Nuovo';
                 }
-                
-                showQuickNotification('✅ Nota consegna parziale salvata', 'success');
-                closePartialDeliveryPopup();
-                updateUI();
-            }
+            } else { 
+                o.status = newStatus;
+                o.linkedId = null; 
+            } 
+            updateUI(); 
+            renderMatrices();
         }
 
         function updateLinkedId(id, newLinkedId) {
@@ -3209,57 +2888,69 @@ function deleteOrder(id) {
             }
         }
 
-        // ===== SISTEMA MEMORIZZAZIONE FILTRI =====
-        function saveFiltersState() {
-            try {
-                const filtersState = {
-                    searchInput: document.getElementById('searchInput')?.value || '',
-                    sortOrder: document.getElementById('sortOrder')?.value || 'asc',
-                    filterStatus: document.getElementById('filterStatus')?.value || 'all',
-                    filterRoleYear: document.getElementById('filterRoleYear')?.value || '',
-                    filterSize: document.getElementById('filterSize')?.value || 'all',
-                    filterKitType: document.getElementById('filterKitType')?.value || 'all',
-                    filterItem: document.getElementById('filterItem')?.value || 'all',
-                    filterMinId: document.getElementById('filterMinId')?.value || '',
-                    filterMaxId: document.getElementById('filterMaxId')?.value || ''
-                };
-                localStorage.setItem('orderflow_filters', JSON.stringify(filtersState));
-            } catch (e) {
-                console.warn('⚠️ Impossibile salvare filtri:', e);
+        async function handleStatusChange(id, newStatus) {
+            const order = orders.find(o => o.id === id || o.displayId === id);
+            if (!order) {
+                console.error('Order not found:', id);
+                return;
             }
-        }
-        
-        function restoreFiltersState() {
-            try {
-                const saved = localStorage.getItem('orderflow_filters');
-                if (!saved) return;
-                
-                const filtersState = JSON.parse(saved);
-                
-                // Ripristina ogni filtro
-                Object.keys(filtersState).forEach(key => {
-                    const element = document.getElementById(key);
-                    if (element && filtersState[key]) {
-                        element.value = filtersState[key];
-                    }
-                });
-                
-                console.log('✅ Filtri ripristinati:', filtersState);
-            } catch (e) {
-                console.warn('⚠️ Impossibile ripristinare filtri:', e);
+            
+            const oldStatus = order.status || 'Nuovo';
+            
+            // Inizializza statusHistory se non esiste
+            if (!order.statusHistory) {
+                order.statusHistory = [];
             }
+            
+            // Crea l'oggetto statusChange
+            const statusChange = {
+                from: oldStatus,
+                to: newStatus,
+                date: new Date().toISOString(),
+                dateFormatted: new Date().toLocaleString('it-IT', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }),
+                user: currentUser ? currentUser.username : 'System'
+            };
+            
+            // Aggiungi allo storico
+            order.statusHistory.push(statusChange);
+            
+            // Aggiorna lo stato corrente
+            order.status = newStatus;
+            order.lastStatusChangeDate = statusChange.dateFormatted;
+            
+            // Log dell'attività
+            if (typeof logActivity === 'function') {
+                await logActivity(
+                    'STATUS_CHANGE',
+                    `Stato cambiato da "${oldStatus}" a "${newStatus}"`,
+                    order.displayId || order.id,
+                    statusChange
+                );
+            }
+            
+            // Salva i dati
+            await saveData();
+            
+            // Aggiorna l'interfaccia
+            updateUI();
+            
+            // Notifica
+            if (typeof showQuickNotification === 'function') {
+                showQuickNotification(`Stato ordine ${order.displayId || order.id} aggiornato: ${newStatus}`, 'success');
+            }
+            
+            console.log('Status changed successfully:', {orderId: id, from: oldStatus, to: newStatus});
         }
-        
-        function clearFiltersState() {
-            localStorage.removeItem('orderflow_filters');
-            console.log('🗑️ Filtri cancellati');
-        }
-        // ===== FINE SISTEMA MEMORIZZAZIONE FILTRI =====
+
         
         function renderTable() {
-            // Salva stato filtri
-            saveFiltersState();
-            
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             const filterStatus = document.getElementById('filterStatus').value; 
@@ -3339,9 +3030,8 @@ function deleteOrder(id) {
                             <option value="In Lavorazione" ${o.status==='In Lavorazione'?'selected':''}>In Lavorazione</option>
                             <option value="Ordine Arrivato" ${o.status==='Ordine Arrivato'?'selected':''}>Arrivato</option>
                             <option value="Pagato" ${o.status==='Pagato'?'selected':''}>Pagato</option>
-                            <option value="Consegna Parziale" ${o.status==='Consegna Parziale'?'selected':''}>Consegna Parziale</option>
                             <option value="Consegnato" ${o.status==='Consegnato'?'selected':''}>Consegnato</option>
-                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegna Parziale' && o.status !== 'Consegnato') ?
+                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegnato') ?
                             `<option value="${o.status}" selected disabled>${o.status}</option>` : ''}
                         </select>
                     </div>`;
@@ -3359,23 +3049,9 @@ function deleteOrder(id) {
                             </div>
                         </div>`;
                     } else {
-                        // Controlla se c'è una nota di consegna parziale
-                        const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
-                        
-                        statusInfo = `
-                        <div class="flex flex-col gap-1">
-                            <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
-                                ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
-                            </select>
-                            ${hasPartialNote ? `
-                            <div class="bg-amber-50 border border-amber-300 rounded p-1.5 cursor-pointer hover:bg-amber-100 transition" onclick="openPartialDeliveryPopup(${o.id})" title="Clicca per modificare">
-                                <div class="text-[10px] font-bold text-amber-800 flex items-center gap-1">
-                                    <i class="fas fa-box-open"></i>
-                                    <span>Manca:</span>
-                                </div>
-                                <div class="text-[10px] text-amber-700 mt-0.5 line-clamp-2">${o.partialDeliveryNote}</div>
-                            </div>` : ''}
-                        </div>`;
+                        statusInfo = `<select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
+                            ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
+                        </select>`;
                     }
                 }
 
@@ -3927,9 +3603,7 @@ function deleteOrder(id) {
         }
 
         function initSelect() { 
-            const sel = document.getElementById('addItemSelect');
-            if (!sel) return; // Protezione
-            sel.innerHTML = ''; 
+            const sel = document.getElementById('addItemSelect'); sel.innerHTML = ''; 
             [...globalItems].filter(i => i && typeof i === 'string').forEach(i => { 
                 const opt = document.createElement('option');
                 opt.value = i; 
@@ -3939,13 +3613,10 @@ function deleteOrder(id) {
                 sel.appendChild(opt); 
             }); 
             const sizeSel = document.getElementById('filterSize');
-            if (sizeSel) {
-                SIZE_ORDER.forEach(s => sizeSel.innerHTML += `<option value="${s}">${s}</option>`);
-            }
+            SIZE_ORDER.forEach(s => sizeSel.innerHTML += `<option value="${s}">${s}</option>`);
             
             // Popola filtro articoli
             const itemSel = document.getElementById('filterItem');
-            if (!itemSel) return; // Protezione
             const currentItemFilter = itemSel.value; // Preserva selezione corrente
             itemSel.innerHTML = '<option value="all">🔍 Cerca Capo...</option>';
             [...globalItems].filter(item => item && typeof item === 'string').sort().forEach(item => {
@@ -3967,10 +3638,6 @@ function deleteOrder(id) {
             document.getElementById('modalEmail').value = o.email || '';
             document.getElementById('modalPhone').value = o.phone || '';
             document.getElementById('modalTimestamp').value = o.timestamp || 'Non disponibile';
-            if (o.statusUpdatedAt) {
-            const formatted = new Date(o.statusUpdatedAt).toLocaleString('it-IT');
-            document.getElementById('modalTimestamp').value += ` | Stato: ${formatted}`;
-       }
             o.itemsList.forEach((item, idx) => { tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2 text-xs" style="max-width: 300px; word-wrap: break-word; white-space: normal;">${item.name}</td><td class="p-2 text-center"><input type="text" value="${item.size}" onchange="updateItemSize(${idx}, this.value)" class="border rounded w-20 text-center font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-300 outline-none"></td><td class="p-2 text-center"><button onclick="delItem(${idx})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button></td></tr>`; });
             document.getElementById('itemModal').classList.add('active'); 
         }
@@ -3984,7 +3651,6 @@ function deleteOrder(id) {
         function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
         function updateUI() { 
             populateGestioneOrdiniIdSelects();
-            restoreFiltersState(); // Ripristina filtri salvati
             renderTable(); 
             renderChart(); 
             saveData(); 
@@ -4911,63 +4577,36 @@ function deleteOrder(id) {
 
         // ===== INIZIALIZZAZIONE =====
         
-        // Dichiarazione variabili globali
-        let currentUser = null;
-        
-        // IMPORTANTE: Check login first, then load data - DOPO che il DOM è pronto
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inizializza utenti di default
-            initializeDefaultUsers();
-            
-            // Setup event listeners per login
-            const loginButton = document.getElementById('loginButton');
-            const loginPassword = document.getElementById('loginPassword');
-            
-            if (loginButton) {
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Accedi';
-                loginButton.addEventListener('click', performLogin);
-            }
-            
-            if (loginPassword) {
-                loginPassword.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') performLogin();
+        // IMPORTANTE: Inizializza utenti PRIMA di caricare i dati
+        // Check if user is logged in
+        const savedUser = localStorage.getItem('orderFlowCurrentUser');
+        if (savedUser) {
+            try {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                loadData().then(() => {
+                    initSelect();
+                    updateUI();
+                    applyUserPermissions();
+                    initQuickIdButtons();
+                    startClock();
                 });
-            }
-            
-            // Auto-login se sessione attiva
-            const savedUser = localStorage.getItem('orderFlowCurrentUser');
-            if (savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    const loginScreen = document.getElementById('loginScreen');
-                    const appContainer = document.getElementById('appContainer');
-                    
-                    if (loginScreen) loginScreen.style.display = 'none';
-                    if (appContainer) appContainer.style.display = 'block';
-                    
-                    // Load data then initialize UI
-                    loadData().then(() => {
-                        initSelect();
-                        resetFiltersToDefault();
-                        updateUI();
-                        applyUserPermissions();
-                        startClock();
-                        startAutoRefresh(); // Avvia auto-refresh anche per auto-login
-                    });
-                } catch (error) {
-                    console.error('Error loading user:', error);
-                    localStorage.removeItem('orderFlowCurrentUser');
-                    const loginScreen = document.getElementById('loginScreen');
-                    if (loginScreen) loginScreen.style.display = 'flex';
-                }
-            } else {
-                const loginScreen = document.getElementById('loginScreen');
-                if (loginScreen) loginScreen.style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading user:', error);
+                localStorage.removeItem('orderFlowCurrentUser');
+                document.getElementById('loginScreen').style.display = 'flex';
                 startClock();
             }
-        });
+        } else {
+            document.getElementById('loginScreen').style.display = 'flex';
+            startClock();
+        } initSelect();
+        updateUI(); startClock();
         
         // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
+        
+        let currentUser = null;
         
         // Definizione ruoli
         const USER_ROLES = {
@@ -4986,9 +4625,7 @@ function deleteOrder(id) {
                     resetData: true,
                     manageUsers: true,
                     viewDistinta: true,
-                    viewTabella: true,
-                    useQuickIdFilters: true,
-                    downloadGoogleForm: true
+                    viewTabella: true
                 }
             },
             VIEWER: {
@@ -5033,38 +4670,16 @@ function deleteOrder(id) {
                 permissions: {
                     viewAll: true,
                     viewDashboard: false,
-                    createOrders: false,
+                    createOrders: false, // Può solo importare
                     editOrders: false,
                     deleteOrders: false,
-                    importGoogle: false,
+                    importGoogle: true, // Può importare da Google
                     importExcel: false,
                     exportBackup: false,
                     resetData: false,
                     manageUsers: false,
                     viewDistinta: true,
-                    viewTabella: true,
-                    downloadGoogleForm: true,
-                    editStatus: false
-                }
-            },
-            CONTRIBUTOR_ADVANCED: {
-                id: 'contributor_advanced',
-                name: 'Contributore Avanzato (Google Form + Stato)',
-                permissions: {
-                    viewAll: true,
-                    viewDashboard: false,
-                    createOrders: false,
-                    editOrders: false,
-                    deleteOrders: false,
-                    importGoogle: false,
-                    importExcel: false,
-                    exportBackup: false,
-                    resetData: false,
-                    manageUsers: false,
-                    viewDistinta: true,
-                    viewTabella: true,
-                    downloadGoogleForm: true,
-                    editStatus: true // Può modificare SOLO lo stato
+                    viewTabella: true
                 }
             },
             TABLE_EDITOR: {
@@ -5083,8 +4698,7 @@ function deleteOrder(id) {
                     manageUsers: false,
                     viewDistinta: false, // Non vede Distinta
                     viewTabella: true, // SOLO Tabella
-                    editTabella: true, // Permesso speciale per modificare celle tabella
-                    useQuickIdFilters: true // Può usare Quick ID filters
+                    editTabella: true // Permesso speciale per modificare celle tabella
                 }
             },
             TABELLA_FULL: {
@@ -5105,8 +4719,7 @@ function deleteOrder(id) {
                     viewTabella: true, // Vede Tabella Ordini
                     editTabella: true, // Può modificare celle
                     highlightCells: true, // Può evidenziare celle
-                    downloadGoogleForm: true, // Può scaricare Google Form
-                    useQuickIdFilters: true // Può usare Quick ID filters
+                    downloadGoogleForm: true // Può scaricare Google Form
                 }
             },
             TABELLA_READONLY: {
@@ -5133,127 +4746,70 @@ function deleteOrder(id) {
         };
         
         // Inizializza utente admin di default
-        async function initializeDefaultUsers() {
-            try {
-                const response = await fetch('/api/users');
-                
-                // Verifica che la risposta sia OK prima di parsare JSON
-                if (!response.ok) {
-                    console.warn('⚠️ API users non disponibile, skip inizializzazione');
-                    return;
-                }
-                
-                const data = await response.json();
-                const users = data.users || [];
-                
-                console.log('🔍 Utenti esistenti:', users.length);
-                
-                if (users.length === 0) {
-                    // Crea admin di default
-                    const createResponse = await fetch('/api/users', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'create',
-                            username: 'admin',
-                            password: 'admin123',
-                            role: 'admin',
-                            name: 'Amministratore'
-                        })
-                    });
-                    
-                    if (createResponse.ok) {
-                        console.log('✅ Utente admin creato');
-                    }
-                } else {
-                    console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
-                }
-            } catch (error) {
-                // Silenzioso: l'errore è normale se l'API non è ancora pronta
-                console.warn('⚠️ Impossibile inizializzare utenti:', error.message);
+        function initializeDefaultUsers() {
+            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            console.log('🔍 Utenti esistenti:', users.length);
+            
+            if (users.length === 0) {
+                // Crea admin di default
+                const defaultAdmin = {
+                    username: 'admin',
+                    password: 'admin123',
+                    role: 'admin',
+                    name: 'Amministratore',
+                    createdAt: new Date().toISOString()
+                };
+                users.push(defaultAdmin);
+                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+                console.log('✅ Utente admin creato:', defaultAdmin);
+            } else {
+                console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
             }
         }
         
         // Login
-        async function performLogin() {
+        function performLogin() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
-            const loginButton = document.getElementById('loginButton');
+            const errorDiv = document.getElementById('loginError');
+            
+            console.log('🔐 Tentativo login:', username);
             
             if (!username || !password) {
-                alert('Inserisci username e password');
+                errorDiv.textContent = '⚠️ Inserisci username e password';
+                errorDiv.classList.remove('hidden');
                 return;
             }
             
-            loginButton.disabled = true;
-            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
+            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            console.log('👥 Utenti disponibili:', users.length);
+            console.log('📋 Lista utenti:', users.map(u => ({username: u.username, role: u.role})));
             
-            try {
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'login', username, password })
-                });
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                console.log('✅ Login riuscito:', user.username);
+                currentUser = user;
+                localStorage.setItem('orderFlowCurrentUser', JSON.stringify(user));
+                document.getElementById('loginScreen').classList.add('hidden');
+                applyUserPermissions();
+                initQuickIdButtons();
                 
-                const data = await response.json();
+                // Disabilita campi se necessario
+                setTimeout(() => {
+                    if (window.disableEditInputs) window.disableEditInputs();
+                }, 200);
                 
-                if (data.success && data.user) {
-                    currentUser = data.user;
-                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
-                    
-                    const loginScreen = document.getElementById('loginScreen');
-                    const appContainer = document.getElementById('appContainer');
-                    
-                    if (loginScreen) loginScreen.style.display = 'none';
-                    if (appContainer) appContainer.style.display = 'block';
-                    
-                    await loadData();
-                    updateUI();
-                    applyUserPermissions();
-                    
-                    // Avvia auto-refresh per sincronizzazione multi-utente
-                    startAutoRefresh();
-                } else {
-                    alert('Credenziali non valide');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('Errore di connessione al server');
-            } finally {
-                loginButton.disabled = false;
-                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+                // Log login
+                logActivity('LOGIN', `Accesso effettuato`);
+                
+                showQuickNotification(`Benvenuto, ${user.name}!`, 'success');
+            } else {
+                console.log('❌ Login fallito - credenziali errate');
+                errorDiv.textContent = '❌ Username o password errati';
+                errorDiv.classList.remove('hidden');
             }
-        }// Reimposta tutti i filtri ai valori predefiniti (mostra tutti gli ordini)
-function resetFiltersToDefault() {
-    // Stato → "Tutti"
-    const filterStatus = document.getElementById('filterStatus');
-    if (filterStatus) filterStatus.value = 'all';
-    
-    // Anno/Ruolo → "Tutti"
-    const filterRoleYear = document.getElementById('filterRoleYear');
-    if (filterRoleYear) filterRoleYear.value = '';
-    
-    // ID minimo / massimo → vuoti
-    const filterMinId = document.getElementById('filterMinId');
-    if (filterMinId) filterMinId.value = '';
-    const filterMaxId = document.getElementById('filterMaxId');
-    if (filterMaxId) filterMaxId.value = '';
-    
-    // Taglia, Kit, Articolo, Cliente → vuoti
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.value = '';
-    
-    const filterSize = document.getElementById('filterSize');
-    if (filterSize) filterSize.value = 'all';
-    
-    const filterKitType = document.getElementById('filterKitType');
-    if (filterKitType) filterKitType.value = 'all';
-    
-    const filterItem = document.getElementById('filterItem');
-    if (filterItem) filterItem.value = 'all';
-    
-    console.log('✅ Filtri reimpostati a "Tutti"');
-}
+        }
         
         // Logout
         function logout() {
@@ -5318,79 +4874,6 @@ function resetFiltersToDefault() {
                 }
             }
             
-            // Nascondi Quick ID filters se non ha permesso
-            if (!perms.useQuickIdFilters) {
-                const quickIdContainer = document.querySelector('[id="quickIdButtons"]')?.parentElement;
-                if (quickIdContainer) {
-                    quickIdContainer.style.display = 'none';
-                }
-            }
-            
-            // ASSICURA che i filtri siano sempre visibili per TUTTI
-            const ensureFiltersVisible = () => {
-                // Forza visibilità del container principale
-                const filtersContainer = document.getElementById('filtersContainer');
-                if (filtersContainer) {
-                    filtersContainer.style.cssText += 'display: flex !important; visibility: visible !important; opacity: 1 !important; flex-wrap: wrap !important;';
-                }
-                
-                // Forza anche il parent
-                const filterSection = document.querySelector('.p-3.border-b.bg-gray-50');
-                if (filterSection) {
-                    filterSection.style.cssText += 'display: flex !important; visibility: visible !important;';
-                }
-                
-                // Mostra tutti gli elementi di filtro
-                const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
-                                  'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
-                filterIds.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.style.cssText += 'display: inline-block !important; visibility: visible !important; pointer-events: auto !important;';
-                        el.disabled = false;
-                    }
-                });
-                
-                console.log('✅ Filtri forzati visibili');
-            };
-            
-            // Esegui immediatamente e dopo timeout
-            setTimeout(ensureFiltersVisible, 0);
-            setTimeout(ensureFiltersVisible, 100);
-            setTimeout(ensureFiltersVisible, 500);
-            setTimeout(ensureFiltersVisible, 1000);
-            setTimeout(ensureFiltersVisible, 2000);
-            
-            // Aggiungi CSS globale per forzare la visibilità dei filtri
-            const filterStyle = document.createElement('style');
-            filterStyle.id = 'filterVisibilityStyle';
-            filterStyle.textContent = `
-                /* Forza visibilità sezione filtri */
-                .p-3.border-b.bg-gray-50 { 
-                    display: flex !important; 
-                    visibility: visible !important; 
-                    opacity: 1 !important; 
-                }
-                #filtersContainer {
-                    display: flex !important;
-                    flex-wrap: wrap !important;
-                    gap: 0.5rem !important;
-                    visibility: visible !important;
-                }
-                #filtersContainer * {
-                    visibility: visible !important;
-                }
-                /* Forza visibilità singoli filtri */
-                #searchInput, #sortOrder, #filterStatus, #filterRoleYear, 
-                #filterSize, #filterKitType, #filterItem, #filterMinId, #filterMaxId {
-                    display: inline-block !important;
-                    visibility: visible !important;
-                    pointer-events: auto !important;
-                    opacity: 1 !important;
-                }
-            `;
-            document.head.appendChild(filterStyle);
-            
             // Disabilita campi editabili per utenti senza permessi
             if (!perms.editOrders || !perms.deleteOrders || !perms.downloadGoogleForm) {
                 const style = document.createElement('style');
@@ -5415,45 +4898,29 @@ function resetFiltersToDefault() {
                 
                 // Disabilita input campi quando non ha permessi editOrders
                 if (!perms.editOrders && !perms.editTabella) {
-                    // Lista completa ID filtri da NON disabilitare
-                    const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
-                                      'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
-                    
                     // Funzione per disabilitare inputs dopo il render
                     window.disableEditInputs = function() {
-                        // Disabilita input taglie, sconto, ecc (MA NON I FILTRI!)
+                        // Disabilita input taglie, sconto, ecc
                         document.querySelectorAll('input.edit-order-btn, select.edit-order-btn').forEach(el => {
-                            // NON disabilitare i filtri
-                            if (filterIds.includes(el.id)) return;
-                            
                             el.disabled = true;
                             el.style.backgroundColor = '#f3f4f6';
                             el.style.cursor = 'not-allowed';
                             el.style.color = '#6b7280';
                         });
                         
-                        // Disabilita TUTTI gli input e select tranne i filtri
-                        document.querySelectorAll('input, select').forEach(el => {
-                            // NON disabilitare i filtri
-                            if (filterIds.includes(el.id)) return;
-                            // NON disabilitare elementi già gestiti o non nella tabella
-                            if (el.type === 'button' || el.type === 'submit') return;
-                            // NON disabilitare elementi nella sezione "Filtri & Ricerca"
-                            if (el.closest('.p-3.border-b.bg-gray-50')) return;
-                            // NON disabilitare select STATO se l'utente ha editStatus
-                            if (perms.editStatus && el.classList.contains('status-select')) return;
-                            
-                            // Disabilita solo se è nella tabella/area dati
-                            const isInTable = el.closest('table') || el.closest('.tab-content');
-                            if (isInTable && !el.closest('.glass-effect')) {
-                                el.disabled = true;
-                                el.style.cursor = 'not-allowed';
-                                el.style.opacity = '0.6';
-                                if (el.tagName === 'INPUT') {
-                                    el.style.backgroundColor = '#f3f4f6';
-                                    el.style.color = '#6b7280';
-                                }
-                            }
+                        // Disabilita select STATO
+                        document.querySelectorAll('select.status-select').forEach(el => {
+                            el.disabled = true;
+                            el.style.cursor = 'not-allowed';
+                            el.style.opacity = '0.6';
+                        });
+                        
+                        // Disabilita input inventario (giacenze)
+                        document.querySelectorAll('input.inv-input').forEach(el => {
+                            el.disabled = true;
+                            el.style.backgroundColor = '#f3f4f6';
+                            el.style.cursor = 'not-allowed';
+                            el.style.color = '#6b7280';
                         });
                         
                         // Disabilita pulsante "X Capi" ma lascialo visibile
@@ -5485,16 +4952,13 @@ function resetFiltersToDefault() {
         }
         
         // Gestione utenti (solo admin)
-        async function openUserManagement() {
+        function openUserManagement() {
             if (!currentUser || currentUser.role !== 'admin') {
                 alert('⚠️ Accesso negato. Solo gli amministratori possono gestire gli utenti.');
                 return;
             }
             
-            try {
-                const response = await fetch('/api/users');
-                const data = await response.json();
-                const users = data.users || [];
+            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
             
             let html = `
                 <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="event.target === this && closeUserManagement()">
@@ -5582,10 +5046,6 @@ function resetFiltersToDefault() {
             `;
             
             document.body.insertAdjacentHTML('beforeend', html);
-            } catch (error) {
-                console.error('Error loading users:', error);
-                alert('Errore nel caricamento degli utenti');
-            }
         }
         
         function closeUserManagement() {
@@ -5617,7 +5077,6 @@ function resetFiltersToDefault() {
                                     <option value="viewer">Visualizzazione (senza Dashboard)</option>
                                     <option value="viewer_full">Visualizzazione (con Dashboard)</option>
                                     <option value="contributor">Contributore (Google Form)</option>
-                                    <option value="contributor_advanced">Contributore Avanzato (Form + Stato)</option>
                                     <option value="table_editor">Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full">Tabella Completa</option>
                                     <option value="tabella_readonly">Tabella Solo Lettura</option>
@@ -5639,7 +5098,7 @@ function resetFiltersToDefault() {
             document.body.insertAdjacentHTML('beforeend', html);
         }
         
-        async function saveNewUser() {
+        function saveNewUser() {
             const username = document.getElementById('newUserUsername').value.trim();
             const name = document.getElementById('newUserName').value.trim();
             const password = document.getElementById('newUserPassword').value;
@@ -5650,40 +5109,36 @@ function resetFiltersToDefault() {
                 return;
             }
             
-            try {
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'create',
-                        username,
-                        password,
-                        role,
-                        name
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
-                    
-                    // Chiudi modals
-                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-                    
-                    showQuickNotification('✅ Utente creato con successo!', 'success');
-                    openUserManagement();
-                } else {
-                    alert(`⚠️ ${data.error || 'Errore nella creazione utente'}`);
-                }
-            } catch (error) {
-                console.error('Error creating user:', error);
-                alert('Errore di connessione al server');
+            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            
+            if (users.find(u => u.username === username)) {
+                alert('⚠️ Username già esistente');
+                return;
             }
+            
+            users.push({
+                username,
+                password,
+                role,
+                name,
+                createdAt: new Date().toISOString()
+            });
+            
+            localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+            
+            logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
+            
+            // Chiudi modals
+            document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+            
+            showQuickNotification('✅ Utente creato con successo!', 'success');
+            openUserManagement();
         }
         
-        async function deleteUser(username) {
+        function deleteUser(username) {
             if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) return;
+            
+            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
             
             // Non permettere eliminazione admin corrente
             if (currentUser && currentUser.username === username) {
@@ -5691,40 +5146,20 @@ function resetFiltersToDefault() {
                 return;
             }
             
-            try {
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'delete',
-                        username
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    logActivity('DELETE_USER', `Eliminato utente: ${username}`);
-                    
-                    closeUserManagement();
-                    showQuickNotification('✅ Utente eliminato', 'success');
-                    openUserManagement();
-                } else {
-                    alert(`⚠️ ${data.error || 'Errore nell\'eliminazione utente'}`);
-                }
-            } catch (error) {
-                console.error('Error deleting user:', error);
-                alert('Errore di connessione al server');
-            }
+            users = users.filter(u => u.username !== username);
+            localStorage.setItem('orderFlowUsers', JSON.stringify(users));
+            
+            logActivity('DELETE_USER', `Eliminato utente: ${username}`);
+            
+            closeUserManagement();
+            showQuickNotification('✅ Utente eliminato', 'success');
+            openUserManagement();
         }
         
         // Modifica ruolo utente
-        async function editUser(username) {
-            try {
-                const response = await fetch('/api/users');
-                const data = await response.json();
-                const users = data.users || [];
-                const user = users.find(u => u.username === username);
+        function editUser(username) {
+            const users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            const user = users.find(u => u.username === username);
             
             if (!user) {
                 alert('⚠️ Utente non trovato');
@@ -5746,7 +5181,6 @@ function resetFiltersToDefault() {
                                     <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Visualizzazione (senza Dashboard)</option>
                                     <option value="viewer_full" ${user.role === 'viewer_full' ? 'selected' : ''}>Visualizzazione (con Dashboard)</option>
                                     <option value="contributor" ${user.role === 'contributor' ? 'selected' : ''}>Contributore (Google Form)</option>
-                                    <option value="contributor_advanced" ${user.role === 'contributor_advanced' ? 'selected' : ''}>Contributore Avanzato (Form + Stato)</option>
                                     <option value="table_editor" ${user.role === 'table_editor' ? 'selected' : ''}>Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full" ${user.role === 'tabella_full' ? 'selected' : ''}>Tabella Completa</option>
                                     <option value="tabella_readonly" ${user.role === 'tabella_readonly' ? 'selected' : ''}>Tabella Solo Lettura</option>
@@ -5766,13 +5200,9 @@ function resetFiltersToDefault() {
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
-            } catch (error) {
-                console.error('Error loading user:', error);
-                alert('Errore nel caricamento utente');
-            }
         }
         
-        async function saveEditUser(username) {
+        function saveEditUser(username) {
             const newName = document.getElementById('editUserName').value.trim();
             const newRole = document.getElementById('editUserRole').value;
             
@@ -5781,34 +5211,21 @@ function resetFiltersToDefault() {
                 return;
             }
             
-            try {
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'edit',
-                        username,
-                        name: newName,
-                        role: newRole
-                    })
-                });
+            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            const userIndex = users.findIndex(u => u.username === username);
+            
+            if (userIndex !== -1) {
+                users[userIndex].name = newName;
+                users[userIndex].role = newRole;
+                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
                 
-                const data = await response.json();
+                logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
                 
-                if (data.success) {
-                    logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
-                    
-                    // Chiudi modals
-                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-                    
-                    showQuickNotification('✅ Utente modificato con successo!', 'success');
-                    openUserManagement();
-                } else {
-                    alert(`⚠️ ${data.error || 'Errore nella modifica utente'}`);
-                }
-            } catch (error) {
-                console.error('Error editing user:', error);
-                alert('Errore di connessione al server');
+                // Chiudi modals
+                document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                
+                showQuickNotification('✅ Utente modificato con successo!', 'success');
+                openUserManagement();
             }
         }
         
@@ -5845,7 +5262,7 @@ function resetFiltersToDefault() {
             document.body.insertAdjacentHTML('beforeend', html);
         }
         
-        async function saveNewPassword(username) {
+        function saveNewPassword(username) {
             const pass1 = document.getElementById('newPassword1').value;
             const pass2 = document.getElementById('newPassword2').value;
             
@@ -5864,208 +5281,141 @@ function resetFiltersToDefault() {
                 return;
             }
             
-            try {
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'update',
-                        username,
-                        newPassword: pass1
-                    })
-                });
+            let users = JSON.parse(localStorage.getItem('orderFlowUsers') || '[]');
+            const userIndex = users.findIndex(u => u.username === username);
+            
+            if (userIndex !== -1) {
+                users[userIndex].password = pass1;
+                localStorage.setItem('orderFlowUsers', JSON.stringify(users));
                 
-                const data = await response.json();
-                
-                if (data.success) {
-                    logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
-                    
-                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-                    showQuickNotification('✅ Password aggiornata con successo!', 'success');
-                    openUserManagement();
-                } else {
-                    alert(`⚠️ ${data.error || 'Errore nell\'aggiornamento password'}`);
+                // Se è l'utente corrente, aggiorna anche la sessione
+                if (currentUser && currentUser.username === username) {
+                    currentUser.password = pass1;
+                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
                 }
-            } catch (error) {
-                console.error('Error updating password:', error);
-                alert('Errore di connessione al server');
+                
+                logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
+                
+                document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                showQuickNotification('✅ Password aggiornata con successo!', 'success');
+                openUserManagement();
             }
         }
         
         // ===== SISTEMA LOG ATTIVITÀ =====
         
-        // Registra un'azione nello storico CONDIVISO (su Redis)
-        async function logActivity(action, details) {
-        const ignoredActions = ['SAVE', 'AUTOSAVE', 'Salvataggio dati'];
-        if (ignoredActions.includes(action)) return; // <--- se qui c'è 'Salvataggio dati' NON verrà mai loggato
-
-        const user = typeof currentUser === 'string'
-            ? currentUser
-            : (currentUser && currentUser.username) || 'Amministratore';
-
-         try {
-            await fetch('/api/logs', {
-            method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user,
-                action,
-                details,
-            timestamp: new Date().toISOString()
-            })
-         });
-        } catch (e) {
-         console.warn('Errore caricamento log:', e);
-         }
-        }
-
-        
-        // Mostra lo storico CONDIVISO da Redis
-        async function openActivityLog() {
-        try {
-            const res = await fetch('/api/logs');
-            const data = await res.json();
-            if (data.logs && data.logs.length > 0) {
-        console.log('DEBUG LOGS[0]:', JSON.stringify(data.logs[0], null, 2));
-        }
-
-        // AGGIUNGI QUESTO
-        console.log('DEBUG LOGS:', data.logs && data.logs[0]);
-
-    if (data.success && data.logs) {
-      const logs = data.logs.slice(0, 20); // ultime 20 azioni
-
-      let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">';
-      html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">';
-      html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
-      html += '<h2 class="text-2xl font-bold text-gray-900">';
-      html += '<i class="fas fa-history text-blue-600 mr-2"></i>';
-      html += 'LOG Attività (Ultime 20 Azioni)';
-      html += '</h2>';
-      html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\">";
-      html += '<i class="fas fa-times text-2xl"></i>';
-      html += '</button>';
-      html += '</div>';
-
-      if (logs.length === 0) {
-        html += '<p class="text-gray-500 text-center py-8">Nessuna attività registrata</p>';
-      } else {
-        const actionColors = {
-          'CREATE_ORDER': 'bg-green-100 text-green-800',
-          'EDIT_ORDER': 'bg-blue-100 text-blue-800',
-          'DELETE_ORDER': 'bg-red-100 text-red-800',
-          'IMPORT_GOOGLE': 'bg-purple-100 text-purple-800',
-          'EXPORT_BACKUP': 'bg-teal-100 text-teal-800',
-          'CREATE_USER': 'bg-green-100 text-green-800',
-          'DELETE_USER': 'bg-red-100 text-red-800',
-          'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
-          'LOGIN': 'bg-blue-100 text-blue-800',
-          'RESET_DATA': 'bg-red-100 text-red-800',
-          'CHANGESTATUS': 'bg-indigo-100 text-indigo-800'
-        };
-
-        html += '<div class="overflow-x-auto">';
-        html += '<table class="min-w-full divide-y divide-gray-200">';
-        html += '<thead class="bg-gray-50">';
-        html += '<tr>';
-        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data/Ora</th>';
-        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Utente</th>';
-        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Azione</th>';
-        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Descrizione</th>';
-        html += '</tr>';
-        html += '</thead>';
-        html += '<tbody class="bg-white divide-y divide-gray-200">';
-
-        logs.forEach(log => {
-        // Leggi il campo data: prova in quest'ordine
-        const rawTs = log.timestamp || log.time || log.date || log.createdAt;
-
-        let dateStr = '';
-        let timeStr = '';
-
-        if (rawTs) {
-         const d = new Date(rawTs);
-            if (!isNaN(d.getTime())) {
-            dateStr = d.toLocaleDateString('it-IT');
-            timeStr = d.toLocaleTimeString('it-IT');
+        function logActivity(action, description, details = {}) {
+            const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
+            
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                user: currentUser ? currentUser.username : 'Sistema',
+                userName: currentUser ? currentUser.name : 'Sistema',
+                action: action,
+                description: description,
+                details: details
+            };
+            
+            logs.unshift(logEntry); // Aggiungi all'inizio
+            
+            // Mantieni solo ultime 100 (mostriamo 20 ma ne salviamo di più)
+            if (logs.length > 100) {
+                logs.splice(100);
             }
+            
+            localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
         }
-
-        // Utente come stringa “pulita”
-        let userDisplay = '';
-        if (typeof log.user === 'string') {
-         userDisplay = log.user;
-         } else if (log.user && typeof log.user === 'object') {
-            userDisplay = log.user.name || log.user.username || 'Amministratore';
-        } else {
-            userDisplay = 'Amministratore';
-        }
-
-        const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
-
-         html += `
-            <tr class="hover:bg-gray-50">
-            <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${userDisplay}</td>
-            <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
-            </tr>`;
-        });
-
-        html += '</tbody>';
-        html += '</table>';
-        html += '</div>';
-
-        html += '<div class="mt-4 pt-4 border-t text-center">';
-        html += '<button onclick="clearActivityLog()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold">';
-        html += '<i class="fas fa-trash mr-2"></i>Cancella LOG';
-        html += '</button>';
-        html += '</div>';
-      }
-
-      html += '</div>'; // chiude contenitore bianco
-      html += '</div>'; // chiude overlay
-
-      document.body.insertAdjacentHTML('beforeend', html);
-    }
-  } catch (error) {
-    console.error('Errore caricamento log:', error);
-    alert('❌ Impossibile caricare lo storico delle attività.');
-  }
-}
-
-async function clearActivityLog() {
-  if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
-
-  try {
-    // per ora usa l'azione 'clear' via POST, come da tuo server
-    await fetch('/api/logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'clear' })
-    });
-    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-    showQuickNotification('✅ LOG cancellato', 'success');
-  } catch (error) {
-    alert('❌ Errore durante la cancellazione del log.');
-  }
-}
         
-        async function clearActivityLog() {
-    if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
-    
-    try {
-        await fetch('/api/logs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'clear' })
-        });
-        document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
-        showQuickNotification('✅ LOG cancellato', 'success');
-    } catch (error) {
-        alert('❌ Errore durante la cancellazione del log.');
-    }
-}
+        function openActivityLog() {
+            const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
+            const recentLogs = logs.slice(0, 20); // Ultime 20 azioni
+            
+            let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" onclick="event.target === this && this.remove()">';
+            html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">';
+            html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
+            html += '<h2 class="text-2xl font-bold text-gray-900">';
+            html += '<i class="fas fa-history text-blue-600 mr-2"></i>';
+            html += 'LOG Attività (Ultime 20 Azioni)';
+            html += '</h2>';
+            html += '<button onclick="this.closest(\'.fixed\').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>';
+            html += '</div>';
+            
+            if (recentLogs.length === 0) {
+                html += '<p class="text-gray-500 text-center py-8">Nessuna attività registrata</p>';
+            } else {
+                html += '<div class="overflow-x-auto">';
+                html += '<table class="min-w-full divide-y divide-gray-200">';
+                html += '<thead class="bg-gray-50">';
+                html += '<tr>';
+                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data/Ora</th>';
+                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Utente</th>';
+                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Azione</th>';
+                html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Descrizione</th>';
+                html += '</tr>';
+                html += '</thead>';
+                html += '<tbody class="bg-white divide-y divide-gray-200">';
+            
+                recentLogs.forEach(log => {
+                    const date = new Date(log.timestamp);
+                    const dateStr = date.toLocaleDateString('it-IT');
+                    const timeStr = date.toLocaleTimeString('it-IT');
+                    
+                    const actionColors = {
+                        'CREATE_ORDER': 'bg-green-100 text-green-800',
+                        'EDIT_ORDER': 'bg-blue-100 text-blue-800',
+                        'DELETE_ORDER': 'bg-red-100 text-red-800',
+                        'IMPORT_GOOGLE': 'bg-purple-100 text-purple-800',
+                        'EXPORT_BACKUP': 'bg-teal-100 text-teal-800',
+                        'CREATE_USER': 'bg-green-100 text-green-800',
+                        'DELETE_USER': 'bg-red-100 text-red-800',
+                        'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
+                        'LOGIN': 'bg-blue-100 text-blue-800',
+                        'RESET_DATA': 'bg-red-100 text-red-800'
+                    };
+                    
+                    const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
+                    
+                    html += '<tr class="hover:bg-gray-50">';
+                    html += '<td class="px-4 py-3 text-sm text-gray-900">';
+                    html += '<div class="font-bold">' + dateStr + '</div>';
+                    html += '<div class="text-xs text-gray-500">' + timeStr + '</div>';
+                    html += '</td>';
+                    html += '<td class="px-4 py-3 text-sm">';
+                    html += '<div class="font-bold">' + log.userName + '</div>';
+                    html += '<div class="text-xs text-gray-500">' + log.user + '</div>';
+                    html += '</td>';
+                    html += '<td class="px-4 py-3">';
+                    html += '<span class="px-2 py-1 rounded text-xs font-bold ' + actionColor + '">';
+                    html += log.action.replace(/_/g, ' ');
+                    html += '</span>';
+                    html += '</td>';
+                    html += '<td class="px-4 py-3 text-sm text-gray-700">' + log.description + '</td>';
+                    html += '</tr>';
+                });
+            
+                html += '</tbody>';
+                html += '</table>';
+                html += '</div>';
+            }
+            
+            html += '<div class="mt-4 pt-4 border-t text-center">';
+            html += '<button onclick="clearActivityLog()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold">';
+            html += '<i class="fas fa-trash mr-2"></i>Cancella LOG';
+            html += '</button>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+        
+        function clearActivityLog() {
+            if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
+            
+            localStorage.setItem('orderFlowActivityLog', JSON.stringify([]));
+            document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+            showQuickNotification('✅ LOG cancellato', 'success');
+        }
         
         // ===== FINE SISTEMA LOG =====
         
@@ -6076,12 +5426,36 @@ async function clearActivityLog() {
             return role.permissions[action] === true;
         }
         
+        // Auto-login se sessione attiva
+        const savedUser = localStorage.getItem('orderFlowCurrentUser');
+        if (savedUser) {
+            currentUser = JSON.parse(savedUser);
+            document.getElementById('loginScreen').classList.add('hidden');
+            applyUserPermissions();
+                initQuickIdButtons();
+            // Disabilita campi dopo l'applicazione permessi
+            setTimeout(() => {
+                if (window.disableEditInputs) window.disableEditInputs();
+            }, 200);
+        }
+        
         // ===== FINE SISTEMA UTENTI =====
         
         // ===== QUICK ID BUTTONS =====
         
         // Inizializza i Quick ID buttons in TUTTE le sezioni
         function initQuickIdButtons() {
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'Amministratore')) {
+                const cont = document.getElementById('quickIdButtonsContainer');
+                if (cont) cont.style.display = 'none';
+                const btn = document.getElementById('quickIdConfigBtn');
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+            const cont = document.getElementById('quickIdButtonsContainer');
+            if (cont) cont.style.display = 'flex';
+            const btn = document.getElementById('quickIdConfigBtn');
+            if (btn) btn.style.display = 'inline-flex';
             const quickIdFilters = JSON.parse(localStorage.getItem('quickIdFilters') || '{}');
             
             // IDs dei container in tutte e 3 le sezioni
