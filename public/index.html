@@ -2117,8 +2117,6 @@
                         highlightedSizeCells
                     })
                 });
-                // Registra nel log
-                logActivity('Salvataggio dati', `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`);
                 
                 // Save inventory
                 await fetch('/api/inventory', {
@@ -2198,17 +2196,33 @@
 
         function updateOrderField(id, field, value) { 
             const o = orders.find(x => x.id === id);
-            if (!o) return; 
+            if (!o) return;
+            const oldValue = o[field] || '';
+            
             if (field === 'displayId') { 
                 const newValue = value.toUpperCase().trim();
                 if (orders.some(x => x.displayId === newValue && x.id !== id)) { alert(`ID esistente.`); renderTable(); return; } 
                 o.displayId = newValue;
-            } else if (field === 'customer') o.customer = value.trim(); 
-            else if (field === 'roleOrYear') o.roleOrYear = value.trim();
+                if (oldValue !== newValue) logActivity('MODIFICA_ID', `Ordine ${o.customer}: ID cambiato da "${oldValue}" a "${newValue}"`);
+            } else if (field === 'customer') {
+                const newValue = value.trim();
+                if (oldValue !== newValue) logActivity('MODIFICA_CLIENTE', `Ordine ${o.displayId}: Cliente cambiato da "${oldValue}" a "${newValue}"`);
+                o.customer = newValue;
+            }
+            else if (field === 'roleOrYear') {
+                const newValue = value.trim();
+                if (oldValue !== newValue) logActivity('MODIFICA_ANNO_RUOLO', `Ordine ${o.displayId} (${o.customer}): Anno/Ruolo cambiato da "${oldValue}" a "${newValue}"`);
+                o.roleOrYear = newValue;
+            }
             else if (field === 'kitType') { 
+                if (oldValue !== value) logActivity('MODIFICA_KIT', `Ordine ${o.displayId} (${o.customer}): Kit cambiato da "${oldValue}" a "${value}"`);
                 o.kitType = value;
                 if (value.toLowerCase().includes('staff') || value.toLowerCase().includes('allenatore') || value.toLowerCase().includes('dirigente')) o.type = 'Staff'; else o.type = 'Giocatore';
-            } else if (field === 'notes') o.notes = value.trim(); 
+            } else if (field === 'notes') {
+                const newValue = value.trim();
+                if (oldValue !== newValue) logActivity('MODIFICA_NOTE', `Ordine ${o.displayId} (${o.customer}): Note modificate`);
+                o.notes = newValue;
+            }
             updateUI();
         }
 
@@ -2228,13 +2242,31 @@
         highlightedSizeCells = {}; lastOrderId = 0; localStorage.clear(); location.reload(); } }
         function extractKitName(input) { if (!input) return null;
         const match = input.match(/^(.*?)\s*\(/); return (match && match[1].trim()) ? match[1].trim() : input.trim(); }
-        function updateSizes(id, t, v) { const o = orders.find(x=>x.id===id); if (!o) return; v = v.toUpperCase().trim(); if (t === 'sock') { if (v === 'UNICA') return alert('Taglia non valida'); o.sockSize = v; o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); } if(t==='main') { o.mainSize = v; o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); } updateUI(); }
+        function updateSizes(id, t, v) { 
+            const o = orders.find(x=>x.id===id); 
+            if (!o) return; 
+            v = v.toUpperCase().trim(); 
+            if (t === 'sock') { 
+                if (v === 'UNICA') return alert('Taglia non valida'); 
+                const oldSize = o.sockSize;
+                o.sockSize = v; 
+                o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); 
+                if (oldSize !== v) logActivity('MODIFICA_TAGLIA_CALZE', `Ordine ${o.displayId} (${o.customer}): Taglia calze cambiata da "${oldSize}" a "${v}"`);
+            } 
+            if(t==='main') { 
+                const oldSize = o.mainSize;
+                o.mainSize = v; 
+                o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); 
+                if (oldSize !== v) logActivity('MODIFICA_TAGLIA', `Ordine ${o.displayId} (${o.customer}): Taglia principale cambiata da "${oldSize}" a "${v}"`);
+            } 
+            updateUI(); 
+        }
         function updateInventory(itemName, size, value) { const key = `${itemName}_${size}`; if(value === "" || value === null) delete inventory[key]; else inventory[key] = parseInt(value); saveData(); renderMatrices(true); }
         function getPriceFromString(str) { if (!str || typeof str !== 'string') return 0; const match = str.match(/\((\d+)€\)/); return match ? parseInt(match[1]) : 0; }
         function getBagType(items) { const bag = items.find(i => i.name.includes('Borsone') || i.name.includes('Zaino'));
         if (!bag) return ''; return bag.name.includes('Zaino') ? 'Zaino' : 'Borsone'; }
         function updateDiscount(id, val) { const o = orders.find(x => x.id === id);
-        if (!o) return; o.discount = parseInt(val) || 0; updateUI(); }
+        if (!o) return; const oldDiscount = o.discount || 0; o.discount = parseInt(val) || 0; if (oldDiscount !== o.discount) logActivity('MODIFICA_SCONTO', `Ordine ${o.displayId} (${o.customer}): Sconto cambiato da ${oldDiscount}€ a ${o.discount}€`); updateUI(); }
         
         function calculateOrderTotal(o) {
             if (!o) return 0;
@@ -2966,8 +2998,7 @@
             const newOrder = { id: Date.now(), displayId: generateNewId(true), importKey: null, customer: "Nuovo Ordine", mainSize: "L", sockSize: "43/46", notes: "", itemsList: kitInfo.items.map(n => ({ name: n, size: n.includes("Calzettoni")?"43/46":(n.includes("Borsone")||n.includes("Zaino")||n.includes("Cappellino")||n.includes("Scaldacollo")||n.includes("Guanti")?"UNICA":"L") })), status: 'Nuovo', type: 'Giocatore', kitType: kitInfo.display, linkedId: null, discount: 0, email: "", phone: "", roleOrYear: "" };
             orders.push(newOrder);
             
-            logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
-            logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
+            logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId} - Cliente: ${newOrder.customer}`);
             
             updateUI(); 
         }
@@ -2975,10 +3006,11 @@
             if (confirm(`Eliminare?`)) { 
                 const order = orders.find(x => x.id === id);
                 const orderId = order ? order.displayId : 'N/A';
+                const customerName = order ? order.customer : 'N/A';
                 
                 orders = orders.filter(x => x.id !== id);
                 
-                logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId}`);
+                logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId} - Cliente: ${customerName}`);
                 
                 updateUI(); 
             } 
