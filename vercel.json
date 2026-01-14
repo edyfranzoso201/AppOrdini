@@ -1,9 +1,12 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/api/orders", "dest": "/api/orders.js" },
-    { "src": "/api/users", "dest": "/api/users.js" },
-    { "src": "/api/inventory", "dest": "/api/inventory.js" },
-    { "src": "/api/logs", "dest": "/api/logs.js" }
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/presenza/:token",
+      "destination": "/index.html"
+    }
   ]
 }
