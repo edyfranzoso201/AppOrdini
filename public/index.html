@@ -2204,7 +2204,11 @@
                 const newValue = value.toUpperCase().trim();
                 if (orders.some(x => x.displayId === newValue && x.id !== id)) { alert(`ID esistente.`); renderTable(); return; } 
                 o.displayId = newValue;
-            } else if (field === 'customer') o.customer = value.trim(); 
+            } else if (field === 'customer') {
+                // Rimuovi newline e spazi multipli, unisci con uno spazio
+                const cleanValue = value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                o.customer = cleanValue;
+            }
             else if (field === 'roleOrYear') o.roleOrYear = value.trim();
             else if (field === 'kitType') { 
                 o.kitType = value;
@@ -3432,7 +3436,16 @@ function deleteOrder(id) {
                 const roleSelector = `<select onchange="updateOrderType(${o.id}, this.value)" class="text-[10px] uppercase font-bold bg-transparent border-none focus:ring-0 cursor-pointer ${isStaff?'text-red-600':'text-blue-600'} outline-none"><option value="Giocatore" ${o.type==='Giocatore'?'selected':''}>GIOCATORE</option><option value="Staff" ${o.type==='Staff'?'selected':''}>STAFF</option></select>`;
                 const isDuplicate = nameCounts[o.customer.trim().toLowerCase()] > 1;
                 const customerClass = isDuplicate ?
-                "w-full border rounded px-1 text-sm font-medium duplicate-highlight" : "w-full border rounded px-1 text-sm font-medium";
+                "w-full border rounded px-1 text-xs font-medium duplicate-highlight leading-tight" : "w-full border rounded px-1 text-xs font-medium leading-tight";
+                
+                // Dividi nome e cognome su due righe
+                const customerParts = o.customer.trim().split(' ');
+                let customerDisplay = o.customer;
+                if (customerParts.length >= 2) {
+                    const firstName = customerParts[0];
+                    const lastName = customerParts.slice(1).join(' ');
+                    customerDisplay = `${firstName}\n${lastName}`;
+                }
                 
                 // Note con colore
                 const noteColor = o.noteColor || 'default';
@@ -3445,7 +3458,7 @@ function deleteOrder(id) {
                     `<span class="text-[9px] bg-green-100 text-green-800 px-1 py-0.5 rounded font-bold border border-green-300" title="Scalato dal magazzino il ${o.inventoryScaledAt}">📦 SCALATO</span>` : '';
                 
                 tr.innerHTML = `<td class="px-4 py-3 text-xs text-gray-500 font-bold"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-left border rounded px-1 text-xs font-bold uppercase"></td>
-                <td class="px-4 py-3 font-medium text-sm"><input value="${o.customer}" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}"><span class="block">${roleSelector}</span></td>
+                <td class="px-2 py-1 font-medium text-xs" style="min-width: 120px; max-width: 150px;"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
                 <td class="px-4 py-3"><input value="${o.roleOrYear || ''}" onblur="updateOrderField(${o.id}, 'roleOrYear', this.value)" class="w-full border rounded px-1 text-xs text-center" placeholder="Anno/Ruolo"></td>
                 <td class="px-4 py-3 text-sm text-gray-700"><select onchange="updateOrderField(${o.id}, 'kitType', this.value)" class="text-xs border rounded p-1 w-full">${kitOptions}</select></td>
                 <td class="px-4 py-3 text-xs text-gray-500 note-cell" onclick="openNotesPopup(${o.id})" title="Clicca per modificare la nota">
