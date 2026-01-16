@@ -1054,6 +1054,7 @@
         let orders = []; 
         let inventory = {}; 
         let globalKitTypes = {}; 
+        let quickIdFilters = {}; // Filtri Quick ID condivisi su Redis
         let currentEditId = null;
         let currentEditingKitKey = null; 
         let chartStatus = null;
@@ -1801,6 +1802,7 @@
             if (configData.success && configData.data) {
                 globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
                 globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                quickIdFilters = configData.data.quickIdFilters || {};
             }
         }
         
@@ -1815,6 +1817,7 @@
         // Repair import keys
         repairAllImportKeys();
         renderKitFilterOptions();
+        initQuickIdButtons(); // Inizializza i pulsanti Quick ID dopo aver caricato i filtri
         await saveData();
     } catch (error) {
         console.error('Error loading data:', error);
@@ -2131,14 +2134,15 @@
                     })
                 });
                 
-                // Save config
+                // Save config (include quickIdFilters)
                 await fetch('/api/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         action: 'save', 
                         globalItems,
-                        globalKitTypes
+                        globalKitTypes,
+                        quickIdFilters
                     })
                 });
                 
@@ -6143,7 +6147,7 @@ async function clearActivityLog() {
         
         // Inizializza i Quick ID buttons in TUTTE le sezioni
         function initQuickIdButtons() {
-            const quickIdFilters = JSON.parse(localStorage.getItem('quickIdFilters') || '{}');
+            // Usa la variabile globale quickIdFilters (caricata da Redis)
             
             // IDs dei container in tutte e 3 le sezioni
             const containers = [
@@ -6177,7 +6181,7 @@ async function clearActivityLog() {
         
         // Applica filtro Quick ID a TUTTE le sezioni
         function applyQuickIdFilter(num) {
-            const quickIdFilters = JSON.parse(localStorage.getItem('quickIdFilters') || '{}');
+            // Usa la variabile globale quickIdFilters (caricata da Redis)
             const filter = quickIdFilters[num];
             
             if (!filter || !filter.min || !filter.max) {
@@ -6297,7 +6301,7 @@ async function clearActivityLog() {
         
         // Apri modal configurazione
         function openQuickIdConfig() {
-            const quickIdFilters = JSON.parse(localStorage.getItem('quickIdFilters') || '{}');
+            // Usa la variabile globale quickIdFilters (caricata da Redis)
             
             let html = `
                 <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeQuickIdConfig()">
@@ -6369,33 +6373,38 @@ async function clearActivityLog() {
             if (modal) modal.remove();
         }
         
-        // Salva configurazione
-        function saveQuickIdConfig() {
-            const quickIdFilters = {};
+        // Salva configurazione Quick ID su Redis
+        async function saveQuickIdConfig() {
+            const newFilters = {};
             
             for (let i = 1; i <= 15; i++) { // 15 pulsanti
                 const min = document.getElementById(`quickIdMin_${i}`).value.trim();
                 const max = document.getElementById(`quickIdMax_${i}`).value.trim();
                 
                 if (min && max) {
-                    quickIdFilters[i] = { min, max };
+                    newFilters[i] = { min, max };
                 }
             }
             
-            localStorage.setItem('quickIdFilters', JSON.stringify(quickIdFilters));
+            // Aggiorna la variabile globale
+            quickIdFilters = newFilters;
+            
+            // Salva su Redis tramite saveData()
+            await saveData();
+            
             closeQuickIdConfig();
             initQuickIdButtons();
             
             const configCount = Object.keys(quickIdFilters).length;
-            alert(`✅ Configurazione salvata!\n\n📊 ${configCount} pulsanti configurati su 15 disponibili.`);
+            alert(`✅ Configurazione salvata su server!\n\n📊 ${configCount} pulsanti configurati su 15 disponibili.\n\n👥 Tutti gli utenti vedranno questa configurazione.`);
         }
         
         // Inizializza all'avvio
         initQuickIdButtons();
     </script>
     <!-- Copyright Footer - Fisso in basso -->
-    <footer class="no-print" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #1e3a5f 0%, #2d1b4e 100%); color: white; padding: 8px 20px; font-size: 10px; line-height: 1.4; z-index: 9999; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.3);">
-        <strong>© 2025 Edy Franzoso.</strong> Codice sorgente e contenuti protetti ai sensi della Legge sul Diritto d'Autore (L. 633/1941). Riproduzione, distribuzione o modifica vietati senza autorizzazione scritta.
+    <footer class="no-print" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 6px 15px; font-size: 9px; z-index: 9999; text-align: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.2);">
+        © 2025 Edy Franzoso. Codice sorgente e contenuti protetti ai sensi della Legge sul Diritto d'Autore (L. 633/1941). Riproduzione, distribuzione o modifica vietati senza autorizzazione scritta.
     </footer>
 </body>
 </html>
