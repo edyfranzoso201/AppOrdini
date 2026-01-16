@@ -1225,10 +1225,9 @@
             const maxSelect = document.getElementById('tabellaOrdiniMaxId');
             if (!minSelect || !maxSelect) return;
             
-            const allIds = orders.map(o => o.displayId).sort((a, b) => {
-                const getNum = (id) => { const m = id.match(/(\d+)$/); return m ? parseInt(m[1]) : 0; };
-                return getNum(a) - getNum(b);
-            });
+            // Ordina usando la funzione globale
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
+            const allIds = sortedOrders.map(o => o.displayId);
             
             minSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
             maxSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
@@ -1373,9 +1372,6 @@
             // Filtri ID
             const minId = tabellaMinId?.value;
             const maxId = tabellaMaxId?.value;
-            const getNum = (id) => { const m = id.match(/(\d+)$/); return m ? parseInt(m[1]) : 0; };
-            const minNum = getNum(minId);
-            const maxNum = getNum(maxId);
             
             // Ordine ESATTO colonne come nell'Excel
             const columnOrder = [
