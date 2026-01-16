@@ -5883,7 +5883,13 @@ function resetFiltersToDefault() {
                 if (!perms.editOrders && !perms.editTabella) {
                     // Lista completa ID filtri da NON disabilitare
                     const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
-                                      'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
+                                      'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId',
+                                      // Filtri Distinta & Magazzino
+                                      'matrixMinId', 'matrixMaxId',
+                                      // Filtri Tabella Ordini
+                                      'tabellaOrdiniMinId', 'tabellaOrdiniMaxId', 'tabellaOrdiniFilterCliente', 'tabellaOrdiniFilterTaglia',
+                                      // Filtri Dashboard
+                                      'dashboardKitFilter'];
                     
                     // Funzione per disabilitare inputs dopo il render
                     window.disableEditInputs = function() {
@@ -5900,18 +5906,24 @@ function resetFiltersToDefault() {
                         
                         // Disabilita TUTTI gli input e select tranne i filtri
                         document.querySelectorAll('input, select').forEach(el => {
-                            // NON disabilitare i filtri
+                            // NON disabilitare i filtri per ID
                             if (filterIds.includes(el.id)) return;
                             // NON disabilitare elementi già gestiti o non nella tabella
                             if (el.type === 'button' || el.type === 'submit') return;
-                            // NON disabilitare elementi nella sezione "Filtri & Ricerca"
+                            // NON disabilitare elementi nella sezione "Filtri & Ricerca" (Gestione)
                             if (el.closest('.p-3.border-b.bg-gray-50')) return;
+                            // NON disabilitare elementi nelle aree filtri (header delle sezioni)
+                            if (el.closest('.flex.items-center.gap-3')) return;
+                            if (el.closest('.flex.justify-between.items-center.mb-4')) return;
+                            if (el.closest('.no-print')) return;
                             // NON disabilitare select STATO se l'utente ha editStatus
                             if (perms.editStatus && el.classList.contains('status-select')) return;
+                            // NON disabilitare Quick ID buttons
+                            if (el.closest('#quickIdButtons') || el.closest('#quickIdButtonsMatrix') || el.closest('#quickIdButtonsTabella')) return;
                             
-                            // Disabilita solo se è nella tabella/area dati
-                            const isInTable = el.closest('table') || el.closest('.tab-content');
-                            if (isInTable && !el.closest('.glass-effect')) {
+                            // Disabilita solo se è nella tabella dati (non header/filtri)
+                            const isInDataTable = el.closest('tbody') || el.closest('.overflow-x-auto table');
+                            if (isInDataTable) {
                                 el.disabled = true;
                                 el.style.cursor = 'not-allowed';
                                 el.style.opacity = '0.6';
