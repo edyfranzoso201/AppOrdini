@@ -1137,6 +1137,40 @@
             { value: 'Ordine trasferito ad altro ID', label: 'Trasferito', color: 'bg-purple-100 text-purple-800' },
 	    { value: 'Da piazzare', label: 'Da piazzare', color: 'bg-indigo-100 text-indigo-800' }
         ];
+        
+        // === FUNZIONI GLOBALI PER ORDINAMENTO ID ===
+        // Estrae prefisso (anno) e numero dall'ID
+        // Esempi: "2025_001" -> {prefix: "2025_", num: 1}, "2025A_244" -> {prefix: "2025A_", num: 244}, "2026_001" -> {prefix: "2026_", num: 1}
+        function parseDisplayId(displayId) {
+            if (!displayId) return { prefix: '', num: 0 };
+            const match = displayId.match(/^(.+?)(\d+)$/);
+            if (match) {
+                return { prefix: match[1], num: parseInt(match[2]) };
+            }
+            return { prefix: displayId, num: 0 };
+        }
+        
+        // Confronta due ID considerando prefisso + numero
+        // 2025_001 < 2025_002 < 2025A_001 < 2025A_244 < 2026_001
+        function compareDisplayIds(idA, idB) {
+            const a = parseDisplayId(idA);
+            const b = parseDisplayId(idB);
+            
+            // Prima confronta il prefisso (ordine alfabetico: 2025A_ < 2026_)
+            if (a.prefix !== b.prefix) {
+                return a.prefix.localeCompare(b.prefix);
+            }
+            // Se stesso prefisso, confronta il numero
+            return a.num - b.num;
+        }
+        
+        // Ordina un array di ordini per displayId
+        function sortOrdersByDisplayId(ordersArray, ascending = true) {
+            return [...ordersArray].sort((a, b) => {
+                const comparison = compareDisplayIds(a.displayId, b.displayId);
+                return ascending ? comparison : -comparison;
+            });
+        }
 
         let globalItems = []; 
         let orders = []; 
@@ -1315,11 +1349,7 @@
             const tabellaMinId = document.getElementById('tabellaOrdiniMinId');
             const tabellaMaxId = document.getElementById('tabellaOrdiniMaxId');
             if (tabellaMinId && tabellaMaxId && tabellaMinId.options.length === 0) {
-                const getNumId = (displayId) => {
-                    const match = displayId.match(/(\d+)$/);
-                    return match ? parseInt(match[1]) : 0;
-                };
-                const sortedOrders = [...orders].sort((a, b) => getNumId(a.displayId) - getNumId(b.displayId));
+                const sortedOrders = sortOrdersByDisplayId(orders, true);
                 
                 sortedOrders.forEach(o => {
                     const optMin = document.createElement('option');
@@ -1448,9 +1478,10 @@
             const filterCliente = document.getElementById('tabellaOrdiniFilterCliente')?.value.toLowerCase().trim() || '';
             const filterTaglia = document.getElementById('tabellaOrdiniFilterTaglia')?.value || '';
             
-            const filteredOrders = orders.filter(o => {
-                const num = getNum(o.displayId);
-                if (num < minNum || num > maxNum) return false;
+            let filteredOrders = orders.filter(o => {
+                // Usa confronto completo per il filtro ID
+                if (minId && compareDisplayIds(o.displayId, minId) < 0) return false;
+                if (maxId && compareDisplayIds(o.displayId, maxId) > 0) return false;
                 
                 // Filtro Cliente
                 if (filterCliente && !o.customer.toLowerCase().includes(filterCliente)) return false;
@@ -1459,7 +1490,10 @@
                 if (filterTaglia && o.mainSize !== filterTaglia) return false;
                 
                 return true;
-            }).sort((a, b) => getNum(a.displayId) - getNum(b.displayId));
+            });
+            
+            // Ordina usando la nuova funzione globale
+            filteredOrders = sortOrdersByDisplayId(filteredOrders, true);
             
             // Header riga 2 - Totali
             let header2HTML = '';
@@ -2508,7 +2542,8 @@
                     return match ? parseInt(match[1]) : 0;
                 };
                 
-                const sortedOrders = [...orders].sort((a, b) => getNumId(b.displayId) - getNumId(a.displayId));
+                // Usa ordinamento globale (decrescente per trovare l'ultimo)
+                const sortedOrders = sortOrdersByDisplayId(orders, false);
                 latestOrder = sortedOrders[0];
                 
                 if (latestOrder && latestOrder.timestamp) {
@@ -3418,12 +3453,40 @@ function deleteOrder(id) {
             // Filtro ID Min/Max
             const filterMinId = document.getElementById('filterMinId')?.value;
             const filterMaxId = document.getElementById('filterMaxId')?.value;
+            
+            // Funzione per estrarre anno/prefisso e numero dall'ID
+            // Esempi: "2025_001" -> {prefix: "2025_", num: 1}, "2025A_001" -> {prefix: "2025A_", num: 1}
+            const parseDisplayId = (displayId) => {
+                const match = displayId.match(/^(.+?)(\d+)$/);
+                if (match) {
+                    return { prefix: match[1], num: parseInt(match[2]) };
+                }
+                return { prefix: displayId, num: 0 };
+            };
+            
+            // Funzione per confrontare due ID (considera prefisso + numero)
+            const compareIds = (idA, idB) => {
+                const a = parseDisplayId(idA);
+                const b = parseDisplayId(idB);
+                
+                // Prima confronta il prefisso (2025A_ viene prima di 2026_)
+                if (a.prefix !== b.prefix) {
+                    return a.prefix.localeCompare(b.prefix);
+                }
+                // Se stesso prefisso, confronta il numero
+                return a.num - b.num;
+            };
+            
             const getNumId = (displayId) => {
                 const match = displayId.match(/(\d+)$/);
                 return match ? parseInt(match[1]) : 0;
             };
+            
+            // Per i filtri min/max, usa il confronto completo
             const minNum = filterMinId ? getNumId(filterMinId) : 0;
             const maxNum = filterMaxId ? getNumId(filterMaxId) : Infinity;
+            const minPrefix = filterMinId ? parseDisplayId(filterMinId).prefix : '';
+            const maxPrefix = filterMaxId ? parseDisplayId(filterMaxId).prefix : '';
 
             const nameCounts = {};
             orders.forEach(o => {
@@ -3431,9 +3494,9 @@ function deleteOrder(id) {
                 if(c) nameCounts[c] = (nameCounts[c] || 0) + 1;
             });
             let displayedOrders = orders.filter(o => {
-                // FILTRO ID MIN/MAX
-                const oNum = getNumId(o.displayId);
-                if (oNum < minNum || oNum > maxNum) return false;
+                // FILTRO ID MIN/MAX - considera anche il prefisso
+                if (filterMinId && compareIds(o.displayId, filterMinId) < 0) return false;
+                if (filterMaxId && compareIds(o.displayId, filterMaxId) > 0) return false;
                 
                 if(filterStatus !== 'all' && o.status !== filterStatus) return false;
                 if(filterSize !== 'all' && o.mainSize !== filterSize) return false; 
@@ -3461,10 +3524,10 @@ function deleteOrder(id) {
                 return true;
             });
 
+            // Ordinamento che considera prefisso + numero
             displayedOrders.sort((a, b) => {
-                const getNum = (str) => { const match = str.match(/(\d+)$/); return match ? parseInt(match[1]) : 0; };
-                const numA = getNum(a.displayId); const numB = getNum(b.displayId);
-                return sortOrder === 'asc' ? numA - numB : numB - numA;
+                const comparison = compareIds(a.displayId, b.displayId);
+                return sortOrder === 'asc' ? comparison : -comparison;
             });
 
             displayedOrders.forEach(o => {
@@ -3586,10 +3649,11 @@ function deleteOrder(id) {
                 o.status !== 'Ordine trasferito ad altro ID' &&
                 o.status !== 'Ordine annullato'
             );
-            const getNumId = (displayId) => { const match = displayId.match(/(\d+)$/); return match ? parseInt(match[1]) : 0; };
-            ordersGross.sort((a, b) => getNumId(a.displayId) - getNumId(b.displayId));
-            ordersNet.sort((a, b) => getNumId(a.displayId) - getNumId(b.displayId));
-            let allSorted = [...orders].sort((a, b) => getNumId(a.displayId) - getNumId(b.displayId));
+            
+            // Ordina usando la funzione globale
+            ordersGross = sortOrdersByDisplayId(ordersGross, true);
+            ordersNet = sortOrdersByDisplayId(ordersNet, true);
+            let allSorted = sortOrdersByDisplayId(orders, true);
             
             if (!manualUpdate) { 
                 populateIdSelects(allSorted);
@@ -4467,13 +4531,8 @@ function deleteOrder(id) {
             const currentMin = filterMinId.value;
             const currentMax = filterMaxId.value;
             
-            // Ordina ordini per ID
-            const getNumId = (displayId) => {
-                const match = displayId.match(/(\d+)$/);
-                return match ? parseInt(match[1]) : 0;
-            };
-            
-            const sortedOrders = [...orders].sort((a, b) => getNumId(a.displayId) - getNumId(b.displayId));
+            // Ordina ordini per ID usando la funzione globale
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
             
             // Popola select
             filterMinId.innerHTML = '';
@@ -5237,13 +5296,17 @@ function deleteOrder(id) {
             const maxNum = getNum(maxId);
             
             // Filtra ordini come nella tabella visualizzata
-            const filteredOrders = orders.filter(o => {
-                const num = getNum(o.displayId);
-                if (num < minNum || num > maxNum) return false;
+            let filteredOrders = orders.filter(o => {
+                // Usa confronto completo per il filtro
+                if (minId && compareDisplayIds(o.displayId, minId) < 0) return false;
+                if (maxId && compareDisplayIds(o.displayId, maxId) > 0) return false;
                 if (filterCliente && !o.customer.toLowerCase().includes(filterCliente)) return false;
                 if (filterTaglia && o.mainSize !== filterTaglia) return false;
                 return true;
-            }).sort((a, b) => getNum(a.displayId) - getNum(b.displayId));
+            });
+            
+            // Ordina usando la funzione globale
+            filteredOrders = sortOrdersByDisplayId(filteredOrders, true);
             
             // Raccogli tutti gli articoli presenti negli ordini filtrati
             const allItemsMap = new Map();
