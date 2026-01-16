@@ -3675,18 +3675,24 @@ function deleteOrder(id) {
 
             // Applica filtro ID se sono selezionati min e max
             if (minSel.value && maxSel.value) { 
-                const startNum = getNumId(minSel.value);
-                const endNum = getNumId(maxSel.value); 
-                filteredGross = ordersGross.filter(o => { const oNum = getNumId(o.displayId); return oNum >= startNum && oNum <= endNum; });
-                filteredNet = ordersNet.filter(o => { const oNum = getNumId(o.displayId); return oNum >= startNum && oNum <= endNum; });
+                // Usa la funzione globale compareDisplayIds per il filtro
+                filteredGross = ordersGross.filter(o => {
+                    return compareDisplayIds(o.displayId, minSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxSel.value) <= 0;
+                });
+                filteredNet = ordersNet.filter(o => {
+                    return compareDisplayIds(o.displayId, minSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxSel.value) <= 0;
+                });
                 
                 // DEBUG: Log per verificare filtro ordine netto
                 console.log(`📊 ORDINE NETTO - Range: ${minSel.value} → ${maxSel.value}`);
                 console.log(`   📦 Ordini GROSS nel range: ${filteredGross.length}`);
                 console.log(`   ✨ Ordini NET nel range (Nuovo NON scalati): ${filteredNet.length}`);
                 console.log(`   🟢 Ordini scalati esclusi da NET:`, orders.filter(o => {
-                    const oNum = getNumId(o.displayId);
-                    return o.status === 'Nuovo' && o.inventoryScaledAt && oNum >= startNum && oNum <= endNum;
+                    return o.status === 'Nuovo' && o.inventoryScaledAt && 
+                           compareDisplayIds(o.displayId, minSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxSel.value) <= 0;
                 }).map(o => `${o.displayId} (scalato: ${o.inventoryScaledAt})`));
             }
             
@@ -4048,13 +4054,9 @@ function deleteOrder(id) {
             const maxIdSel = document.getElementById('matrixMaxId');
             
             if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
-                const getNumId = (displayId) => { const match = displayId.match(/(\d+)$/); return match ? parseInt(match[1]) : 0; };
-                const startNum = getNumId(minIdSel.value);
-                const endNum = getNumId(maxIdSel.value);
-                
                 const filteredOrders = validOrders.filter(o => {
-                    const oNum = getNumId(o.displayId);
-                    return oNum >= startNum && oNum <= endNum;
+                    return compareDisplayIds(o.displayId, minIdSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxIdSel.value) <= 0;
                 });
                 
                 let filteredGross = 0;
@@ -5032,18 +5034,14 @@ function deleteOrder(id) {
             
             if (!confirm(confirmMsg)) return;
             
-            const getNumId = (displayId) => { const match = displayId.match(/(\d+)$/); return match ? parseInt(match[1]) : 0; };
-            const startNum = getNumId(minIdSel.value);
-            const endNum = getNumId(maxIdSel.value);
-            
             // Filtra solo ordini "Nuovo" NON ANCORA SCALATI nel range
             const NET_STATUSES = ['Nuovo'];
             const ordersToProcess = orders.filter(o => {
-                const oNum = getNumId(o.displayId);
                 return NET_STATUSES.includes(o.status) && 
                        o.status !== 'Ordine trasferito ad altro ID' &&
                        !o.inventoryScaledAt && // IMPORTANTE: Non scalare ordini già scalati!
-                       oNum >= startNum && oNum <= endNum;
+                       compareDisplayIds(o.displayId, minIdSel.value) >= 0 &&
+                       compareDisplayIds(o.displayId, maxIdSel.value) <= 0;
             });
             
             if (ordersToProcess.length === 0) {
@@ -5054,12 +5052,15 @@ function deleteOrder(id) {
             console.log(`🔄 Ordini da scalare: ${ordersToProcess.length}`);
             console.log(`   IDs:`, ordersToProcess.map(o => o.displayId));
             console.log(`   Totale ordini Nuovo nel range:`, orders.filter(o => {
-                const oNum = getNumId(o.displayId);
-                return o.status === 'Nuovo' && oNum >= startNum && oNum <= endNum;
+                return o.status === 'Nuovo' && 
+                       compareDisplayIds(o.displayId, minIdSel.value) >= 0 &&
+                       compareDisplayIds(o.displayId, maxIdSel.value) <= 0;
             }).length);
             console.log(`   Di cui già scalati:`, orders.filter(o => {
-                const oNum = getNumId(o.displayId);
-                return o.status === 'Nuovo' && oNum >= startNum && oNum <= endNum && o.inventoryScaledAt;
+                return o.status === 'Nuovo' && 
+                       compareDisplayIds(o.displayId, minIdSel.value) >= 0 &&
+                       compareDisplayIds(o.displayId, maxIdSel.value) <= 0 && 
+                       o.inventoryScaledAt;
             }).length);
             
             let scaledOrders = 0;
@@ -5143,9 +5144,6 @@ function deleteOrder(id) {
             const maxId = document.getElementById('matrixMaxId').value; 
             const rangeTxt = (minId && maxId) ? `Intervallo ID: ${minId} - ${maxId}` : 'Intervallo ID: Tutti';
             
-            // Funzione per estrarre numero ID
-            const getNumId = (displayId) => { const match = displayId.match(/(\d+)$/); return match ? parseInt(match[1]) : 0; };
-            
             // DB completo (tutti gli ordini) - con info trasferimenti
             const rawData = orders.map(o => {
                 const linkedFrom = orders.find(x => x.linkedId === o.displayId);
@@ -5169,11 +5167,9 @@ function deleteOrder(id) {
             // Filtra ordini nel range ID selezionato (TUTTI gli stati)
             let activeOrders = orders;
             if (minId && maxId) {
-                const startNum = getNumId(minId);
-                const endNum = getNumId(maxId);
                 activeOrders = orders.filter(o => {
-                    const oNum = getNumId(o.displayId);
-                    return oNum >= startNum && oNum <= endNum;
+                    return compareDisplayIds(o.displayId, minId) >= 0 && 
+                           compareDisplayIds(o.displayId, maxId) <= 0;
                 });
             }
             
