@@ -12,17 +12,18 @@ export default async function handler(req, res) {
       
       return res.status(200).json({
         success: true,
-        data: config || { globalItems: [], globalKitTypes: {} }
+        data: config || { globalItems: [], globalKitTypes: {}, quickIdFilters: {} }
       });
       
     } else if (req.method === 'POST') {
-      const { action, globalItems, globalKitTypes } = req.body;
+      const { action, globalItems, globalKitTypes, quickIdFilters } = req.body;
       
       if (action === 'save') {
-        // Save config
+        // Save config (include quickIdFilters)
         await redis.set(CONFIG_KEY, {
           globalItems,
           globalKitTypes,
+          quickIdFilters: quickIdFilters || {},
           updatedAt: new Date().toISOString()
         });
         
