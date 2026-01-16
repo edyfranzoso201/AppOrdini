@@ -5509,6 +5509,7 @@ function deleteOrder(id) {
                     viewDistinta: true,
                     viewTabella: true,
                     useQuickIdFilters: true,
+                    viewLogs: true,
                     downloadGoogleForm: true
                 }
             },
@@ -5527,6 +5528,7 @@ function deleteOrder(id) {
                     resetData: false,
                     manageUsers: false,
                     viewDistinta: true,
+                    viewLogs: false,
                     viewTabella: true
                 }
             },
@@ -5545,6 +5547,7 @@ function deleteOrder(id) {
                     resetData: false,
                     manageUsers: false,
                     viewDistinta: true,
+                    viewLogs: false,
                     viewTabella: true
                 }
             },
@@ -5565,6 +5568,7 @@ function deleteOrder(id) {
                     viewDistinta: true,
                     viewTabella: true,
                     downloadGoogleForm: true,
+                    viewLogs: false,
                     editStatus: false
                 }
             },
@@ -5585,6 +5589,7 @@ function deleteOrder(id) {
                     viewDistinta: true,
                     viewTabella: true,
                     downloadGoogleForm: true,
+                    viewLogs: false,
                     editStatus: true // Può modificare SOLO lo stato
                 }
             },
@@ -5605,6 +5610,7 @@ function deleteOrder(id) {
                     viewDistinta: false, // Non vede Distinta
                     viewTabella: true, // SOLO Tabella
                     editTabella: true, // Permesso speciale per modificare celle tabella
+                    viewLogs: false,
                     useQuickIdFilters: true // Può usare Quick ID filters
                 }
             },
@@ -5627,6 +5633,7 @@ function deleteOrder(id) {
                     editTabella: true, // Può modificare celle
                     highlightCells: true, // Può evidenziare celle
                     downloadGoogleForm: true, // Può scaricare Google Form
+                    viewLogs: false,
                     useQuickIdFilters: true // Può usare Quick ID filters
                 }
             },
@@ -5648,6 +5655,7 @@ function deleteOrder(id) {
                     viewTabella: true, // Vede Tabella Ordini
                     editTabella: true, // Può modificare celle
                     highlightCells: true, // Può evidenziare celle
+                    viewLogs: false,
                     downloadGoogleForm: false // NON può scaricare Google Form
                 }
             }
@@ -5804,6 +5812,12 @@ function resetFiltersToDefault() {
             document.getElementById('btnExportBackup').classList.toggle('hidden', !perms.exportBackup);
             document.getElementById('importExcelContainer').classList.toggle('hidden', !perms.importExcel);
             
+            const btnLog = document.querySelector('button[onclick="openActivityLog()"]');
+            if (btnLog) btnLog.classList.toggle('hidden', !perms.viewLogs);
+            
+            applyDashboardPermissions(perms);
+        }
+
             // Nascondi tab in base ai permessi
             const ordiniBtn = document.getElementById('nav-ordini');
             const matrixBtn = document.getElementById('nav-matrix');
