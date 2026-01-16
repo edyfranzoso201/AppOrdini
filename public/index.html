@@ -633,6 +633,62 @@
                 <h3 class="text-xs font-bold text-gray-500 uppercase mb-2 pl-2">Quantità per Tipologia Abbigliamento</h3>
                 <div class="h-[550px] w-full"><canvas id="chartItems"></canvas></div>
              </div>
+             
+            <!-- NUOVA SEZIONE: Analisi per Tipo Kit -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded shadow mb-6 border-2 border-blue-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-box-open text-blue-600 text-xl"></i>
+                        <h3 class="text-lg font-bold text-blue-900">Analisi per Tipo Kit</h3>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm font-bold text-gray-600">Filtra per Kit:</label>
+                        <select id="dashboardKitFilter" onchange="renderKitAnalysis()" class="border-2 border-blue-300 rounded-lg px-3 py-2 text-sm font-bold bg-white min-w-[250px]">
+                            <option value="all">📊 Tutti i Kit</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Riepilogo Kit -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-600">
+                        <div class="text-gray-500 text-xs font-bold uppercase">Kit Selezionati</div>
+                        <div class="text-3xl font-bold text-blue-900" id="dash-kit-count">0</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-indigo-600">
+                        <div class="text-gray-500 text-xs font-bold uppercase">Totale Lordo</div>
+                        <div class="text-2xl font-bold text-indigo-900" id="dash-kit-gross">0€</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+                        <div class="text-gray-500 text-xs font-bold uppercase">Totale Sconti</div>
+                        <div class="text-2xl font-bold text-red-600" id="dash-kit-discount">0€</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-green-600">
+                        <div class="text-gray-500 text-xs font-bold uppercase">Totale Netto</div>
+                        <div class="text-2xl font-bold text-green-700" id="dash-kit-net">0€</div>
+                    </div>
+                </div>
+                
+                <!-- Tabella Kit per Tipo -->
+                <div class="bg-white p-4 rounded-lg shadow mb-4">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <i class="fas fa-list-ol text-blue-600"></i>
+                        Quantità Kit per Tipo
+                    </h4>
+                    <div id="dash-kit-breakdown" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <!-- Popolato da JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Grafico Capi per Kit Filtrato -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <i class="fas fa-tshirt text-blue-600"></i>
+                        Quantità Singoli Capi (Kit Filtrato)
+                    </h4>
+                    <div class="h-[400px] w-full"><canvas id="chartKitItems"></canvas></div>
+                </div>
+            </div>
         </div>
 
         <div id="tab-tabella-ordini" class="tab-content">
@@ -1059,6 +1115,7 @@
         let currentEditingKitKey = null; 
         let chartStatus = null;
         let chartRevenue = null; let chartItems = null;
+        let chartKitItems = null; // Grafico capi per kit filtrato
         let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}A_`;
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
@@ -3989,6 +4046,188 @@ function deleteOrder(id) {
             });
             const sortedItems = Object.entries(itemCounts).sort((a,b) => b[1] - a[1]); const labels = sortedItems.map(x => x[0]); const data = sortedItems.map(x => x[1]);
             const ctxItems = document.getElementById('chartItems').getContext('2d'); if(chartItems) chartItems.destroy(); chartItems = new Chart(ctxItems, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Quantità Venduta', data: data, backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } }, plugins: { legend: { display: false } } } });
+            
+            // Inizializza anche l'analisi per kit
+            populateKitFilterOptions();
+            renderKitAnalysis();
+        }
+        
+        // Popola il select con i tipi di kit disponibili
+        function populateKitFilterOptions() {
+            const select = document.getElementById('dashboardKitFilter');
+            if (!select) return;
+            
+            // Raccogli tutti i tipi di kit dagli ordini
+            const kitTypes = new Set();
+            orders.forEach(o => {
+                if (o.kitType && o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID') {
+                    kitTypes.add(o.kitType);
+                }
+            });
+            
+            // Ordina alfabeticamente
+            const sortedKits = Array.from(kitTypes).sort();
+            
+            // Mantieni la selezione corrente
+            const currentValue = select.value;
+            
+            // Ricostruisci le opzioni
+            select.innerHTML = '<option value="all">📊 Tutti i Kit</option>';
+            sortedKits.forEach(kit => {
+                const cleanName = kit.split('(')[0].trim();
+                const opt = document.createElement('option');
+                opt.value = kit;
+                opt.textContent = cleanName;
+                select.appendChild(opt);
+            });
+            
+            // Ripristina selezione se ancora valida
+            if (currentValue && (currentValue === 'all' || sortedKits.includes(currentValue))) {
+                select.value = currentValue;
+            }
+        }
+        
+        // Analisi dettagliata per tipo kit
+        function renderKitAnalysis() {
+            const filterValue = document.getElementById('dashboardKitFilter')?.value || 'all';
+            
+            // Filtra ordini validi
+            let filteredOrders = orders.filter(o => 
+                o.status !== 'Ordine annullato' && 
+                o.status !== 'Ordine trasferito ad altro ID'
+            );
+            
+            // Applica filtro kit se non è "all"
+            if (filterValue !== 'all') {
+                filteredOrders = filteredOrders.filter(o => o.kitType === filterValue);
+            }
+            
+            // Calcola totali
+            let totalGross = 0;
+            let totalDiscount = 0;
+            filteredOrders.forEach(o => {
+                const net = calculateOrderTotal(o);
+                const disc = o.discount || 0;
+                totalGross += (net + disc);
+                totalDiscount += disc;
+            });
+            const totalNet = totalGross - totalDiscount;
+            
+            // Aggiorna card riepilogo
+            document.getElementById('dash-kit-count').innerText = filteredOrders.length;
+            document.getElementById('dash-kit-gross').innerText = totalGross + '€';
+            document.getElementById('dash-kit-discount').innerText = totalDiscount + '€';
+            document.getElementById('dash-kit-net').innerText = totalNet + '€';
+            
+            // Breakdown per tipo kit (mostra sempre tutti i kit con quantità)
+            const kitBreakdown = {};
+            const kitTotals = {};
+            
+            const allValidOrders = orders.filter(o => 
+                o.status !== 'Ordine annullato' && 
+                o.status !== 'Ordine trasferito ad altro ID'
+            );
+            
+            allValidOrders.forEach(o => {
+                const kitType = o.kitType || 'Non specificato';
+                if (!kitBreakdown[kitType]) {
+                    kitBreakdown[kitType] = 0;
+                    kitTotals[kitType] = 0;
+                }
+                kitBreakdown[kitType]++;
+                kitTotals[kitType] += calculateOrderTotal(o);
+            });
+            
+            // Ordina per quantità decrescente
+            const sortedKits = Object.entries(kitBreakdown).sort((a, b) => b[1] - a[1]);
+            
+            let breakdownHtml = '';
+            sortedKits.forEach(([kitName, count]) => {
+                const cleanName = kitName.split('(')[0].trim();
+                const kitTotal = kitTotals[kitName];
+                const isSelected = filterValue === kitName;
+                const isStaff = kitName.includes('Allenatore') || kitName.includes('Dirigente') || kitName.includes('Staff');
+                const isPortiere = kitName.includes('Portiere');
+                const isMini = kitName.includes('Mini');
+                
+                let bgColor = isSelected ? 'bg-blue-200 border-blue-500' : 'bg-blue-50 border-blue-200';
+                let textColor = 'text-blue-900';
+                let icon = 'fa-tshirt';
+                
+                if (isStaff) {
+                    bgColor = isSelected ? 'bg-red-200 border-red-500' : 'bg-red-50 border-red-200';
+                    textColor = 'text-red-900';
+                    icon = 'fa-user-tie';
+                } else if (isPortiere) {
+                    bgColor = isSelected ? 'bg-yellow-200 border-yellow-500' : 'bg-yellow-50 border-yellow-200';
+                    textColor = 'text-yellow-900';
+                    icon = 'fa-hand-paper';
+                } else if (isMini) {
+                    bgColor = isSelected ? 'bg-green-200 border-green-500' : 'bg-green-50 border-green-200';
+                    textColor = 'text-green-900';
+                    icon = 'fa-child';
+                }
+                
+                breakdownHtml += `
+                    <div class="${bgColor} p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition" 
+                         onclick="document.getElementById('dashboardKitFilter').value='${kitName.replace(/'/g, "\\'")}'; renderKitAnalysis();">
+                        <div class="flex items-center justify-between mb-1">
+                            <i class="fas ${icon} ${textColor} opacity-60"></i>
+                            <span class="text-2xl font-bold ${textColor}">${count}</span>
+                        </div>
+                        <div class="text-xs ${textColor} font-medium leading-tight">${cleanName}</div>
+                        <div class="text-xs ${textColor} opacity-70 mt-1">${kitTotal}€</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('dash-kit-breakdown').innerHTML = breakdownHtml || 
+                '<div class="text-gray-400 italic col-span-full text-center">Nessun kit trovato</div>';
+            
+            // Grafico capi per kit filtrato
+            const itemCounts = {};
+            filteredOrders.forEach(o => {
+                o.itemsList.forEach(item => {
+                    let cleanName = item.name.replace(/\s*\(\d+€\)\s*$/, '').trim();
+                    if (!itemCounts[cleanName]) itemCounts[cleanName] = 0;
+                    itemCounts[cleanName]++;
+                });
+            });
+            
+            const sortedItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]);
+            const labelsKit = sortedItems.map(x => x[0]);
+            const dataKit = sortedItems.map(x => x[1]);
+            
+            const ctxKitItems = document.getElementById('chartKitItems');
+            if (ctxKitItems) {
+                if (chartKitItems) chartKitItems.destroy();
+                chartKitItems = new Chart(ctxKitItems.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labelsKit,
+                        datasets: [{
+                            label: 'Quantità',
+                            data: dataKit,
+                            backgroundColor: filterValue === 'all' ? '#3b82f6' : '#8b5cf6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { x: { beginAtZero: true } },
+                        plugins: { 
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: filterValue === 'all' ? 'Tutti i Kit' : filterValue.split('(')[0].trim(),
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         function initSelect() { 
