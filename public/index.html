@@ -680,6 +680,38 @@
                     </div>
                 </div>
                 
+                <!-- NUOVA: Distribuzione Taglie Kit -->
+                <div class="bg-white p-4 rounded-lg shadow mb-4">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <i class="fas fa-ruler text-purple-600"></i>
+                        Distribuzione Taglie Kit
+                    </h4>
+                    <div id="dash-kit-sizes" class="flex flex-wrap gap-2">
+                        <!-- Popolato da JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- NUOVA: Tabella Capi per Taglia -->
+                <div class="bg-white p-4 rounded-lg shadow mb-4">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <i class="fas fa-table text-indigo-600"></i>
+                        Dettaglio Capi per Taglia (Kit Filtrato)
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-xs" id="dash-items-by-size-table">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-left font-bold text-gray-700">Capo</th>
+                                    <!-- Colonne taglie aggiunte da JS -->
+                                </tr>
+                            </thead>
+                            <tbody id="dash-items-by-size-body">
+                                <!-- Popolato da JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
                 <!-- Grafico Capi per Kit Filtrato -->
                 <div class="bg-white p-4 rounded-lg shadow">
                     <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
@@ -4183,6 +4215,136 @@ function deleteOrder(id) {
             
             document.getElementById('dash-kit-breakdown').innerHTML = breakdownHtml || 
                 '<div class="text-gray-400 italic col-span-full text-center">Nessun kit trovato</div>';
+            
+            // === NUOVA SEZIONE: Distribuzione Taglie Kit ===
+            const sizeOrder = ['4XS', '3XS', '2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '4 ANNI', '6 ANNI', '8 ANNI', '10 ANNI', '12 ANNI', '14 ANNI', '16 ANNI'];
+            const kitSizes = {};
+            
+            filteredOrders.forEach(o => {
+                const size = o.mainSize || 'N/D';
+                if (!kitSizes[size]) kitSizes[size] = 0;
+                kitSizes[size]++;
+            });
+            
+            // Ordina per ordine taglie standard
+            const sortedSizes = Object.entries(kitSizes).sort((a, b) => {
+                const idxA = sizeOrder.indexOf(a[0]);
+                const idxB = sizeOrder.indexOf(b[0]);
+                if (idxA === -1 && idxB === -1) return a[0].localeCompare(b[0]);
+                if (idxA === -1) return 1;
+                if (idxB === -1) return -1;
+                return idxA - idxB;
+            });
+            
+            let sizesHtml = '';
+            sortedSizes.forEach(([size, count]) => {
+                const isKids = size.includes('ANNI');
+                const bgColor = isKids ? 'bg-green-100 border-green-400' : 'bg-purple-100 border-purple-400';
+                const textColor = isKids ? 'text-green-800' : 'text-purple-800';
+                
+                sizesHtml += `
+                    <div class="${bgColor} border-2 rounded-lg px-4 py-2 text-center min-w-[70px]">
+                        <div class="text-2xl font-bold ${textColor}">${count}</div>
+                        <div class="text-xs font-medium ${textColor}">${size}</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('dash-kit-sizes').innerHTML = sizesHtml || 
+                '<div class="text-gray-400 italic">Nessuna taglia trovata</div>';
+            
+            // === NUOVA SEZIONE: Tabella Capi per Taglia ===
+            const itemsBySize = {}; // { itemName: { S: 2, M: 3, L: 1, ... } }
+            const allSizesSet = new Set();
+            
+            filteredOrders.forEach(o => {
+                o.itemsList.forEach(item => {
+                    const cleanName = item.name.replace(/\s*\(\d+€\)\s*$/, '').trim();
+                    const size = item.size || 'N/D';
+                    
+                    allSizesSet.add(size);
+                    
+                    if (!itemsBySize[cleanName]) {
+                        itemsBySize[cleanName] = {};
+                    }
+                    if (!itemsBySize[cleanName][size]) {
+                        itemsBySize[cleanName][size] = 0;
+                    }
+                    itemsBySize[cleanName][size]++;
+                });
+            });
+            
+            // Ordina le taglie
+            const allSizes = Array.from(allSizesSet).sort((a, b) => {
+                const idxA = sizeOrder.indexOf(a);
+                const idxB = sizeOrder.indexOf(b);
+                if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+                if (idxA === -1) return 1;
+                if (idxB === -1) return -1;
+                return idxA - idxB;
+            });
+            
+            // Costruisci header tabella
+            const tableHeader = document.querySelector('#dash-items-by-size-table thead tr');
+            if (tableHeader) {
+                let headerHtml = '<th class="px-3 py-2 text-left font-bold text-gray-700 sticky left-0 bg-gray-100">Capo</th>';
+                allSizes.forEach(size => {
+                    const isKids = size.includes('ANNI');
+                    const bgColor = isKids ? 'bg-green-50' : 'bg-purple-50';
+                    headerHtml += `<th class="px-2 py-2 text-center font-bold text-gray-700 ${bgColor} min-w-[50px]">${size}</th>`;
+                });
+                headerHtml += '<th class="px-3 py-2 text-center font-bold text-gray-700 bg-blue-100">TOT</th>';
+                tableHeader.innerHTML = headerHtml;
+            }
+            
+            // Costruisci body tabella
+            const tableBody = document.getElementById('dash-items-by-size-body');
+            if (tableBody) {
+                // Ordina per quantità totale decrescente
+                const sortedItemsBySize = Object.entries(itemsBySize).sort((a, b) => {
+                    const totalA = Object.values(a[1]).reduce((sum, v) => sum + v, 0);
+                    const totalB = Object.values(b[1]).reduce((sum, v) => sum + v, 0);
+                    return totalB - totalA;
+                });
+                
+                let bodyHtml = '';
+                sortedItemsBySize.forEach(([itemName, sizes]) => {
+                    const total = Object.values(sizes).reduce((sum, v) => sum + v, 0);
+                    
+                    bodyHtml += `<tr class="border-b hover:bg-gray-50">`;
+                    bodyHtml += `<td class="px-3 py-2 font-medium text-gray-800 sticky left-0 bg-white text-xs">${itemName}</td>`;
+                    
+                    allSizes.forEach(size => {
+                        const count = sizes[size] || 0;
+                        const cellClass = count > 0 ? 'font-bold text-blue-700' : 'text-gray-300';
+                        bodyHtml += `<td class="px-2 py-2 text-center ${cellClass}">${count || '-'}</td>`;
+                    });
+                    
+                    bodyHtml += `<td class="px-3 py-2 text-center font-bold text-white bg-blue-600">${total}</td>`;
+                    bodyHtml += `</tr>`;
+                });
+                
+                // Riga totali
+                if (sortedItemsBySize.length > 0) {
+                    bodyHtml += `<tr class="bg-gray-200 font-bold">`;
+                    bodyHtml += `<td class="px-3 py-2 sticky left-0 bg-gray-200">TOTALE</td>`;
+                    
+                    let grandTotal = 0;
+                    allSizes.forEach(size => {
+                        let sizeTotal = 0;
+                        Object.values(itemsBySize).forEach(sizes => {
+                            sizeTotal += sizes[size] || 0;
+                        });
+                        grandTotal += sizeTotal;
+                        bodyHtml += `<td class="px-2 py-2 text-center">${sizeTotal}</td>`;
+                    });
+                    
+                    bodyHtml += `<td class="px-3 py-2 text-center text-white bg-blue-800">${grandTotal}</td>`;
+                    bodyHtml += `</tr>`;
+                }
+                
+                tableBody.innerHTML = bodyHtml || '<tr><td colspan="100" class="text-center text-gray-400 py-4">Nessun dato disponibile</td></tr>';
+            }
             
             // Grafico capi per kit filtrato
             const itemCounts = {};
