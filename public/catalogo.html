@@ -6,30 +6,18 @@
     <title>Catalogo Abbigliamento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'societa-blu': '#0047AB',
-                        'societa-rosso': '#DC143C',
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-red-50 min-h-screen py-8">
+<body class="bg-gradient-to-br from-blue-600 to-blue-800 min-h-screen py-8">
     <div class="container mx-auto px-4 max-w-6xl">
         <!-- Header -->
-        <div class="bg-white rounded-xl shadow-lg p-8 mb-8 text-center border-t-4 border-societa-blu">
+        <div class="bg-blue-900 rounded-xl shadow-2xl p-8 mb-8 text-center border-4 border-white">
             <img id="catalogLogo" src="" alt="Logo" class="h-20 mx-auto mb-4" style="display: none;">
-            <h1 id="catalogTitle" class="text-4xl font-bold text-societa-rosso mb-2">Catalogo</h1>
-            <p id="catalogSubtitle" class="text-black">Scopri la nostra collezione</p>
+            <h1 id="catalogTitle" class="text-5xl font-bold text-red-600 mb-2 drop-shadow-lg">Catalogo</h1>
+            <p id="catalogSubtitle" class="text-white text-lg">Scopri la nostra collezione</p>
             
             <!-- Link catalogo completo (se presente) -->
             <div id="fullCatalogLink" style="display: none;" class="mt-4">
-                <a href="" target="_blank" class="inline-flex items-center gap-2 bg-societa-blu hover:bg-societa-rosso text-white px-6 py-3 rounded-lg font-bold transition">
+                <a href="" target="_blank" class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition shadow-lg">
                     <i class="fas fa-file-pdf"></i>
                     Scarica Catalogo Completo PDF
                 </a>
@@ -37,18 +25,25 @@
             
             <!-- QR Code per ordini (se presente) -->
             <div id="qrCodeSection" style="display: none;" class="mt-6">
-                <p class="text-sm text-black mb-2">Scansiona per ordinare:</p>
-                <img id="qrCodeImage" src="" alt="QR Code Ordini" class="w-32 h-32 mx-auto border-2 border-societa-blu rounded">
+                <p class="text-sm text-white mb-2">Scansiona per ordinare:</p>
+                <img id="qrCodeImage" src="" alt="QR Code Ordini" class="w-32 h-32 mx-auto border-4 border-white rounded bg-white p-2 shadow-lg">
+                
+                <!-- NUOVO: Pulsante link al Google Form -->
+                <a id="orderFormLink" href="" target="_blank" rel="noopener noreferrer" 
+                   class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition mt-4 shadow-lg">
+                    <i class="fas fa-clipboard-list"></i>
+                    Clicca qui per Ordinare
+                </a>
             </div>
         </div>
         
         <!-- Placeholder (mostrato durante il caricamento) -->
-        <div id="catalogPlaceholder" class="bg-white rounded-xl shadow-lg p-12 text-center">
+        <div id="catalogPlaceholder" class="bg-blue-900 rounded-xl shadow-2xl p-12 text-center border-4 border-white">
             <div class="animate-pulse">
-                <div class="h-24 w-24 bg-gray-200 rounded-full mx-auto mb-4"></div>
-                <div class="h-4 bg-gray-200 rounded w-48 mx-auto mb-2"></div>
-                <div class="h-4 bg-gray-200 rounded w-32 mx-auto"></div>
-                <p class="text-black mt-4">Caricamento catalogo in corso...</p>
+                <div class="h-24 w-24 bg-blue-700 rounded-full mx-auto mb-4"></div>
+                <div class="h-4 bg-blue-700 rounded w-48 mx-auto mb-2"></div>
+                <div class="h-4 bg-blue-700 rounded w-32 mx-auto"></div>
+                <p class="text-white mt-4 font-bold">Caricamento catalogo in corso...</p>
             </div>
         </div>
         
@@ -58,12 +53,12 @@
         </div>
         
         <!-- Messaggio nessun articolo -->
-        <div id="noItemsMessage" class="bg-white rounded-xl shadow-lg p-12 text-center" style="display: none;">
-            <div class="text-societa-blu mb-4">
+        <div id="noItemsMessage" class="bg-blue-900 rounded-xl shadow-2xl p-12 text-center border-4 border-white" style="display: none;">
+            <div class="text-white mb-4">
                 <i class="fas fa-box-open text-6xl"></i>
             </div>
-            <p class="text-black font-bold text-lg">Nessun articolo disponibile</p>
-            <p class="text-gray-600 text-sm mt-2">Il catalogo è attualmente vuoto</p>
+            <p class="text-white font-bold text-lg">Nessun articolo disponibile</p>
+            <p class="text-gray-300 text-sm mt-2">Il catalogo è attualmente vuoto</p>
         </div>
     </div>
 
@@ -106,11 +101,22 @@
                     linkSection.style.display = 'block';
                 }
                 
-                // Mostra QR Code (se presente)
+                // Mostra QR Code E link cliccabile (se presente)
                 if (catalog.qrUrl && catalog.qrUrl.trim() !== '') {
                     const qrSection = document.getElementById('qrCodeSection');
                     const qrImg = document.getElementById('qrCodeImage');
+                    const orderLink = document.getElementById('orderFormLink');
+                    
                     qrImg.src = catalog.qrUrl;
+                    
+                    // Estrai l'URL del Google Form dall'immagine QR Code generata da QuickChart
+                    const urlMatch = catalog.qrUrl.match(/text=([^&]+)/);
+                    if (urlMatch) {
+                        const formUrl = decodeURIComponent(urlMatch[1]);
+                        orderLink.href = formUrl;
+                        console.log('✅ Link ordini estratto:', formUrl);
+                    }
+                    
                     qrSection.style.display = 'block';
                 }
                 
@@ -124,30 +130,30 @@
                     
                     catalog.items.forEach(item => {
                         const card = document.createElement('div');
-                        card.className = 'bg-white rounded-lg shadow hover:shadow-xl transition transform hover:-translate-y-1 overflow-hidden border-2 border-societa-blu';
+                        card.className = 'bg-blue-900 rounded-lg shadow-2xl hover:shadow-3xl transition transform hover:-translate-y-2 overflow-hidden border-4 border-white';
                         
                         card.innerHTML = `
-                            <div class="aspect-square bg-gradient-to-br from-blue-50 to-red-50 flex items-center justify-center p-8">
+                            <div class="aspect-square bg-gradient-to-br from-blue-700 to-blue-800 flex items-center justify-center p-8">
                                 ${item.image ? 
                                     `<img src="${item.image}" alt="${item.name}" class="w-full h-full object-contain">` :
-                                    `<svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    `<svg class="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
                                     </svg>`
                                 }
                             </div>
-                            <div class="p-4">
-                                <h3 class="font-bold text-black text-lg mb-2 line-clamp-2">${escapeHtml(item.name)}</h3>
+                            <div class="p-4 bg-blue-900">
+                                <h3 class="font-bold text-red-600 text-xl mb-2 line-clamp-2">${escapeHtml(item.name)}</h3>
                                 ${item.description ? 
-                                    `<p class="text-sm text-gray-700 mb-3 line-clamp-3">${escapeHtml(item.description)}</p>` : 
+                                    `<p class="text-sm text-white mb-3 line-clamp-3">${escapeHtml(item.description)}</p>` : 
                                     ''
                                 }
                                 <div class="flex items-center justify-between">
                                     ${item.price ? 
-                                        `<p class="text-xl font-bold text-societa-rosso">€ ${item.price}</p>` : 
+                                        `<p class="text-2xl font-bold text-white">€ ${item.price}</p>` : 
                                         '<span></span>'
                                     }
                                     ${item.link ? 
-                                        `<a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer" class="text-societa-blu hover:text-societa-rosso text-sm font-medium flex items-center gap-1">
+                                        `<a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer" class="text-red-400 hover:text-red-300 text-sm font-medium flex items-center gap-1">
                                             Dettagli <i class="fas fa-arrow-right"></i>
                                         </a>` : 
                                         ''
@@ -167,12 +173,12 @@
                 console.error('❌ Errore caricamento catalogo:', error);
                 document.getElementById('catalogPlaceholder').innerHTML = `
                     <div class="text-center py-12">
-                        <div class="text-societa-rosso mb-4">
+                        <div class="text-red-500 mb-4">
                             <i class="fas fa-exclamation-triangle text-6xl"></i>
                         </div>
-                        <p class="text-societa-rosso font-bold text-lg mb-2">Errore nel caricamento del catalogo</p>
-                        <p class="text-black text-sm">${error.message}</p>
-                        <button onclick="loadCatalog()" class="mt-4 bg-societa-blu hover:bg-societa-rosso text-white px-6 py-2 rounded-lg font-bold transition">
+                        <p class="text-white font-bold text-lg mb-2">Errore nel caricamento del catalogo</p>
+                        <p class="text-gray-300 text-sm">${error.message}</p>
+                        <button onclick="loadCatalog()" class="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition shadow-lg">
                             <i class="fas fa-redo mr-2"></i>Riprova
                         </button>
                     </div>
@@ -204,29 +210,6 @@
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
-        }
-        
-        /* Colori personalizzati società */
-        .text-societa-blu {
-            color: #0047AB !important;
-        }
-        .text-societa-rosso {
-            color: #DC143C !important;
-        }
-        .bg-societa-blu {
-            background-color: #0047AB !important;
-        }
-        .bg-societa-rosso {
-            background-color: #DC143C !important;
-        }
-        .border-societa-blu {
-            border-color: #0047AB !important;
-        }
-        .hover\:bg-societa-rosso:hover {
-            background-color: #DC143C !important;
-        }
-        .hover\:text-societa-rosso:hover {
-            color: #DC143C !important;
         }
     </style>
 </body>
