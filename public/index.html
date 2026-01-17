@@ -2052,7 +2052,7 @@
         globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
         
         quickIdFilters = configData.data.quickIdFilters || {};
-        
+
         catalogData = configData.data.catalog || {
           title: "Catalogo Abbigliamento",
           logo: "",
@@ -2366,24 +2366,24 @@
         }
         
         async function saveData() {
-            try {
-                // Save orders
-                await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'save',
-                    orders,
-                    lastOrderId,
-                    currentPrefix,
-                    highlightedSizeCells
-                })
-                });
+  try {
+    // Save orders
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        orders,
+        lastOrderId,
+        currentPrefix,
+        highlightedSizeCells
+      })
+    });
 
-                // Registra nel log
-                logActivity(
-                'Salvataggio dati',
-                `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`,
+    // Registra nel log
+    logActivity(
+      'Salvataggio dati',
+      `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`,
       {}
     );
 
@@ -2396,36 +2396,24 @@
         inventory
       })
     });
-                
-                // Save config (include quickIdFilters)
-                await fetch('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                action: 'save',
-                globalItems,
-                globalKitTypes,
-                quickIdFilters,
-                catalog: catalogData
-                })
+
+    // Save config
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        globalItems: globalItems,
+        globalKitTypes: globalKitTypes,
+        quickIdFilters: quickIdFilters,
+        catalog: catalogData
+      })
     });
-                
-                // Save public catalog
-try {
-    await fetch('/api/catalog', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(catalogData)
-    });
-    console.log('Catalogo pubblico salvato');
-} catch (err) {
-    console.error('Errore salvataggio catalogo pubblico', err);
+
+    console.log('Data saved successfully');
+  } catch (error) {
+    console.error('Error saving data:', error);
+  }
 }
-                console.log('Data saved successfully');
-            } catch (error) {
-                console.error('Error saving data:', error);
-            }
-        }
       // Funzione per registrare un'azione nello storico
        function logActivity(action, description, details = {}) {
         const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
