@@ -80,6 +80,16 @@
         .size-cell-clickable:hover { background-color: #d1fae5 !important; opacity: 0.7; }
         .size-cell-highlighted { background-color: #10b981 !important; color: white !important; font-weight: bold; }
         
+        /* Stili Catalogo */
+        .catalog-item-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; }
+        .catalog-item-card:hover { border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15); }
+        .catalog-item-images { display: flex; gap: 4px; background: #f3f4f6; min-height: 120px; align-items: center; justify-content: center; }
+        .catalog-item-images img { max-height: 120px; object-fit: contain; cursor: pointer; transition: transform 0.2s; }
+        .catalog-item-images img:hover { transform: scale(1.05); }
+        .catalog-item-placeholder { color: #9ca3af; text-align: center; padding: 20px; font-size: 0.9rem; }
+        .catalog-image-lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+        .catalog-image-lightbox img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        
         /* Colonne fisse tabella ordini */
         .tabella-ordini-sticky-col-1 { 
             position: sticky !important; 
@@ -335,6 +345,7 @@
             <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
             <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
             <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
+            <button onclick="showTab('catalogo')" id="nav-catalogo" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-book-open mr-1"></i>Catalogo</button>
         </nav>
 
         <div class="flex gap-1 items-center">
@@ -830,6 +841,78 @@
                 </div>
             </div>
         </div>
+
+        <!-- TAB CATALOGO (solo admin) -->
+        <div id="tab-catalogo" class="tab-content">
+            <div class="bg-white p-4 rounded shadow mb-4">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="font-bold text-xl text-blue-900"><i class="fas fa-book-open mr-2"></i>Gestione Catalogo</h2>
+                        <p class="text-xs text-gray-500">Configura il catalogo pubblico da condividere con i clienti</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openCatalogPreview()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold transition">
+                            <i class="fas fa-eye mr-2"></i>Anteprima Catalogo
+                        </button>
+                        <button onclick="copyCatalogLink()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold transition">
+                            <i class="fas fa-link mr-2"></i>Copia Link
+                        </button>
+                        <button onclick="saveCatalogConfig()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-bold transition">
+                            <i class="fas fa-save mr-2"></i>Salva Catalogo
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Configurazione QR Code e Link -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded border">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-qrcode mr-1"></i>URL QR Code per Ordini</label>
+                        <input type="text" id="catalogQrUrl" placeholder="https://forms.google.com/..." class="w-full border rounded px-3 py-2 text-sm" onchange="updateQrPreview()">
+                        <p class="text-xs text-gray-500 mt-1">Inserisci il link al modulo ordini (es. Google Form)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-external-link-alt mr-1"></i>Link Catalogo Completo (opzionale)</label>
+                        <input type="text" id="catalogFullUrl" placeholder="https://..." class="w-full border rounded px-3 py-2 text-sm">
+                        <p class="text-xs text-gray-500 mt-1">Link a un catalogo PDF o sito esterno</p>
+                    </div>
+                </div>
+                
+                <!-- Titolo e descrizione catalogo -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-blue-50 rounded border border-blue-200">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-heading mr-1"></i>Titolo Catalogo</label>
+                        <input type="text" id="catalogTitle" placeholder="Catalogo Abbigliamento Sportivo 2025" class="w-full border rounded px-3 py-2 text-sm" value="Catalogo Abbigliamento">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-image mr-1"></i>Logo/Immagine Header (URL)</label>
+                        <input type="text" id="catalogLogo" placeholder="https://..." class="w-full border rounded px-3 py-2 text-sm">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lista Articoli del Catalogo -->
+            <div class="bg-white p-4 rounded shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-lg text-gray-800"><i class="fas fa-tshirt mr-2"></i>Articoli nel Catalogo</h3>
+                    <div class="flex gap-2">
+                        <button onclick="addCatalogItem()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm font-bold transition">
+                            <i class="fas fa-plus mr-1"></i>Aggiungi Articolo
+                        </button>
+                        <button onclick="importItemsFromDB()" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded text-sm font-bold transition">
+                            <i class="fas fa-database mr-1"></i>Importa da DB
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="catalogItemsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Articoli popolati dinamicamente -->
+                    <div class="text-center text-gray-400 py-8 col-span-full">
+                        <i class="fas fa-box-open text-4xl mb-2"></i>
+                        <p>Nessun articolo nel catalogo. Clicca "Aggiungi Articolo" o "Importa da DB".</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <div id="itemModal" class="modal">
@@ -1236,10 +1319,16 @@
                 return;
             }
             
+            // Verifica permessi per Catalogo (solo admin)
+            if (tabName === 'catalogo' && currentUser?.role !== 'admin') {
+                alert('⚠️ Non hai i permessi per visualizzare il Catalogo.');
+                return;
+            }
+            
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             
             // Reset stili nav buttons MA rispetta i permessi
-            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard'];
+            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-catalogo'];
             navButtons.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn && !btn.classList.contains('hidden')) {
@@ -1255,6 +1344,7 @@
                 updateDashboardCounts(); 
                 renderChart(); 
             }
+            if (tabName === 'catalogo') renderCatalogItems();
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
         
@@ -6057,6 +6147,16 @@ function resetFiltersToDefault() {
                 }
             }
             
+            // Mostra Catalogo SOLO per admin
+            const catalogoBtn = document.getElementById('nav-catalogo');
+            const catalogoTab = document.getElementById('tab-catalogo');
+            if (currentUser.role === 'admin') {
+                if (catalogoBtn) catalogoBtn.classList.remove('hidden');
+            } else {
+                if (catalogoBtn) catalogoBtn.classList.add('hidden');
+                if (catalogoTab) catalogoTab.classList.add('hidden');
+            }
+            
             // Nascondi Quick ID filters se non ha permesso
             if (!perms.useQuickIdFilters) {
                 const quickIdContainer = document.querySelector('[id="quickIdButtons"]')?.parentElement;
@@ -6641,6 +6741,223 @@ function resetFiltersToDefault() {
                 console.error('Error updating password:', error);
                 alert('Errore di connessione al server');
             }
+        }
+        
+        // ===== SISTEMA CATALOGO =====
+        
+        // Dati catalogo
+        let catalogData = {
+            title: 'Catalogo Abbigliamento',
+            logo: '',
+            qrUrl: '',
+            fullCatalogUrl: '',
+            items: []
+        };
+        
+        // Carica dati catalogo da Redis
+        async function loadCatalogData() {
+            try {
+                const response = await fetch(`${API_BASE}/data/catalog`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.title) {
+                        catalogData = data;
+                        // Popola i campi
+                        document.getElementById('catalogTitle').value = catalogData.title || '';
+                        document.getElementById('catalogLogo').value = catalogData.logo || '';
+                        document.getElementById('catalogQrUrl').value = catalogData.qrUrl || '';
+                        document.getElementById('catalogFullUrl').value = catalogData.fullCatalogUrl || '';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading catalog:', error);
+            }
+        }
+        
+        // Salva configurazione catalogo
+        async function saveCatalogConfig() {
+            catalogData.title = document.getElementById('catalogTitle').value;
+            catalogData.logo = document.getElementById('catalogLogo').value;
+            catalogData.qrUrl = document.getElementById('catalogQrUrl').value;
+            catalogData.fullCatalogUrl = document.getElementById('catalogFullUrl').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/data/catalog`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(catalogData)
+                });
+                
+                if (response.ok) {
+                    showQuickNotification('Catalogo salvato!', 'success');
+                } else {
+                    throw new Error('Errore salvataggio');
+                }
+            } catch (error) {
+                console.error('Error saving catalog:', error);
+                alert('Errore durante il salvataggio del catalogo');
+            }
+        }
+        
+        // Renderizza gli articoli del catalogo
+        function renderCatalogItems() {
+            loadCatalogData();
+            
+            const container = document.getElementById('catalogItemsList');
+            if (!container) return;
+            
+            if (!catalogData.items || catalogData.items.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 py-8 col-span-full">
+                        <i class="fas fa-box-open text-4xl mb-2"></i>
+                        <p>Nessun articolo nel catalogo. Clicca "Aggiungi Articolo" o "Importa da DB".</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            catalogData.items.forEach((item, index) => {
+                const imagesHtml = item.images && item.images.length > 0 
+                    ? item.images.map(img => `<img src="${img}" alt="${item.name}" onclick="openImageLightbox('${img}')">`).join('')
+                    : `<div class="catalog-item-placeholder"><i class="fas fa-tshirt text-3xl mb-2"></i><br>${item.name}</div>`;
+                
+                html += `
+                    <div class="catalog-item-card" data-index="${index}">
+                        <div class="catalog-item-images">
+                            ${imagesHtml}
+                        </div>
+                        <div class="p-3">
+                            <input type="text" value="${item.name || ''}" placeholder="Nome articolo" 
+                                class="w-full font-bold text-gray-800 border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none mb-2"
+                                onchange="updateCatalogItem(${index}, 'name', this.value)">
+                            <textarea placeholder="Descrizione o link..." rows="2"
+                                class="w-full text-xs text-gray-600 border rounded p-1 resize-none mb-2"
+                                onchange="updateCatalogItem(${index}, 'description', this.value)">${item.description || ''}</textarea>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-xs text-gray-500">€</span>
+                                    <input type="number" value="${item.price || 0}" 
+                                        class="w-16 text-lg font-bold text-green-600 border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none"
+                                        onchange="updateCatalogItem(${index}, 'price', this.value)">
+                                </div>
+                                <div class="flex gap-1">
+                                    <button onclick="editCatalogItemImages(${index})" class="text-blue-500 hover:text-blue-700 px-2 py-1" title="Gestisci immagini">
+                                        <i class="fas fa-images"></i>
+                                    </button>
+                                    <button onclick="removeCatalogItem(${index})" class="text-red-500 hover:text-red-700 px-2 py-1" title="Rimuovi">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Aggiorna un campo di un articolo
+        function updateCatalogItem(index, field, value) {
+            if (catalogData.items[index]) {
+                catalogData.items[index][field] = field === 'price' ? parseFloat(value) || 0 : value;
+            }
+        }
+        
+        // Aggiungi nuovo articolo
+        function addCatalogItem() {
+            catalogData.items.push({
+                name: 'Nuovo Articolo',
+                description: '',
+                price: 0,
+                images: []
+            });
+            renderCatalogItems();
+        }
+        
+        // Rimuovi articolo
+        function removeCatalogItem(index) {
+            if (confirm('Sei sicuro di voler rimuovere questo articolo?')) {
+                catalogData.items.splice(index, 1);
+                renderCatalogItems();
+            }
+        }
+        
+        // Gestisci immagini articolo
+        function editCatalogItemImages(index) {
+            const item = catalogData.items[index];
+            const currentImages = (item.images || []).join('\n');
+            
+            const newImages = prompt(
+                'Inserisci gli URL delle immagini (uno per riga, max 3):\n\nEsempio:\nhttps://example.com/img1.jpg\nhttps://example.com/img2.jpg',
+                currentImages
+            );
+            
+            if (newImages !== null) {
+                item.images = newImages.split('\n').filter(url => url.trim()).slice(0, 3);
+                renderCatalogItems();
+            }
+        }
+        
+        // Importa articoli dal database
+        function importItemsFromDB() {
+            if (confirm('Vuoi importare tutti gli articoli dal database? Gli articoli esistenti verranno mantenuti.')) {
+                globalItems.forEach(itemName => {
+                    // Estrai nome e prezzo
+                    const priceMatch = itemName.match(/\((\d+)€\)/);
+                    const price = priceMatch ? parseInt(priceMatch[1]) : 0;
+                    const name = itemName.replace(/\s*\(\d+€\)\s*$/, '').trim();
+                    
+                    // Verifica se esiste già
+                    const exists = catalogData.items.some(i => i.name === name);
+                    if (!exists) {
+                        catalogData.items.push({
+                            name: name,
+                            description: '',
+                            price: price,
+                            images: []
+                        });
+                    }
+                });
+                
+                renderCatalogItems();
+                showQuickNotification(`Importati ${globalItems.length} articoli dal DB`, 'success');
+            }
+        }
+        
+        // Apri anteprima catalogo pubblico
+        function openCatalogPreview() {
+            // Salva prima il catalogo
+            saveCatalogConfig().then(() => {
+                // Apri in nuova finestra
+                const publicUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'catalogo.html';
+                window.open(publicUrl, '_blank');
+            });
+        }
+        
+        // Copia link catalogo
+        function copyCatalogLink() {
+            const publicUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'catalogo.html';
+            navigator.clipboard.writeText(publicUrl).then(() => {
+                showQuickNotification('Link copiato negli appunti!', 'success');
+            }).catch(() => {
+                prompt('Copia questo link:', publicUrl);
+            });
+        }
+        
+        // Lightbox per immagini
+        function openImageLightbox(imageUrl) {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'catalog-image-lightbox';
+            lightbox.innerHTML = `<img src="${imageUrl}" alt="Immagine ingrandita">`;
+            lightbox.onclick = () => lightbox.remove();
+            document.body.appendChild(lightbox);
+        }
+        
+        // Aggiorna preview QR
+        function updateQrPreview() {
+            // Placeholder per futura integrazione QR
         }
         
         // ===== SISTEMA LOG ATTIVITÀ =====
