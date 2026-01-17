@@ -867,12 +867,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded border">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-qrcode mr-1"></i>URL QR Code per Ordini</label>
-                        <input type="text" id="catalogQrUrl" placeholder="https://forms.google.com/..." class="w-full border rounded px-3 py-2 text-sm" onchange="updateQrPreview()">
+                        <input type="text" id="catalogFormUrlInput" placeholder="https://forms.google.com/..." class="w-full border rounded px-3 py-2 text-sm" onchange="updateQrPreview()">
                         <p class="text-xs text-gray-500 mt-1">Inserisci il link al modulo ordini (es. Google Form)</p>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-external-link-alt mr-1"></i>Link Catalogo Completo (opzionale)</label>
-                        <input type="text" id="catalogFullUrl" placeholder="https://..." class="w-full border rounded px-3 py-2 text-sm">
+                        <input type="text" id="catalogPdfUrlInput" placeholder="https://..." class="w-full border rounded px-3 py-2 text-sm">
                         <p class="text-xs text-gray-500 mt-1">Link a un catalogo PDF o sito esterno</p>
                     </div>
                 </div>
@@ -881,11 +881,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-blue-50 rounded border border-blue-200">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-heading mr-1"></i>Titolo Catalogo</label>
-                        <input type="text" id="catalogTitle" placeholder="Catalogo Abbigliamento Sportivo 2025" class="w-full border rounded px-3 py-2 text-sm" value="Catalogo Abbigliamento">
+                        <input type="text" id="catalogTitleInput" placeholder="Catalogo Abbigliamento Sportivo 2025" class="w-full border rounded px-3 py-2 text-sm" value="Catalogo Abbigliamento">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2"><i class="fas fa-image mr-1"></i>Logo/Immagine Header (URL)</label>
-                        <input type="text" id="catalogLogo" placeholder="https://..." class="w-full border rounded px-3 py-2 text-sm">
+                        <input type="text" id="catalogLogoUrlInput" placeholder="https://..." class="w-full border rounded px-3 py-2 text-sm">
                     </div>
                 </div>
             </div>
@@ -2069,8 +2069,10 @@
       globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
     }
 
-    // Repair import keys
-    repairImportKeys();
+        // Repair import keys
+        function repairImportKeys() {
+        // placeholder
+    }
 
     updateUI();
   } catch (error) {
