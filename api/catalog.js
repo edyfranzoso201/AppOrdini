@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         items: []
       };
 
-      // retrocompatibilità
+      // retrocompatibilità: copia eventuale qrCodeUrl nel nuovo campo
       if (data.qrCodeUrl && !data.qrUrl) {
         data.qrUrl = data.qrCodeUrl;
       }
