@@ -6746,59 +6746,68 @@ function resetFiltersToDefault() {
         
         // ===== SISTEMA CATALOGO =====
         
-        // Dati catalogo
-        let catalogData = {
-            title: 'Catalogo Abbigliamento',
-            logo: '',
-            qrUrl: '',
-            fullCatalogUrl: '',
+        // DATI CATALOGO CHE USI NELLA UI
+        let catalogConfig = {
+            title: "Catalogo Abbigliamento",
+            logo: "",
+            qrUrl: "",
+            fullCatalogUrl: "",
             items: []
         };
-        
-        // Carica dati catalogo da Redis
-        async function loadCatalogData() {
-            try {
-                const response = await fetch(`${API_BASE}/data/catalog`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.title) {
-                        catalogData = data;
-                        // Popola i campi
-                        document.getElementById('catalogTitle').value = catalogData.title || '';
-                        document.getElementById('catalogLogo').value = catalogData.logo || '';
-                        document.getElementById('catalogQrUrl').value = catalogData.qrUrl || '';
-                        document.getElementById('catalogFullUrl').value = catalogData.fullCatalogUrl || '';
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading catalog:', error);
-            }
+        // CARICA CATALOGO DA /api/catalog
+        async function loadCatalogConfig() {
+        try {
+            const res = await fetch(API_BASE + "catalog");
+            if (!res.ok) throw new Error("Errore caricamento catalogo");
+            const data = await res.json();
+
+            catalogConfig = data;
+
+            // TODO: qui aggiorni gli input della UI del tab "Gestione Catalogo"
+            // Esempio (adatta agli id reali degli input):
+            // document.getElementById("catalogTitleInput").value = data.title || "";
+            // document.getElementById("catalogFormUrlInput").value = data.qrUrl || "";
+            // document.getElementById("catalogPdfUrlInput").value = data.fullCatalogUrl || "";
+            // e così via per gli articoli...
+        } catch (err) {
+            console.error("Errore in loadCatalogConfig:", err);
         }
+    }
         
         // Salva configurazione catalogo
         async function saveCatalogConfig() {
-            catalogData.title = document.getElementById('catalogTitle').value;
-            catalogData.logo = document.getElementById('catalogLogo').value;
-            catalogData.qrUrl = document.getElementById('catalogQrUrl').value;
-            catalogData.fullCatalogUrl = document.getElementById('catalogFullUrl').value;
-            
-            try {
-                const response = await fetch(`${API_BASE}/catalog`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(catalogData)
-                });
-                
-                if (response.ok) {
-                    showQuickNotification('Catalogo salvato!', 'success');
-                } else {
-                    throw new Error('Errore salvataggio');
-                }
-            } catch (error) {
-                console.error('Error saving catalog:', error);
-                alert('Errore durante il salvataggio del catalogo');
-            }
-        }
+  try {
+    // Leggi i valori dagli input del tab "Gestione Catalogo"
+    const title = document.getElementById("catalogTitleInput").value.trim();
+    const qrUrl = document.getElementById("catalogFormUrlInput").value.trim();
+    const fullCatalogUrl = document.getElementById("catalogPdfUrlInput").value.trim();
+
+    // TODO: costruisci l'array items leggendo le righe della tabella articoli
+    // Per ora manteniamo quello già in memoria
+    const items = catalogConfig.items || [];
+
+    const payload = {
+      title,
+      logo: catalogConfig.logo || "",
+      qrUrl,
+      fullCatalogUrl,
+      items
+    };
+
+    const res = await fetch(API_BASE + "catalog", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error("Errore salvataggio catalogo");
+
+    alert("Catalogo salvato correttamente!");
+  } catch (err) {
+    console.error("Errore in saveCatalogConfig:", err);
+    alert("Errore nel salvataggio del catalogo.");
+  }
+}
         
         // Renderizza gli articoli del catalogo
         function renderCatalogItems() {
