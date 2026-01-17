@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogo Abbigliamento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .catalog-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .catalog-header {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .catalog-header-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .catalog-logo {
+            max-height: 80px;
+            object-fit: contain;
+        }
+        .catalog-title {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            border: 2px dashed #9ca3af;
+        }
+        .qr-section img {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+        }
+        .qr-section button {
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .qr-section button:hover {
+            background: #2563eb;
+        }
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .catalog-item {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .catalog-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .item-images {
+            display: flex;
+            gap: 4px;
+            background: #f3f4f6;
+            min-height: 180px;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+        .item-images img {
+            max-height: 170px;
+            max-width: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            cursor: zoom-in;
+            transition: transform 0.2s;
+        }
+        .item-images img:hover {
+            transform: scale(1.02);
+        }
+        .item-placeholder {
+            color: #9ca3af;
+            text-align: center;
+            font-size: 1.1rem;
+            padding: 30px;
+        }
+        .item-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+        .item-info {
+            padding: 16px;
+        }
+        .item-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .item-description {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .item-description a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+        .item-price {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #059669;
+        }
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+        }
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: white;
+        }
+        .loading i {
+            font-size: 3rem;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .external-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .external-link:hover {
+            opacity: 0.9;
+        }
+        .empty-catalog {
+            background: white;
+            border-radius: 16px;
+            padding: 60px;
+            text-align: center;
+            color: #6b7280;
+        }
+        .empty-catalog i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            color: #d1d5db;
+        }
+        @media (max-width: 640px) {
+            .catalog-header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            .catalog-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="catalog-container">
+        <div id="loadingState" class="loading">
+            <i class="fas fa-spinner"></i>
+            <p class="mt-4 text-xl">Caricamento catalogo...</p>
+        </div>
+        
+        <div id="catalogContent" style="display: none;">
+            <!-- Header -->
+            <div class="catalog-header">
+                <div class="catalog-header-content">
+                    <div class="flex items-center gap-4">
+                        <img id="catalogLogo" src="" alt="Logo" class="catalog-logo" style="display: none;">
+                        <div>
+                            <h1 id="catalogTitle" class="catalog-title">Catalogo</h1>
+                            <p class="text-gray-500 text-sm mt-1">Scopri la nostra collezione</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-4">
+                        <!-- QR Code per ordini -->
+                        <div id="qrSection" class="qr-section" style="display: none;">
+                            <p class="text-xs font-bold text-gray-600 uppercase">Ordina qui</p>
+                            <img id="qrCodeImg" src="" alt="QR Code">
+                            <button onclick="copyQrImage()">
+                                <i class="fas fa-copy mr-1"></i>Copia QR
+                            </button>
+                        </div>
+                        
+                        <!-- Link catalogo completo -->
+                        <a id="fullCatalogLink" href="#" target="_blank" class="external-link" style="display: none;">
+                            <i class="fas fa-book"></i>
+                            Catalogo Completo
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Griglia articoli -->
+            <div id="catalogGrid" class="catalog-grid">
+                <!-- Articoli popolati dinamicamente -->
+            </div>
+            
+            <!-- Stato vuoto -->
+            <div id="emptyState" class="empty-catalog" style="display: none;">
+                <i class="fas fa-box-open"></i>
+                <h2 class="text-xl font-bold mb-2">Catalogo in preparazione</h2>
+                <p>Il catalogo è attualmente vuoto. Torna presto!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configurazione API
+        const API_BASE = 'https://appordinigo.vercel.app/api';
+        
+        // Dati catalogo
+        let catalogData = null;
+        
+        // Carica catalogo
+        async function loadCatalog() {
+            try {
+                const response = await fetch(`${API_BASE}/data/catalog`);
+                if (response.ok) {
+                    catalogData = await response.json();
+                    renderCatalog();
+                } else {
+                    showEmpty();
+                }
+            } catch (error) {
+                console.error('Error loading catalog:', error);
+                showEmpty();
+            }
+        }
+        
+        // Mostra stato vuoto
+        function showEmpty() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('catalogContent').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('catalogGrid').style.display = 'none';
+        }
+        
+        // Renderizza catalogo
+        function renderCatalog() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('catalogContent').style.display = 'block';
+            
+            // Titolo
+            if (catalogData.title) {
+                document.getElementById('catalogTitle').textContent = catalogData.title;
+                document.title = catalogData.title;
+            }
+            
+            // Logo
+            if (catalogData.logo) {
+                const logoEl = document.getElementById('catalogLogo');
+                logoEl.src = catalogData.logo;
+                logoEl.style.display = 'block';
+            }
+            
+            // QR Code
+            if (catalogData.qrUrl) {
+                const qrSection = document.getElementById('qrSection');
+                const qrImg = document.getElementById('qrCodeImg');
+                // Genera QR usando API gratuita
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(catalogData.qrUrl)}`;
+                qrSection.style.display = 'flex';
+            }
+            
+            // Link catalogo completo
+            if (catalogData.fullCatalogUrl) {
+                const linkEl = document.getElementById('fullCatalogLink');
+                linkEl.href = catalogData.fullCatalogUrl;
+                linkEl.style.display = 'inline-flex';
+            }
+            
+            // Articoli
+            if (!catalogData.items || catalogData.items.length === 0) {
+                showEmpty();
+                return;
+            }
+            
+            const grid = document.getElementById('catalogGrid');
+            let html = '';
+            
+            catalogData.items.forEach(item => {
+                const imagesHtml = item.images && item.images.length > 0 
+                    ? item.images.map(img => `<img src="${img}" alt="${item.name}" onclick="openLightbox('${img}')">`).join('')
+                    : `<div class="item-placeholder"><i class="fas fa-tshirt"></i>${item.name}</div>`;
+                
+                // Converti link nel testo descrizione
+                let description = item.description || '';
+                description = description.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+                
+                html += `
+                    <div class="catalog-item">
+                        <div class="item-images">
+                            ${imagesHtml}
+                        </div>
+                        <div class="item-info">
+                            <h3 class="item-name">${item.name}</h3>
+                            ${description ? `<p class="item-description">${description}</p>` : ''}
+                            <div class="item-price">${item.price}€</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+        
+        // Lightbox
+        function openLightbox(imageUrl) {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'lightbox';
+            lightbox.innerHTML = `<img src="${imageUrl}" alt="Immagine ingrandita">`;
+            lightbox.onclick = () => lightbox.remove();
+            document.body.appendChild(lightbox);
+        }
+        
+        // Copia QR
+        async function copyQrImage() {
+            const qrImg = document.getElementById('qrCodeImg');
+            try {
+                const response = await fetch(qrImg.src);
+                const blob = await response.blob();
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+                alert('QR Code copiato negli appunti!');
+            } catch (err) {
+                // Fallback: apri immagine in nuova tab
+                window.open(qrImg.src, '_blank');
+            }
+        }
+        
+        // Chiudi lightbox con ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const lightbox = document.querySelector('.lightbox');
+                if (lightbox) lightbox.remove();
+            }
+        });
+        
+        // Avvia
+        loadCatalog();
+    </script>
+</body>
+</html>
