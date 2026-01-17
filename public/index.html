@@ -567,9 +567,9 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="text-sm font-bold text-gray-600">ID:</label>
-                        <select id="dashboardMinId" onchange="updateDashboardCounts(); renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
+                        <select id="dashboardMinId" onchange="renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
                         <span class="text-gray-400">→</span>
-                        <select id="dashboardMaxId" onchange="updateDashboardCounts(); renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
+                        <select id="dashboardMaxId" onchange="renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
                     </div>
                     <button onclick="resetDashboardFilters()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold transition" title="Reset filtri">
                         <i class="fas fa-undo mr-1"></i>Reset
@@ -3749,30 +3749,14 @@ function deleteOrder(id) {
         }
 
         function updateDashboardCounts() {
-            // Popola filtri se non ancora fatto
-            populateDashboardIdFilters();
-            
-            // Filtri ID della Dashboard
-            const minIdSel = document.getElementById('dashboardMinId');
-            const maxIdSel = document.getElementById('dashboardMaxId');
-            
-            // Filtra ordini validi E nel range ID della Dashboard
-            const validOrders = orders.filter(o => {
-                if (o.status === 'Ordine annullato' || o.status === 'Ordine trasferito ad altro ID') {
-                    return false;
-                }
-                // Applica filtro ID se presente
-                if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
-                    if (compareDisplayIds(o.displayId, minIdSel.value) < 0 || 
-                        compareDisplayIds(o.displayId, maxIdSel.value) > 0) {
-                        return false;
-                    }
-                }
-                return true;
-            });
+            // PARTE 1: Totali GENERALI (TUTTI gli ordini attivi, senza filtri)
+            const allValidOrders = orders.filter(o => 
+                o.status !== 'Ordine annullato' && 
+                o.status !== 'Ordine trasferito ad altro ID'
+            );
             
             let staffCount = 0; let playerCount = 0; let thermalCount = 0;
-            validOrders.forEach(o => { 
+            allValidOrders.forEach(o => { 
                 o.itemsList.forEach(item => { 
                     if(item.name.includes("Staff") || item.name.includes("RED") || item.name.includes("SAPPHIRE")) { 
                         staffCount++; 
@@ -3784,11 +3768,27 @@ function deleteOrder(id) {
                 }); 
             });
             
-            document.getElementById('dash-total').innerText = validOrders.length; 
-            document.getElementById('dash-total-all').innerText = orders.length; // Totale TUTTI gli ordini
+            // Card superiori: SEMPRE totali generali
+            document.getElementById('dash-total').innerText = allValidOrders.length; 
+            document.getElementById('dash-total-all').innerText = orders.length;
             document.getElementById('dash-staff-items').innerText = staffCount; 
             document.getElementById('dash-thermal-items').innerText = thermalCount; 
             document.getElementById('dash-player-items').innerText = playerCount;
+            
+            // Totali finanziari GENERALI
+            let totalGross = 0; 
+            let totalDisc = 0;
+            allValidOrders.forEach(o => { 
+                const net = calculateOrderTotal(o); 
+                const disc = o.discount || 0; 
+                totalGross += (net + disc); 
+                totalDisc += disc; 
+            });
+            const totalNet = totalGross - totalDisc;
+            
+            document.getElementById('dash-money-gross').innerText = totalGross + '€';
+            document.getElementById('dash-money-discount').innerText = totalDisc + '€';
+            document.getElementById('dash-money-net').innerText = totalNet + '€';
         }
 
         function formatHeaderName(name) {
@@ -4102,16 +4102,10 @@ function deleteOrder(id) {
             const validOrders = orders.filter(o => o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID');
             const ctx = document.getElementById('chartStatus').getContext('2d'); if(chartStatus) chartStatus.destroy(); chartStatus = new Chart(ctx, { type: 'doughnut', data: { labels: ['Nuovo', 'In Lav.', 'Pagato', 'Finito'], datasets: [{ data: [validOrders.filter(o=>o.status==='Nuovo').length, validOrders.filter(o=>o.status==='In Lavorazione').length, validOrders.filter(o=>o.status==='Pagato').length, validOrders.filter(o=>o.status==='Consegnato').length], backgroundColor: ['#fbbf24', '#3b82f6', '#15803d', '#374151'] }] }, options: { responsive: true, maintainAspectRatio: false } });
             
-            // Totali generali (tutti gli ordini attivi)
-            let totalGross = 0; let totalDisc = 0; validOrders.forEach(o => { const net = calculateOrderTotal(o); const disc = o.discount || 0; totalGross += (net + disc); totalDisc += disc; });
-            const totalNet = totalGross - totalDisc;
-            document.getElementById('dash-money-gross').innerText = totalGross + '€'; document.getElementById('dash-money-discount').innerText = totalDisc + '€';
-            document.getElementById('dash-money-net').innerText = totalNet + '€';
-            
             // Popola filtri Dashboard se non ancora fatto
             populateDashboardIdFilters();
             
-            // Totali filtrati da range ID (FILTRI PROPRI DELLA DASHBOARD)
+            // PARTE FILTRATA: Totali filtrati da range ID (FILTRI PROPRI DELLA DASHBOARD)
             const minIdSel = document.getElementById('dashboardMinId');
             const maxIdSel = document.getElementById('dashboardMaxId');
             
@@ -4608,7 +4602,7 @@ function deleteOrder(id) {
             const kitFilter = document.getElementById('dashboardKitFilter');
             if (kitFilter) kitFilter.value = 'all';
             
-            updateDashboardCounts();
+            // I totali generali non cambiano, aggiorna solo la parte filtrata
             renderChart();
             renderKitAnalysis();
         }
@@ -6925,7 +6919,7 @@ async function clearActivityLog() {
                 const maxId = findMatchingId(filter.max, dashboardMaxId);
                 dashboardMinId.value = minId;
                 dashboardMaxId.value = maxId;
-                updateDashboardCounts();
+                // I totali generali non cambiano, aggiorna solo la parte filtrata
                 renderChart();
                 renderKitAnalysis();
             }
