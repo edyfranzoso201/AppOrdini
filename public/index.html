@@ -2399,15 +2399,16 @@
 
     // Save config
     await fetch('/api/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        globalItems: globalItems,
-        globalKitTypes: globalKitTypes,
-        quickIdFilters: quickIdFilters,
-        catalog: catalogData
-      })
-    });
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'save',  // ⬅️ AGGIUNGI QUESTA RIGA
+    globalItems: globalItems,
+    globalKitTypes: globalKitTypes,
+    quickIdFilters: quickIdFilters,
+    catalog: catalogData
+  })
+});
 
     console.log('Data saved successfully');
   } catch (error) {
