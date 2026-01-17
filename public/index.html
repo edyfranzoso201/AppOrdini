@@ -3744,7 +3744,8 @@ function deleteOrder(id) {
             renderSocksTable(filteredGross, 'INV'); 
             renderSocksTable(filteredNet, 'NET', true); 
             
-            updateDashboardCounts(); renderChart();
+            // NON chiamare più updateDashboardCounts qui - la Dashboard ha i suoi filtri indipendenti
+            renderChart();
         }
 
         function updateDashboardCounts() {
@@ -4546,6 +4547,13 @@ function deleteOrder(id) {
             const minSelect = document.getElementById('dashboardMinId');
             const maxSelect = document.getElementById('dashboardMaxId');
             if (!minSelect || !maxSelect) return;
+            if (orders.length === 0) return;
+            
+            // Se già popolato e con lo stesso numero di ordini, non ripopolare
+            const currentOptionsCount = minSelect.options.length;
+            if (currentOptionsCount === orders.length && minSelect.value && maxSelect.value) {
+                return; // Già popolato correttamente
+            }
             
             // Salva selezione corrente
             const currentMin = minSelect.value;
@@ -4700,8 +4708,10 @@ function deleteOrder(id) {
         function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
         function updateUI() { 
             populateGestioneOrdiniIdSelects();
+            populateDashboardIdFilters(); // Inizializza filtri Dashboard
             restoreFiltersState(); // Ripristina filtri salvati
             renderTable(); 
+            updateDashboardCounts(); // Aggiorna conteggi Dashboard
             renderChart(); 
             saveData(); 
         }
