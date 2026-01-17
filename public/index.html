@@ -331,43 +331,36 @@
         </div>
 
         <nav class="flex bg-gray-100 p-1 rounded-lg">
-    <button onclick="showTab('ordini')" id="nav-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow">Gestione</button>
-    <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
-    <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
-    <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
-</nav>
+            <button onclick="showTab('ordini')" id="nav-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow">Gestione</button>
+            <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
+            <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
+            <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
+        </nav>
 
-<div class="flex gap-1 items-center">
-    
-    <div class="hidden md:flex flex-col items-end mr-6">
-        <div id="timeDisplay" class="text-2xl font-bold font-mono tracking-widest text-blue-900"></div>
-        <div id="dateDisplay" class="text-xs font-light uppercase tracking-wider text-gray-500"></div>
-    </div>
-    
-    <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
-        <i class="fas fa-users"></i>
-    </button>
-    <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold hidden">
-        <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
-    </button>
-    <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
-        <i class="fas fa-sign-out-alt"></i>
-    </button>
-
-    <button onclick="clearAllOrders()" id="btnReset" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-eraser"></i></button>
-    <button onclick="addNewOrder()" id="btnNuovo" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-plus"></i></button>
-    <button onclick="importFromGoogleSheet()" id="btnImportGoogle" class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Importa da Google"><i class="fas fa-cloud-download-alt"></i></button>
-    <button onclick="exportBackup()" id="btnExportBackup" class="bg-teal-700 hover:bg-teal-800 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Esporta Backup"><i class="fas fa-download"></i></button>
-    
-    <div class="flex items-center gap-1" id="importExcelContainer">
-        <input type="file" id="fileInput" class="hidden" accept=".xlsx, .csv">
-        <label for="fileInput" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded text-xs font-bold cursor-pointer shadow transition" title="Importa Excel"><i class="fas fa-file-excel"></i></label>
-        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded border border-gray-300" id="prefixContainer">
-            <label for="startPrefixInput" class="text-[10px] font-medium text-gray-600">ID:</label>
-            <input type="text" id="startPrefixInput" onblur="updatePrefixAndID()" placeholder="2026A_1" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
+        <div class="flex gap-1 items-center">
+            <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
+                <i class="fas fa-users"></i>
+            </button>
+            <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold hidden">
+                <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
+            </button>
+            <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+            <button onclick="clearAllOrders()" id="btnReset" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-eraser"></i></button>
+             <button onclick="addNewOrder()" id="btnNuovo" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-plus"></i></button>
+             <button onclick="importFromGoogleSheet()" id="btnImportGoogle" class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Importa da Google"><i class="fas fa-cloud-download-alt"></i></button>
+             <button onclick="exportBackup()" id="btnExportBackup" class="bg-teal-700 hover:bg-teal-800 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Esporta Backup"><i class="fas fa-download"></i></button>
+            <div class="flex items-center gap-1" id="importExcelContainer">
+                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .csv">
+                <label for="fileInput" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded text-xs font-bold cursor-pointer shadow transition" title="Importa Excel"><i class="fas fa-file-excel"></i></label>
+                <div class="flex items-center gap-1 bg-gray-100 p-1 rounded border border-gray-300" id="prefixContainer">
+                    <label for="startPrefixInput" class="text-[10px] font-medium text-gray-600">ID:</label>
+                    <input type="text" id="startPrefixInput" onblur="updatePrefixAndID()" placeholder="2026A_1" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
         </div>
-    </div>
-</div> </header>
+    </header>
 
     <main class="flex-grow relative px-4 pt-4 pb-0">
         <div id="tab-ordini" class="tab-content active">
@@ -1220,33 +1213,20 @@
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
 
-        function updateClock() {
-        const now = new Date();
-        
-        // 1. Formattazione Ora
-        const timeString = now.toLocaleTimeString('it-IT', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit' 
-        });
-        
-        // 2. Formattazione Data
-        const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-        const dateStringRaw = now.toLocaleDateString('it-IT', dateOptions);
-        const dateString = dateStringRaw.charAt(0).toUpperCase() + dateStringRaw.slice(1);
-        
-        // 3. Inserimento nell'HTML
-        const timeEl = document.getElementById('timeDisplay');
-        const dateEl = document.getElementById('dateDisplay');
-        
-        if (timeEl) timeEl.textContent = timeString;
-        if (dateEl) dateEl.textContent = dateString;
-    }
-
-    // Avvio Timer
-    setInterval(updateClock, 1000);
-    // Eseguiamo subito per evitare ritardi
-    setTimeout(updateClock, 100);
+        function startClock() {
+            const clockEl = document.getElementById('liveClock');
+            if (!clockEl) return;
+            
+            // Aggiorna subito
+            const updateClock = () => {
+                const now = new Date();
+                clockEl.innerText = now.toLocaleString('it-IT');
+            };
+            updateClock();
+            
+            // Poi ogni secondo
+            setInterval(updateClock, 1000);
+        }
 
         function showTab(tabName) { 
             // Verifica permessi per Dashboard
@@ -7102,7 +7082,7 @@ async function clearActivityLog() {
                 }
             }
             
-            /// Aggiorna la variabile globale
+            // Aggiorna la variabile globale
             quickIdFilters = newFilters;
             
             // Salva su Redis tramite saveData()
