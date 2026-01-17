@@ -6770,13 +6770,15 @@ function resetFiltersToDefault() {
         // ===== SISTEMA CATALOGO =====
         
         // DATI CATALOGO CHE USI NELLA UI
-        catalogData = (config.data && config.data.catalog) ? config.data.catalog : {
-        title: "Catalogo Abbigliamento",
-        logo: "",
-        qrUrl: "",
-        fullCatalogUrl: "",
-        items: []
-        };
+        // DATI CATALOGO CHE USI NELLA UI
+catalogData = (config.catalog) ? config.catalog : {
+  title: "Catalogo Abbigliamento",
+  logo: "",
+  qrUrl: "",
+  fullCatalogUrl: "",
+  items: []
+};
+
         // CARICA CATALOGO DA /api/catalog
         function loadCatalogData() {
   try {
