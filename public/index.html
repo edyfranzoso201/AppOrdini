@@ -6783,7 +6783,7 @@ function resetFiltersToDefault() {
             catalogData.fullCatalogUrl = document.getElementById('catalogFullUrl').value;
             
             try {
-                const response = await fetch(`${API_BASE}/data/catalog`, {
+                const response = await fetch(`${API_BASE}/catalog`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(catalogData)
