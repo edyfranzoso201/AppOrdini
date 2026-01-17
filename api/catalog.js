@@ -20,28 +20,28 @@ export default async function handler(req, res) {
             await redis.set('public_catalog_data', JSON.stringify(catalogData));
             return res.status(200).json({ success: true });
         } else if (req.method === 'GET') {
-            // Carica il catalogo
-            const dataStr = await redis.get('public_catalog_data');
+    // Carica il catalogo
+    const dataStr = await redis.get('public_catalog_data');
 
-            let data = dataStr ? JSON.parse(dataStr) : {
-            title: 'Catalogo Abbigliamento',
-                logo: '',
-                qrUrl: '',          // ← usa qrUrl invece di qrCodeUrl
-                fullCatalogUrl: '',
-                items: []
-            };
+    let data = dataStr ? JSON.parse(dataStr) : {
+        title: 'Catalogo Abbigliamento',
+        logo: '',
+        qrUrl: '',
+        fullCatalogUrl: '',
+        items: []
+    };
 
-            // se esiste ancora il vecchio nome, lo copiamo nel nuovo
-            if (data.qrCodeUrl && !data.qrUrl) {
-            data.qrUrl = data.qrCodeUrl;
+    // retrocompatibilità: se esiste ancora qrCodeUrl lo copiamo in qrUrl
+    if (data.qrCodeUrl && !data.qrUrl) {
+        data.qrUrl = data.qrCodeUrl;
     }
 
-            return res.status(200).json(data);
-        } else {
-            return res.status(405).json({ error: 'Metodo non consentito' });
-        }
-    } catch (error) {
-        console.error('Errore API /api/catalog:', error);
-        return res.status(500).json({ error: 'Errore interno del server' });
+    return res.status(200).json(data);
     }
+          } else {
+    return res.status(405).json({ error: 'Metodo non consentito' });
+  }
+} catch (error) {
+  console.error('Errore API /api/catalog:', error);
+  return res.status(500).json({ error: 'Errore interno del server' });
 }
