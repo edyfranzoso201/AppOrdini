@@ -1220,38 +1220,33 @@
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
 
-        function startClock() 
-            const clockEl = document.getElementById('liveClock');
-            if (!clockEl) return;
-            
-            // Aggiorna subito
-            // --- FUNZIONE OROLOGIO ---
-function updateClock() {
-    const now = new Date();
-    
-    // Formattazione Ora
-    const timeString = now.toLocaleTimeString('it-IT', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit' 
-    });
-    
-    // Formattazione Data
-    const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    const dateStringRaw = now.toLocaleDateString('it-IT', dateOptions);
-    const dateString = dateStringRaw.charAt(0).toUpperCase() + dateStringRaw.slice(1); // Prima lettera maiuscola
-    
-    // Aggiornamento DOM
-    const timeEl = document.getElementById('timeDisplay');
-    const dateEl = document.getElementById('dateDisplay');
-    
-    if (timeEl) timeEl.textContent = timeString;
-    if (dateEl) dateEl.textContent = dateString;
-}
+        function updateClock() {
+        const now = new Date();
+        
+        // 1. Formattazione Ora
+        const timeString = now.toLocaleTimeString('it-IT', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+        });
+        
+        // 2. Formattazione Data
+        const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        const dateStringRaw = now.toLocaleDateString('it-IT', dateOptions);
+        const dateString = dateStringRaw.charAt(0).toUpperCase() + dateStringRaw.slice(1);
+        
+        // 3. Inserimento nell'HTML
+        const timeEl = document.getElementById('timeDisplay');
+        const dateEl = document.getElementById('dateDisplay');
+        
+        if (timeEl) timeEl.textContent = timeString;
+        if (dateEl) dateEl.textContent = dateString;
+    }
 
-// Avvia l'aggiornamento ogni secondo
-setInterval(updateClock, 1000);
-updateClock(); // Esecuzione immediata all'avvio
+    // Avvio Timer
+    setInterval(updateClock, 1000);
+    // Eseguiamo subito per evitare ritardi
+    setTimeout(updateClock, 100);
 
         function showTab(tabName) { 
             // Verifica permessi per Dashboard
