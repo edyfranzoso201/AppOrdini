@@ -345,7 +345,7 @@
             <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
             <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
             <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
-            <button onclick="showTab('catalogo')" id="nav-catalogo" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-book-open mr-1"></i>Catalogo</button>
+            <button onclick="openCatalogSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-bold"><i class="fas fa-book mr-2"></i>Catalogo</button>
         </nav>
 
         <div class="flex gap-1 items-center">
@@ -6929,18 +6929,21 @@ function resetFiltersToDefault() {
         
         // Apri anteprima catalogo pubblico
         async function openCatalogPreview() {
-    // Prima salva il catalogo su Redis
-    await saveCatalogConfig();
+        // Prima salva il catalogo su Redis
+        await saveCatalogConfig();
     
-    // Poi apri catalogo.html in una nuova scheda
-    const publicUrl = window.location.origin + '/catalogo.html';
-    window.open(publicUrl, '_blank');
-}
+        // Poi apri catalogo.html in una nuova scheda
+        const publicUrl = window.location.origin + '/catalogo.html';
+        window.open(publicUrl, '_blank');
+        }
             // Salva prima il catalogo
             saveCatalogConfig().then(() => {
-                // Apri in nuova finestra
-                const publicUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'catalogo.html';
-                window.open(publicUrl, '_blank');
+            // Apri in nuova finestra
+            function openCatalogSettings() {
+            // Apri la pagina di gestione del catalogo in una nuova scheda
+            const catalogUrl = window.location.origin + '/catalogo.html';
+            window.open(catalogUrl, '_blank');
+        }
             });
         
         // Copia link catalogo
