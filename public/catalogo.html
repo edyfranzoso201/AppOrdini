@@ -275,7 +275,7 @@
         // Carica catalogo
         async function loadCatalog() {
             try {
-                const response = await fetch(`${API_BASE}/data/catalog`);
+                const response = await fetch(`${API_BASE}/catalog`);
                 if (response.ok) {
                     catalogData = await response.json();
                     renderCatalog();
