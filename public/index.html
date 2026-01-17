@@ -6784,7 +6784,7 @@ function resetFiltersToDefault() {
   }
 }
 
-async function saveCatalogConfig() {
+aasync function saveCatalogConfig() {
   try {
     const title = document.getElementById('catalogTitleInput').value.trim();
     const qrUrl = document.getElementById('catalogFormUrlInput').value.trim();
@@ -6796,7 +6796,6 @@ async function saveCatalogConfig() {
     catalogData.fullCatalogUrl = fullCatalogUrl;
     catalogData.logo = logo;
 
-    // Gli articoli sono già dentro catalogData.items
     alert('Configurazione catalogo aggiornata. Ora premi il pulsante di salvataggio generale per scriverla sul server.');
   } catch (err) {
     console.error('Errore in saveCatalogConfig:', err);
