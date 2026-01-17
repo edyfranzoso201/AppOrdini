@@ -6770,11 +6770,11 @@ function resetFiltersToDefault() {
         // ===== SISTEMA CATALOGO =====
         
         // DATI CATALOGO CHE USI NELLA UI
-        catalogData = (data.catalog) ? data.catalog : {
+        catalogData = (config.data && config.data.catalog) ? config.data.catalog : {
         title: "Catalogo Abbigliamento",
-         logo: "",
+        logo: "",
         qrUrl: "",
-         fullCatalogUrl: "",
+        fullCatalogUrl: "",
         items: []
         };
         // CARICA CATALOGO DA /api/catalog
@@ -6814,15 +6814,10 @@ async function saveCatalogConfig() {
       return;
     }
 
-    const title = titleEl.value.trim();
-    const qrUrl = formUrlEl.value.trim();
-    const fullCatalogUrl = pdfUrlEl.value.trim();
-    const logo = logoEl.value.trim();
-
-    catalogData.title = title;
-    catalogData.qrUrl = qrUrl;
-    catalogData.fullCatalogUrl = fullCatalogUrl;
-    catalogData.logo = logo;
+    catalogData.title = titleEl.value.trim();
+    catalogData.qrUrl = formUrlEl.value.trim();
+    catalogData.fullCatalogUrl = pdfUrlEl.value.trim();
+    catalogData.logo = logoEl.value.trim();
 
     alert('Configurazione catalogo aggiornata. Ora premi il pulsante di salvataggio generale per scriverla sul server.');
   } catch (err) {
