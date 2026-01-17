@@ -2051,6 +2051,8 @@
         globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
         globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
         
+        quickIdFilters = configData.data.quickIdFilters || {};
+        
         catalogData = configData.data.catalog || {
           title: "Catalogo Abbigliamento",
           logo: "",
