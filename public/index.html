@@ -1215,10 +1215,17 @@
 
         function startClock() {
             const clockEl = document.getElementById('liveClock');
-            setInterval(() => {
+            if (!clockEl) return;
+            
+            // Aggiorna subito
+            const updateClock = () => {
                 const now = new Date();
                 clockEl.innerText = now.toLocaleString('it-IT');
-            }, 1000);
+            };
+            updateClock();
+            
+            // Poi ogni secondo
+            setInterval(updateClock, 1000);
         }
 
         function showTab(tabName) { 
@@ -5923,6 +5930,7 @@ function deleteOrder(id) {
                     await loadData();
                     updateUI();
                     applyUserPermissions();
+                    startClock();
                     
                     // Avvia auto-refresh per sincronizzazione multi-utente
                     startAutoRefresh();
@@ -6904,6 +6912,10 @@ async function clearActivityLog() {
             const tabellaMinId = document.getElementById('tabellaOrdiniMinId');
             const tabellaMaxId = document.getElementById('tabellaOrdiniMaxId');
             if (tabellaMinId && tabellaMaxId) {
+                // Popola i select se vuoti
+                if (tabellaMinId.options.length === 0) {
+                    populateTabellaOrdiniFilters();
+                }
                 const minId = findMatchingId(filter.min, tabellaMinId);
                 const maxId = findMatchingId(filter.max, tabellaMaxId);
                 tabellaMinId.value = minId;
@@ -6915,6 +6927,10 @@ async function clearActivityLog() {
             const dashboardMinId = document.getElementById('dashboardMinId');
             const dashboardMaxId = document.getElementById('dashboardMaxId');
             if (dashboardMinId && dashboardMaxId) {
+                // Popola i select se vuoti
+                if (dashboardMinId.options.length === 0) {
+                    populateDashboardIdFilters();
+                }
                 const minId = findMatchingId(filter.min, dashboardMinId);
                 const maxId = findMatchingId(filter.max, dashboardMaxId);
                 dashboardMinId.value = minId;
