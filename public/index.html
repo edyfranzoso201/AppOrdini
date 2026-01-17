@@ -567,9 +567,9 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="text-sm font-bold text-gray-600">ID:</label>
-                        <select id="dashboardMinId" onchange="renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
+                        <select id="dashboardMinId" onchange="updateDashboardCounts(); renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
                         <span class="text-gray-400">→</span>
-                        <select id="dashboardMaxId" onchange="renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
+                        <select id="dashboardMaxId" onchange="updateDashboardCounts(); renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
                     </div>
                     <button onclick="resetDashboardFilters()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold transition" title="Reset filtri">
                         <i class="fas fa-undo mr-1"></i>Reset
@@ -1243,7 +1243,10 @@
             document.getElementById('nav-' + tabName).className = "px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow";
             
             if (tabName === 'matrix') renderMatrices();
-            if (tabName === 'dashboard') renderChart();
+            if (tabName === 'dashboard') { 
+                updateDashboardCounts(); 
+                renderChart(); 
+            }
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
         
@@ -3741,13 +3744,46 @@ function deleteOrder(id) {
             renderSocksTable(filteredGross, 'INV'); 
             renderSocksTable(filteredNet, 'NET', true); 
             
-            updateDashboardCounts(); renderChart();
+            // NON chiamare più updateDashboardCounts qui - la Dashboard ha i suoi filtri indipendenti
+            renderChart();
         }
 
         function updateDashboardCounts() {
-            const validOrders = orders.filter(o => o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID');
+            // Popola filtri se non ancora fatto
+            populateDashboardIdFilters();
+            
+            // Filtri ID della Dashboard
+            const minIdSel = document.getElementById('dashboardMinId');
+            const maxIdSel = document.getElementById('dashboardMaxId');
+            
+            // Filtra ordini validi E nel range ID della Dashboard
+            const validOrders = orders.filter(o => {
+                if (o.status === 'Ordine annullato' || o.status === 'Ordine trasferito ad altro ID') {
+                    return false;
+                }
+                // Applica filtro ID se presente
+                if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
+                    if (compareDisplayIds(o.displayId, minIdSel.value) < 0 || 
+                        compareDisplayIds(o.displayId, maxIdSel.value) > 0) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            
             let staffCount = 0; let playerCount = 0; let thermalCount = 0;
-            validOrders.forEach(o => { o.itemsList.forEach(item => { if(item.name.includes("Staff") || item.name.includes("RED") || item.name.includes("SAPPHIRE")) { staffCount++; } else if (item.name.includes("Termica") || item.name.includes("Termico")) { thermalCount++; } else { playerCount++; } }); });
+            validOrders.forEach(o => { 
+                o.itemsList.forEach(item => { 
+                    if(item.name.includes("Staff") || item.name.includes("RED") || item.name.includes("SAPPHIRE")) { 
+                        staffCount++; 
+                    } else if (item.name.includes("Termica") || item.name.includes("Termico")) { 
+                        thermalCount++; 
+                    } else { 
+                        playerCount++; 
+                    } 
+                }); 
+            });
+            
             document.getElementById('dash-total').innerText = validOrders.length; 
             document.getElementById('dash-total-all').innerText = orders.length; // Totale TUTTI gli ordini
             document.getElementById('dash-staff-items').innerText = staffCount; 
@@ -4511,6 +4547,13 @@ function deleteOrder(id) {
             const minSelect = document.getElementById('dashboardMinId');
             const maxSelect = document.getElementById('dashboardMaxId');
             if (!minSelect || !maxSelect) return;
+            if (orders.length === 0) return;
+            
+            // Se già popolato e con lo stesso numero di ordini, non ripopolare
+            const currentOptionsCount = minSelect.options.length;
+            if (currentOptionsCount === orders.length && minSelect.value && maxSelect.value) {
+                return; // Già popolato correttamente
+            }
             
             // Salva selezione corrente
             const currentMin = minSelect.value;
@@ -4565,6 +4608,7 @@ function deleteOrder(id) {
             const kitFilter = document.getElementById('dashboardKitFilter');
             if (kitFilter) kitFilter.value = 'all';
             
+            updateDashboardCounts();
             renderChart();
             renderKitAnalysis();
         }
@@ -4664,8 +4708,10 @@ function deleteOrder(id) {
         function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
         function updateUI() { 
             populateGestioneOrdiniIdSelects();
+            populateDashboardIdFilters(); // Inizializza filtri Dashboard
             restoreFiltersState(); // Ripristina filtri salvati
             renderTable(); 
+            updateDashboardCounts(); // Aggiorna conteggi Dashboard
             renderChart(); 
             saveData(); 
         }
@@ -6879,6 +6925,7 @@ async function clearActivityLog() {
                 const maxId = findMatchingId(filter.max, dashboardMaxId);
                 dashboardMinId.value = minId;
                 dashboardMaxId.value = maxId;
+                updateDashboardCounts();
                 renderChart();
                 renderKitAnalysis();
             }
