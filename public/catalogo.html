@@ -267,7 +267,7 @@
 
     <script>
         // Configurazione API
-        const API_BASE = 'https://appordinigo.vercel.app/api';
+        const response = await fetch(`${API_BASE}/catalog`);
         
         // Dati catalogo
         let catalogData = null;
