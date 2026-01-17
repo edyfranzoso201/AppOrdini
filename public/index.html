@@ -2365,27 +2365,33 @@
             try {
                 // Save orders
                 await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'save',
-                        globalItems,
-                        globalKitTypes,
-                        quickIdFilters,
-                        catalog: catalogData    
-                    });
-                // Registra nel log
-                logActivity('Salvataggio dati', `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`);
-                
-                // Save inventory
-                await fetch('/api/inventory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        inventory 
-                    })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'save',
+                    orders,
+                    lastOrderId,
+                    currentPrefix,
+                    highlightedSizeCells
+                })
                 });
+
+                // Registra nel log
+                logActivity(
+                'Salvataggio dati',
+                `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`,
+      {}
+    );
+
+    // Save inventory
+    await fetch('/api/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        inventory
+      })
+    });
                 
                 // Save config (include quickIdFilters)
                 await fetch('/api/config', {
@@ -6784,7 +6790,7 @@ function resetFiltersToDefault() {
   }
 }
 
-aasync function saveCatalogConfig() {
+async function saveCatalogConfig() {
   try {
     const title = document.getElementById('catalogTitleInput').value.trim();
     const qrUrl = document.getElementById('catalogFormUrlInput').value.trim();
