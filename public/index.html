@@ -6928,14 +6928,20 @@ function resetFiltersToDefault() {
         }
         
         // Apri anteprima catalogo pubblico
-        function openCatalogPreview() {
+        async function openCatalogPreview() {
+    // Prima salva il catalogo su Redis
+    await saveCatalogConfig();
+    
+    // Poi apri catalogo.html in una nuova scheda
+    const publicUrl = window.location.origin + '/catalogo.html';
+    window.open(publicUrl, '_blank');
+}
             // Salva prima il catalogo
             saveCatalogConfig().then(() => {
                 // Apri in nuova finestra
                 const publicUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'catalogo.html';
                 window.open(publicUrl, '_blank');
             });
-        }
         
         // Copia link catalogo
         function copyCatalogLink() {
