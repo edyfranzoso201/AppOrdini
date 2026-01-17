@@ -6931,19 +6931,18 @@ function resetFiltersToDefault() {
         async function openCatalogPreview() {
         // Prima salva il catalogo su Redis
         await saveCatalogConfig();
-    
         // Poi apri catalogo.html in una nuova scheda
         const publicUrl = window.location.origin + '/catalogo.html';
         window.open(publicUrl, '_blank');
         }
-        // Salva prima il catalogo
-            saveCatalogConfig().then(() => {
-        // Apri in nuova finestra
-            function openCatalogSettings() {
-        // Apri la pagina di gestione del catalogo in una nuova scheda
+        /// Definisci la funzione globalmente
+        function openCatalogSettings() {
             const catalogUrl = window.location.origin + '/catalogo.html';
             window.open(catalogUrl, '_blank');
         }
+        // Salva il catalogo e poi apri la pagina
+        saveCatalogConfig().then(() => {
+            openCatalogSettings();
         });
         
         // Copia link catalogo
