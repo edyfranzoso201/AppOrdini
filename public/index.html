@@ -7407,29 +7407,26 @@ async function clearActivityLog() {
         
         // Salva configurazione Quick ID su Redis
         async function saveQuickIdConfig() {
-            const newFilters = {};
-            
-            for (let i = 1; i <= 15; i++) { // 15 pulsanti
-                const min = document.getElementById(`quickIdMin_${i}`).value.trim();
-                const max = document.getElementById(`quickIdMax_${i}`).value.trim();
-                
-                if (min && max) {
-                    newFilters[i] = { min, max };
-                }
-            }
-            
-            // Aggiorna la variabile globale
-            quickIdFilters = newFilters;
-            
-            // Salva su Redis tramite saveData()
-            await saveData();
-            
-            closeQuickIdConfig();
-            initQuickIdButtons();
-            
-            const configCount = Object.keys(quickIdFilters).length;
-            alert(`✅ Configurazione salvata su server!\n\n📊 ${configCount} pulsanti configurati su 15 disponibili.\n\n👥 Tutti gli utenti vedranno questa configurazione.`);
+    const newFilters = {};
+    for (let i = 1; i <= 15; i++) {
+        const min = document.getElementById(`quickIdMin_${i}`).value.trim();
+        const max = document.getElementById(`quickIdMax_${i}`).value.trim();
+        if (min && max) {
+            newFilters[i] = { min, max };
         }
+    }
+    
+    // Aggiorna la variabile globale
+    quickIdFilters = newFilters;
+    
+    // Salva su Redis tramite saveData
+    await saveData();
+    closeQuickIdConfig();
+    initQuickIdButtons(); // ⬅️ AGGIUNGI QUESTA RIGA!
+    
+    const configCount = Object.keys(quickIdFilters).length;
+    alert(`Configurazione salvata su server!\n${configCount} pulsanti configurati su 15 disponibili.\n\nTutti gli utenti vedranno questa configurazione.`);
+}
         
         // Inizializza all'avvio
         initQuickIdButtons();
