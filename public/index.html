@@ -6779,16 +6779,27 @@ function resetFiltersToDefault() {
         };
         // CARICA CATALOGO DA /api/catalog
         function loadCatalogData() {
-  try {
-    document.getElementById('catalogFormUrlInput').value = catalogData.qrUrl || '';
-    document.getElementById('catalogPdfUrlInput').value = catalogData.fullCatalogUrl || '';
-    document.getElementById('catalogTitleInput').value = catalogData.title || '';
-    document.getElementById('catalogLogoUrlInput').value = catalogData.logo || '';
-    renderCatalogItems();
-  } catch (err) {
-    console.error('Errore loadCatalogData: ', err);
-  }
-}
+        try {
+            const formUrlEl = document.getElementById('catalogFormUrlInput');
+            const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
+            const titleEl = document.getElementById('catalogTitleInput');
+            const logoEl = document.getElementById('catalogLogoUrlInput');
+
+            if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
+            console.warn('Elementi catalogo non trovati');
+            return;
+            }
+
+            formUrlEl.value = catalogData.qrUrl || '';
+            pdfUrlEl.value = catalogData.fullCatalogUrl || '';
+            titleEl.value = catalogData.title || '';
+            logoEl.value = catalogData.logo || '';
+
+            renderCatalogItems();
+            } catch (err) {
+            console.error('Errore loadCatalogData: ', err);
+        }
+    }
 
 async function saveCatalogConfig() {
   try {
