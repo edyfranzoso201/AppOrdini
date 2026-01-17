@@ -347,27 +347,27 @@
     <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
         <i class="fas fa-users"></i>
     </button>
-            <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold hidden">
-                <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
-            </button>
-            <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
-                <i class="fas fa-sign-out-alt"></i>
-            </button>
-            </div>
-            <button onclick="clearAllOrders()" id="btnReset" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-eraser"></i></button>
-             <button onclick="addNewOrder()" id="btnNuovo" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-plus"></i></button>
-             <button onclick="importFromGoogleSheet()" id="btnImportGoogle" class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Importa da Google"><i class="fas fa-cloud-download-alt"></i></button>
-             <button onclick="exportBackup()" id="btnExportBackup" class="bg-teal-700 hover:bg-teal-800 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Esporta Backup"><i class="fas fa-download"></i></button>
-            <div class="flex items-center gap-1" id="importExcelContainer">
-                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .csv">
-                <label for="fileInput" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded text-xs font-bold cursor-pointer shadow transition" title="Importa Excel"><i class="fas fa-file-excel"></i></label>
-                <div class="flex items-center gap-1 bg-gray-100 p-1 rounded border border-gray-300" id="prefixContainer">
-                    <label for="startPrefixInput" class="text-[10px] font-medium text-gray-600">ID:</label>
-                    <input type="text" id="startPrefixInput" onblur="updatePrefixAndID()" placeholder="2026A_1" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
-                </div>
-            </div>
+    <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold hidden">
+        <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
+    </button>
+    <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
+        <i class="fas fa-sign-out-alt"></i>
+    </button>
+
+    <button onclick="clearAllOrders()" id="btnReset" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-eraser"></i></button>
+    <button onclick="addNewOrder()" id="btnNuovo" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-plus"></i></button>
+    <button onclick="importFromGoogleSheet()" id="btnImportGoogle" class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Importa da Google"><i class="fas fa-cloud-download-alt"></i></button>
+    <button onclick="exportBackup()" id="btnExportBackup" class="bg-teal-700 hover:bg-teal-800 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Esporta Backup"><i class="fas fa-download"></i></button>
+    
+    <div class="flex items-center gap-1" id="importExcelContainer">
+        <input type="file" id="fileInput" class="hidden" accept=".xlsx, .csv">
+        <label for="fileInput" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded text-xs font-bold cursor-pointer shadow transition" title="Importa Excel"><i class="fas fa-file-excel"></i></label>
+        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded border border-gray-300" id="prefixContainer">
+            <label for="startPrefixInput" class="text-[10px] font-medium text-gray-600">ID:</label>
+            <input type="text" id="startPrefixInput" onblur="updatePrefixAndID()" placeholder="2026A_1" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
         </div>
-    </header>
+    </div>
+</div> </header>
 
     <main class="flex-grow relative px-4 pt-4 pb-0">
         <div id="tab-ordini" class="tab-content active">
@@ -1220,7 +1220,7 @@
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
 
-        function startClock() {
+        function startClock() 
             const clockEl = document.getElementById('liveClock');
             if (!clockEl) return;
             
