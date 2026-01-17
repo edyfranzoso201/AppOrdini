@@ -1296,13 +1296,7 @@
         let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}A_`;
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
-        let catalogData = {
-            title: "Catalogo Abbigliamento",
-            logo: "",
-            qrUrl: "",
-            fullCatalogUrl: "",
-            items: []
-        };
+   
         function startClock() {
             const updateClock = () => {
                 const clockEl = document.getElementById('liveClock');
@@ -2056,9 +2050,13 @@
             if (configData.success && configData.data) {
                 globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
                 globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-                quickIdFilters = configData.data.quickIdFilters || {};
-            }
-        }
+                catalogData = configData.data.catalog || {
+                    title: "Catalogo Abbigliamento",
+                    logo: "",
+                    qrUrl: "",
+                    fullCatalogUrl: "",
+                    items: []
+                };  
         
         // Initialize defaults if empty
         if (globalItems.length === 0) {
@@ -6768,15 +6766,6 @@ function resetFiltersToDefault() {
         }
         
         // ===== SISTEMA CATALOGO =====
-        
-        // DATI CATALOGO CHE USI NELLA UI
-catalogData = (data.catalog) ? data.catalog : {
-  title: "Catalogo Abbigliamento",
-  logo: "",
-  qrUrl: "",
-  fullCatalogUrl: "",
-  items: []
-};
 
         // CARICA CATALOGO DA /api/catalog
         function loadCatalogData() {
