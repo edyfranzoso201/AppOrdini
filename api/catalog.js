@@ -22,13 +22,20 @@ export default async function handler(req, res) {
         } else if (req.method === 'GET') {
             // Carica il catalogo
             const dataStr = await redis.get('public_catalog_data');
-            const data = dataStr ? JSON.parse(dataStr) : {
-                title: 'Catalogo Abbigliamento',
+
+            let data = dataStr ? JSON.parse(dataStr) : {
+            title: 'Catalogo Abbigliamento',
                 logo: '',
-                qrCodeUrl: '',
+                qrUrl: '',          // ← usa qrUrl invece di qrCodeUrl
                 fullCatalogUrl: '',
                 items: []
             };
+
+            // se esiste ancora il vecchio nome, lo copiamo nel nuovo
+            if (data.qrCodeUrl && !data.qrUrl) {
+            data.qrUrl = data.qrCodeUrl;
+    }
+
             return res.status(200).json(data);
         } else {
             return res.status(405).json({ error: 'Metodo non consentito' });
