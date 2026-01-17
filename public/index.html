@@ -1107,6 +1107,7 @@
     </div>
 
     <script>
+        const API_BASE = 'https://appordinigo.vercel.app/api';
         const SIZE_ORDER = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "6 ANNI", "8 ANNI", "10 ANNI", "12 ANNI", "14 ANNI", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "03 BIMBO", "05 ADULTO", "UNICA"];
         const SOCKS_BLUE_DEFAULT = "Calzettoni di Allenamento WULGAR Blu Marine 618 (7€)";
         const SOCKS_RED_DEFAULT = "Calzettoni di Allen. WULGAR COL. 565 RED (7€)";
@@ -6927,13 +6928,9 @@ function resetFiltersToDefault() {
         }
         
         // Apri anteprima catalogo pubblico
-        function openCatalogPreview() {
-            // Salva prima il catalogo
-            saveCatalogConfig().then(() => {
-                // Apri in nuova finestra
-                const publicUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'catalogo.html';
-                window.open(publicUrl, '_blank');
-            });
+        async function openCatalogPreview() {
+            await saveCatalogConfig(); // Salva prima
+            window.open('/catalogo.html', '_blank'); // Poi apri anteprima
         }
         
         // Copia link catalogo
