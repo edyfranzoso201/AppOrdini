@@ -6936,15 +6936,15 @@ function resetFiltersToDefault() {
         const publicUrl = window.location.origin + '/catalogo.html';
         window.open(publicUrl, '_blank');
         }
-            // Salva prima il catalogo
+        // Salva prima il catalogo
             saveCatalogConfig().then(() => {
-            // Apri in nuova finestra
+        // Apri in nuova finestra
             function openCatalogSettings() {
-            // Apri la pagina di gestione del catalogo in una nuova scheda
+        // Apri la pagina di gestione del catalogo in una nuova scheda
             const catalogUrl = window.location.origin + '/catalogo.html';
             window.open(catalogUrl, '_blank');
         }
-            });
+        });
         
         // Copia link catalogo
         function copyCatalogLink() {
