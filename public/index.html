@@ -1296,7 +1296,13 @@
         let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}A_`;
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
-
+        let catalogData = {
+            title: "Catalogo Abbigliamento",
+            logo: "",
+            qrUrl: "",
+            fullCatalogUrl: "",
+            items: []
+        };
         function startClock() {
             const updateClock = () => {
                 const clockEl = document.getElementById('liveClock');
@@ -2361,14 +2367,13 @@
                 await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'save', 
-                        orders,
-                        lastOrderId,
-                        currentPrefix,
-                        highlightedSizeCells
-                    })
-                });
+                    body: JSON.stringify({
+                        action: 'save',
+                        globalItems,
+                        globalKitTypes,
+                        quickIdFilters,
+                        catalog: catalogData    
+                    });
                 // Registra nel log
                 logActivity('Salvataggio dati', `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`);
                 
@@ -6768,37 +6773,31 @@ function resetFiltersToDefault() {
         };
         // CARICA CATALOGO DA /api/catalog
         function loadCatalogData() {
-        try {
-        // aggiorna i campi del tab "Gestione Catalogo"
+  try {
     document.getElementById('catalogFormUrlInput').value = catalogData.qrUrl || '';
     document.getElementById('catalogPdfUrlInput').value = catalogData.fullCatalogUrl || '';
     document.getElementById('catalogTitleInput').value = catalogData.title || '';
     document.getElementById('catalogLogoUrlInput').value = catalogData.logo || '';
+    renderCatalogItems();
+  } catch (err) {
+    console.error('Errore loadCatalogData: ', err);
+  }
+}
 
-        // ridisegna la lista articoli
-         renderCatalogItems();
-            } catch (err) {
-            console.error('Errore loadCatalogData: ', err);
-            }
-    }
-        
-        // Salva configurazione catalogo
-        async function saveCatalogConfig() {
+async function saveCatalogConfig() {
   try {
-    // Leggi i valori dagli input del tab "Gestione Catalogo"
     const title = document.getElementById('catalogTitleInput').value.trim();
     const qrUrl = document.getElementById('catalogFormUrlInput').value.trim();
     const fullCatalogUrl = document.getElementById('catalogPdfUrlInput').value.trim();
     const logo = document.getElementById('catalogLogoUrlInput').value.trim();
 
-    // Aggiorna l'oggetto catalogData
     catalogData.title = title;
     catalogData.qrUrl = qrUrl;
     catalogData.fullCatalogUrl = fullCatalogUrl;
     catalogData.logo = logo;
 
     // Gli articoli sono già dentro catalogData.items
-    alert('Configurazione catalogo aggiornata. Ora premi il pulsante di salvataggio generale per scrivere sul server.');
+    alert('Configurazione catalogo aggiornata. Ora premi il pulsante di salvataggio generale per scriverla sul server.');
   } catch (err) {
     console.error('Errore in saveCatalogConfig:', err);
     alert('Errore nel salvataggio del catalogo.');
