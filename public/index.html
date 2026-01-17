@@ -331,22 +331,29 @@
         </div>
 
         <nav class="flex bg-gray-100 p-1 rounded-lg">
-            <button onclick="showTab('ordini')" id="nav-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow">Gestione</button>
-            <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
-            <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
-            <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
-        </nav>
+    <button onclick="showTab('ordini')" id="nav-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow">Gestione</button>
+    <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
+    <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
+    <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
+</nav>
 
-        <div class="flex gap-1 items-center">
-            <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
-                <i class="fas fa-users"></i>
-            </button>
+<div class="flex gap-1 items-center">
+    
+    <div class="hidden md:flex flex-col items-end mr-6">
+        <div id="timeDisplay" class="text-2xl font-bold font-mono tracking-widest text-blue-900"></div>
+        <div id="dateDisplay" class="text-xs font-light uppercase tracking-wider text-gray-500"></div>
+    </div>
+    
+    <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
+        <i class="fas fa-users"></i>
+    </button>
             <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold hidden">
                 <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
             </button>
             <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
+            </div>
             <button onclick="clearAllOrders()" id="btnReset" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-eraser"></i></button>
              <button onclick="addNewOrder()" id="btnNuovo" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition"><i class="fas fa-plus"></i></button>
              <button onclick="importFromGoogleSheet()" id="btnImportGoogle" class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition" title="Importa da Google"><i class="fas fa-cloud-download-alt"></i></button>
@@ -1218,15 +1225,33 @@
             if (!clockEl) return;
             
             // Aggiorna subito
-            const updateClock = () => {
-                const now = new Date();
-                clockEl.innerText = now.toLocaleString('it-IT');
-            };
-            updateClock();
-            
-            // Poi ogni secondo
-            setInterval(updateClock, 1000);
-        }
+            // --- FUNZIONE OROLOGIO ---
+function updateClock() {
+    const now = new Date();
+    
+    // Formattazione Ora
+    const timeString = now.toLocaleTimeString('it-IT', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+    });
+    
+    // Formattazione Data
+    const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const dateStringRaw = now.toLocaleDateString('it-IT', dateOptions);
+    const dateString = dateStringRaw.charAt(0).toUpperCase() + dateStringRaw.slice(1); // Prima lettera maiuscola
+    
+    // Aggiornamento DOM
+    const timeEl = document.getElementById('timeDisplay');
+    const dateEl = document.getElementById('dateDisplay');
+    
+    if (timeEl) timeEl.textContent = timeString;
+    if (dateEl) dateEl.textContent = dateString;
+}
+
+// Avvia l'aggiornamento ogni secondo
+setInterval(updateClock, 1000);
+updateClock(); // Esecuzione immediata all'avvio
 
         function showTab(tabName) { 
             // Verifica permessi per Dashboard
