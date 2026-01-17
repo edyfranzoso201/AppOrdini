@@ -340,7 +340,8 @@
         <div class="flex gap-1 items-center">
             <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
                 <i class="fas fa-users"></i>
-                <button onclick="openActivityLog()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+            </button>
+            <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold hidden">
                 <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
             </button>
             <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
@@ -557,6 +558,32 @@
         </div>
 
         <div id="tab-dashboard" class="tab-content">
+            <!-- Filtri Dashboard -->
+            <div class="bg-white p-4 rounded shadow mb-6 border-2 border-blue-300">
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-filter text-blue-600"></i>
+                        <span class="text-sm font-bold text-blue-900">Filtri Dashboard:</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-bold text-gray-600">ID:</label>
+                        <select id="dashboardMinId" onchange="renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
+                        <span class="text-gray-400">→</span>
+                        <select id="dashboardMaxId" onchange="renderChart(); renderKitAnalysis();" class="text-sm border-2 border-blue-300 rounded px-2 py-1 w-32 text-center font-bold bg-white"></select>
+                    </div>
+                    <button onclick="resetDashboardFilters()" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold transition" title="Reset filtri">
+                        <i class="fas fa-undo mr-1"></i>Reset
+                    </button>
+                    <div class="flex items-center gap-1">
+                        <span class="text-sm font-bold text-gray-600">Quick:</span>
+                        <div class="flex items-center gap-1" id="quickIdButtonsDashboard"></div>
+                        <button onclick="openQuickIdConfig()" class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold transition" title="Configura Quick ID">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div class="bg-white p-6 rounded shadow border-l-4 border-blue-600">
                     <div class="text-gray-500 text-xs font-bold uppercase">Ordini Attivi</div>
@@ -586,7 +613,7 @@
             <div class="bg-purple-50 p-4 rounded shadow mb-6 border-2 border-purple-200">
                 <div class="flex items-center gap-2 mb-3">
                     <i class="fas fa-filter text-purple-600"></i>
-                    <h3 class="text-sm font-bold text-purple-900 uppercase">Totali Range ID Filtrato (da Distinta & Magazzino)</h3>
+                    <h3 class="text-sm font-bold text-purple-900 uppercase">Totali Range ID Filtrato</h3>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div class="bg-white p-4 rounded shadow border-l-4 border-purple-600">
@@ -4045,9 +4072,12 @@ function deleteOrder(id) {
             document.getElementById('dash-money-gross').innerText = totalGross + '€'; document.getElementById('dash-money-discount').innerText = totalDisc + '€';
             document.getElementById('dash-money-net').innerText = totalNet + '€';
             
-            // Totali filtrati da range ID (Distinta & Magazzino)
-            const minIdSel = document.getElementById('matrixMinId');
-            const maxIdSel = document.getElementById('matrixMaxId');
+            // Popola filtri Dashboard se non ancora fatto
+            populateDashboardIdFilters();
+            
+            // Totali filtrati da range ID (FILTRI PROPRI DELLA DASHBOARD)
+            const minIdSel = document.getElementById('dashboardMinId');
+            const maxIdSel = document.getElementById('dashboardMaxId');
             
             if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
                 const filteredOrders = validOrders.filter(o => {
@@ -4185,11 +4215,24 @@ function deleteOrder(id) {
         function renderKitAnalysis() {
             const filterValue = document.getElementById('dashboardKitFilter')?.value || 'all';
             
-            // Filtra ordini validi
-            let filteredOrders = orders.filter(o => 
-                o.status !== 'Ordine annullato' && 
-                o.status !== 'Ordine trasferito ad altro ID'
-            );
+            // Filtri ID della Dashboard
+            const minIdSel = document.getElementById('dashboardMinId');
+            const maxIdSel = document.getElementById('dashboardMaxId');
+            
+            // Filtra ordini validi E nel range ID della Dashboard
+            let filteredOrders = orders.filter(o => {
+                if (o.status === 'Ordine annullato' || o.status === 'Ordine trasferito ad altro ID') {
+                    return false;
+                }
+                // Applica filtro ID se presente
+                if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
+                    if (compareDisplayIds(o.displayId, minIdSel.value) < 0 || 
+                        compareDisplayIds(o.displayId, maxIdSel.value) > 0) {
+                        return false;
+                    }
+                }
+                return true;
+            });
             
             // Applica filtro kit se non è "all"
             if (filterValue !== 'all') {
@@ -4213,16 +4256,25 @@ function deleteOrder(id) {
             document.getElementById('dash-kit-discount').innerText = totalDiscount + '€';
             document.getElementById('dash-kit-net').innerText = totalNet + '€';
             
-            // Breakdown per tipo kit (mostra sempre tutti i kit con quantità)
+            // Breakdown per tipo kit (mostra kit nel range filtrato)
             const kitBreakdown = {};
             const kitTotals = {};
             
-            const allValidOrders = orders.filter(o => 
-                o.status !== 'Ordine annullato' && 
-                o.status !== 'Ordine trasferito ad altro ID'
-            );
+            // Usa gli ordini già filtrati per range ID
+            const ordersForBreakdown = orders.filter(o => {
+                if (o.status === 'Ordine annullato' || o.status === 'Ordine trasferito ad altro ID') {
+                    return false;
+                }
+                if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
+                    if (compareDisplayIds(o.displayId, minIdSel.value) < 0 || 
+                        compareDisplayIds(o.displayId, maxIdSel.value) > 0) {
+                        return false;
+                    }
+                }
+                return true;
+            });
             
-            allValidOrders.forEach(o => {
+            ordersForBreakdown.forEach(o => {
                 const kitType = o.kitType || 'Non specificato';
                 if (!kitBreakdown[kitType]) {
                     kitBreakdown[kitType] = 0;
@@ -4451,6 +4503,106 @@ function deleteOrder(id) {
                         }
                     }
                 });
+            }
+        }
+        
+        // Popola i filtri ID della Dashboard
+        function populateDashboardIdFilters() {
+            const minSelect = document.getElementById('dashboardMinId');
+            const maxSelect = document.getElementById('dashboardMaxId');
+            if (!minSelect || !maxSelect) return;
+            
+            // Salva selezione corrente
+            const currentMin = minSelect.value;
+            const currentMax = maxSelect.value;
+            
+            // Ordina usando la funzione globale
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
+            
+            minSelect.innerHTML = '';
+            maxSelect.innerHTML = '';
+            
+            sortedOrders.forEach(o => {
+                const optMin = document.createElement('option');
+                optMin.value = o.displayId;
+                optMin.text = o.displayId;
+                minSelect.appendChild(optMin);
+                
+                const optMax = document.createElement('option');
+                optMax.value = o.displayId;
+                optMax.text = o.displayId;
+                maxSelect.appendChild(optMax);
+            });
+            
+            // Ripristina selezione o imposta default
+            if (currentMin && sortedOrders.some(o => o.displayId === currentMin)) {
+                minSelect.value = currentMin;
+            } else if (sortedOrders.length > 0) {
+                minSelect.value = sortedOrders[0].displayId;
+            }
+            
+            if (currentMax && sortedOrders.some(o => o.displayId === currentMax)) {
+                maxSelect.value = currentMax;
+            } else if (sortedOrders.length > 0) {
+                maxSelect.value = sortedOrders[sortedOrders.length - 1].displayId;
+            }
+        }
+        
+        // Reset filtri Dashboard
+        function resetDashboardFilters() {
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
+            const minSelect = document.getElementById('dashboardMinId');
+            const maxSelect = document.getElementById('dashboardMaxId');
+            
+            if (minSelect && sortedOrders.length > 0) {
+                minSelect.value = sortedOrders[0].displayId;
+            }
+            if (maxSelect && sortedOrders.length > 0) {
+                maxSelect.value = sortedOrders[sortedOrders.length - 1].displayId;
+            }
+            
+            // Reset anche il filtro kit
+            const kitFilter = document.getElementById('dashboardKitFilter');
+            if (kitFilter) kitFilter.value = 'all';
+            
+            renderChart();
+            renderKitAnalysis();
+        }
+        
+        // Applica Quick ID filter anche alla Dashboard
+        function applyQuickIdFilterToDashboard(num) {
+            const filter = quickIdFilters[num];
+            if (!filter || !filter.min || !filter.max) return;
+            
+            const minSelect = document.getElementById('dashboardMinId');
+            const maxSelect = document.getElementById('dashboardMaxId');
+            
+            if (minSelect && maxSelect) {
+                // Trova ID corrispondenti
+                const sortedOrders = sortOrdersByDisplayId(orders, true);
+                
+                const findMatchingId = (inputValue) => {
+                    if (inputValue.includes('_') || inputValue.includes('A_')) {
+                        return inputValue;
+                    }
+                    const targetNum = parseInt(inputValue);
+                    for (let o of sortedOrders) {
+                        const parsed = parseDisplayId(o.displayId);
+                        if (parsed.num === targetNum) {
+                            return o.displayId;
+                        }
+                    }
+                    return inputValue;
+                };
+                
+                const matchedMin = findMatchingId(filter.min);
+                const matchedMax = findMatchingId(filter.max);
+                
+                minSelect.value = matchedMin;
+                maxSelect.value = matchedMax;
+                
+                renderChart();
+                renderKitAnalysis();
             }
         }
 
@@ -5804,6 +5956,12 @@ function resetFiltersToDefault() {
             document.getElementById('btnExportBackup').classList.toggle('hidden', !perms.exportBackup);
             document.getElementById('importExcelContainer').classList.toggle('hidden', !perms.importExcel);
             
+            // Pulsante LOG visibile solo per admin
+            const btnViewLog = document.getElementById('btnViewLog');
+            if (btnViewLog) {
+                btnViewLog.classList.toggle('hidden', currentUser.role !== 'admin');
+            }
+            
             // Nascondi tab in base ai permessi
             const ordiniBtn = document.getElementById('nav-ordini');
             const matrixBtn = document.getElementById('nav-matrix');
@@ -5944,7 +6102,7 @@ function resetFiltersToDefault() {
                                       // Filtri Tabella Ordini
                                       'tabellaOrdiniMinId', 'tabellaOrdiniMaxId', 'tabellaOrdiniFilterCliente', 'tabellaOrdiniFilterTaglia',
                                       // Filtri Dashboard
-                                      'dashboardKitFilter'];
+                                      'dashboardKitFilter', 'dashboardMinId', 'dashboardMaxId'];
                     
                     // Funzione per disabilitare inputs dopo il render
                     window.disableEditInputs = function() {
@@ -6617,11 +6775,12 @@ async function clearActivityLog() {
         function initQuickIdButtons() {
             // Usa la variabile globale quickIdFilters (caricata da Redis)
             
-            // IDs dei container in tutte e 3 le sezioni
+            // IDs dei container in tutte le sezioni
             const containers = [
                 'quickIdButtons',        // Gestione Ordini
                 'quickIdButtonsMatrix',  // Distinta & Magazzino
-                'quickIdButtonsTabella'  // Tabella Ordini
+                'quickIdButtonsTabella', // Tabella Ordini
+                'quickIdButtonsDashboard' // Dashboard
             ];
             
             let html = '';
@@ -6710,6 +6869,18 @@ async function clearActivityLog() {
                 tabellaMinId.value = minId;
                 tabellaMaxId.value = maxId;
                 renderTabellaOrdini();
+            }
+            
+            // 4. DASHBOARD
+            const dashboardMinId = document.getElementById('dashboardMinId');
+            const dashboardMaxId = document.getElementById('dashboardMaxId');
+            if (dashboardMinId && dashboardMaxId) {
+                const minId = findMatchingId(filter.min, dashboardMinId);
+                const maxId = findMatchingId(filter.max, dashboardMaxId);
+                dashboardMinId.value = minId;
+                dashboardMaxId.value = maxId;
+                renderChart();
+                renderKitAnalysis();
             }
             
             console.log(`✅ Filtro Quick ID ${num} applicato: ${filter.min} → ${filter.max}`);
