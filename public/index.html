@@ -6788,28 +6788,46 @@ function resetFiltersToDefault() {
 }
 
 async function saveCatalogConfig() {
-  try {
-    const formUrlEl = document.getElementById('catalogFormUrlInput');
-    const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
-    const titleEl = document.getElementById('catalogTitleInput');
-    const logoEl = document.getElementById('catalogLogoUrlInput');
-
-    if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
-      console.warn('Elementi catalogo non trovati');
-      alert('Errore: campi del catalogo non trovati nella pagina.');
-      return;
+    try {
+        const formUrlEl = document.getElementById('catalogFormUrlInput');
+        const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
+        const titleEl = document.getElementById('catalogTitleInput');
+        const logoEl = document.getElementById('catalogLogoUrlInput');
+        
+        if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
+            console.warn('Elementi catalogo non trovati');
+            alert('Errore: campi del catalogo non trovati nella pagina.');
+            return;
+        }
+        
+        // Aggiorna catalogData in memoria
+        catalogData.title = titleEl.value.trim();
+        catalogData.qrUrl = formUrlEl.value.trim();
+        catalogData.fullCatalogUrl = pdfUrlEl.value.trim();
+        catalogData.logo = logoEl.value.trim();
+        
+        // ⬇️⬇️⬇️ AGGIUNGI QUESTA PARTE PER SALVARE SU REDIS ⬇️⬇️⬇️
+        
+        // Salva su Redis tramite /api/config
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save',
+                globalItems: globalItems,
+                globalKitTypes: globalKitTypes,
+                quickIdFilters: quickIdFilters,
+                catalog: catalogData  // ⬅️ SALVA TUTTO catalogData incluso qrUrl
+            })
+        });
+        
+        alert('✅ Configurazione catalogo salvata con successo!');
+        console.log('✅ Catalogo salvato:', catalogData);
+        
+    } catch (error) {
+        console.error('❌ Errore salvataggio catalogo:', error);
+        alert('❌ Errore nel salvataggio del catalogo: ' + error.message);
     }
-
-    catalogData.title = titleEl.value.trim();
-    catalogData.qrUrl = formUrlEl.value.trim();
-    catalogData.fullCatalogUrl = pdfUrlEl.value.trim();
-    catalogData.logo = logoEl.value.trim();
-
-    alert('Configurazione catalogo aggiornata. Ora premi il pulsante di salvataggio generale per scriverla sul server.');
-  } catch (err) {
-    console.error('Errore in saveCatalogConfig:', err);
-    alert('Errore nel salvataggio del catalogo.');
-  }
 }
         
         // Renderizza gli articoli del catalogo
