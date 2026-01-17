@@ -1215,17 +1215,10 @@
 
         function startClock() {
             const clockEl = document.getElementById('liveClock');
-            if (!clockEl) return;
-            
-            // Aggiorna subito
-            const updateClock = () => {
+            setInterval(() => {
                 const now = new Date();
                 clockEl.innerText = now.toLocaleString('it-IT');
-            };
-            updateClock();
-            
-            // Poi ogni secondo
-            setInterval(updateClock, 1000);
+            }, 1000);
         }
 
         function showTab(tabName) { 
