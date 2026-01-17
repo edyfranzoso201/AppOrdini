@@ -6779,34 +6779,45 @@ function resetFiltersToDefault() {
         };
         // CARICA CATALOGO DA /api/catalog
         function loadCatalogData() {
-        try {
-            const formUrlEl = document.getElementById('catalogFormUrlInput');
-            const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
-            const titleEl = document.getElementById('catalogTitleInput');
-            const logoEl = document.getElementById('catalogLogoUrlInput');
+  try {
+    const formUrlEl = document.getElementById('catalogFormUrlInput');
+    const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
+    const titleEl = document.getElementById('catalogTitleInput');
+    const logoEl = document.getElementById('catalogLogoUrlInput');
 
-            if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
-            console.warn('Elementi catalogo non trovati');
-            return;
-            }
-
-            formUrlEl.value = catalogData.qrUrl || '';
-            pdfUrlEl.value = catalogData.fullCatalogUrl || '';
-            titleEl.value = catalogData.title || '';
-            logoEl.value = catalogData.logo || '';
-
-            renderCatalogItems();
-            } catch (err) {
-            console.error('Errore loadCatalogData: ', err);
-        }
+    if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
+      console.warn('Elementi catalogo non trovati');
+      return;
     }
+
+    formUrlEl.value = catalogData.qrUrl || '';
+    pdfUrlEl.value = catalogData.fullCatalogUrl || '';
+    titleEl.value = catalogData.title || '';
+    logoEl.value = catalogData.logo || '';
+
+    renderCatalogItems();
+  } catch (err) {
+    console.error('Errore loadCatalogData: ', err);
+  }
+}
 
 async function saveCatalogConfig() {
   try {
-    const title = document.getElementById('catalogTitleInput').value.trim();
-    const qrUrl = document.getElementById('catalogFormUrlInput').value.trim();
-    const fullCatalogUrl = document.getElementById('catalogPdfUrlInput').value.trim();
-    const logo = document.getElementById('catalogLogoUrlInput').value.trim();
+    const formUrlEl = document.getElementById('catalogFormUrlInput');
+    const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
+    const titleEl = document.getElementById('catalogTitleInput');
+    const logoEl = document.getElementById('catalogLogoUrlInput');
+
+    if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
+      console.warn('Elementi catalogo non trovati');
+      alert('Errore: campi del catalogo non trovati nella pagina.');
+      return;
+    }
+
+    const title = titleEl.value.trim();
+    const qrUrl = formUrlEl.value.trim();
+    const fullCatalogUrl = pdfUrlEl.value.trim();
+    const logo = logoEl.value.trim();
 
     catalogData.title = title;
     catalogData.qrUrl = qrUrl;
