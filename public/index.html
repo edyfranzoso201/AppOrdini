@@ -439,7 +439,8 @@
                 <div class="bg-white p-2 rounded shadow border-b flex justify-between items-center gap-4 flex-wrap flex-none">
                     <div class="flex items-center gap-4">
                         <div><h2 class="font-bold text-lg text-blue-900">Distinta & Magazzino</h2><p class="text-xs text-gray-500">Flusso: Richiesta -> Magazzino -> Ordine Fornitore</p></div>
-                        <div id="liveClock" class="live-clock hidden md:block">--:--:--</div>
+                        <div id="liveClock" class="live-clock hidden md:block"></div>
+
                         
                         <div class="h-6 w-px bg-gray-300"></div>
                         
@@ -1250,22 +1251,22 @@
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
         
-        function populateTabellaOrdiniFilters() {
-            const minSelect = document.getElementById('tabellaOrdiniMinId');
-            const maxSelect = document.getElementById('tabellaOrdiniMaxId');
-            if (!minSelect || !maxSelect) return;
-            
-            // Ordina usando la funzione globale
-            const sortedOrders = sortOrdersByDisplayId(orders, true);
-            const allIds = sortedOrders.map(o => o.displayId);
-            
-            minSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
-            maxSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
-            if (allIds.length > 0) {
-                minSelect.value = allIds[0];
-                maxSelect.value = allIds[allIds.length - 1];
-            }
-        }
+        function populateDashboardIdFilters() {
+  const minSelect = document.getElementById('dashboardMinId');
+  const maxSelect = document.getElementById('dashboardMaxId');
+  if (!minSelect || !maxSelect || !orders || orders.length === 0) return;
+
+  const sortedOrders = sortOrdersByDisplayId(orders, true);
+  const allIds = sortedOrders.map(o => o.displayId);
+
+  minSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
+  maxSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
+
+  if (allIds.length > 0) {
+    minSelect.value = allIds[0];
+    maxSelect.value = allIds[allIds.length - 1];
+  }
+}
         
         function printTabellaOrdiniPart(part) {
             const table = document.getElementById('tabellaOrdiniStampabile');
@@ -6848,89 +6849,52 @@ async function clearActivityLog() {
         
         // Applica filtro Quick ID a TUTTE le sezioni
         function applyQuickIdFilter(num) {
-            // Usa la variabile globale quickIdFilters (caricata da Redis)
-            const filter = quickIdFilters[num];
-            
-            if (!filter || !filter.min || !filter.max) {
-                alert(`⚠️ Il pulsante ${num} non è configurato.\n\nClicca sul pulsante ⚙️ per configurarlo.`);
-                return;
-            }
-            
-            // Funzione per trovare l'ID completo che corrisponde al numero
-            const findMatchingId = (inputValue, selectElement) => {
-                if (!selectElement || !selectElement.options) return inputValue;
-                
-                // Se è già un ID completo (es: 2025_068), usalo direttamente
-                if (inputValue.includes('_') || inputValue.includes('A_')) {
-                    return inputValue;
-                }
-                
-                // Altrimenti è solo un numero (es: 68), trova l'ID corrispondente
-                const targetNum = parseInt(inputValue);
-                for (let opt of selectElement.options) {
-                    const optValue = opt.value;
-                    const match = optValue.match(/(\d+)$/);
-                    if (match && parseInt(match[1]) === targetNum) {
-                        return optValue;
-                    }
-                }
-                
-                return inputValue; // Fallback
-            };
-            
-            // 1. GESTIONE ORDINI
-            const filterMinId = document.getElementById('filterMinId');
-            const filterMaxId = document.getElementById('filterMaxId');
-            if (filterMinId && filterMaxId) {
-                const minId = findMatchingId(filter.min, filterMinId);
-                const maxId = findMatchingId(filter.max, filterMaxId);
-                filterMinId.value = minId;
-                filterMaxId.value = maxId;
-                renderTable();
-            }
-            
-            // 2. DISTINTA & MAGAZZINO
-            const matrixMinId = document.getElementById('matrixMinId');
-            const matrixMaxId = document.getElementById('matrixMaxId');
-            if (matrixMinId && matrixMaxId) {
-                const minId = findMatchingId(filter.min, matrixMinId);
-                const maxId = findMatchingId(filter.max, matrixMaxId);
-                matrixMinId.value = minId;
-                matrixMaxId.value = maxId;
-                renderMatrices(true); // IMPORTANTE: true per non resettare i filtri!
-            }
-            
-            // 3. TABELLA ORDINI
-            const tabellaMinId = document.getElementById('tabellaOrdiniMinId');
-            const tabellaMaxId = document.getElementById('tabellaOrdiniMaxId');
-            if (tabellaMinId && tabellaMaxId) {
-                // Popola i select se vuoti
-                if (tabellaMinId.options.length === 0) {
-                    populateTabellaOrdiniFilters();
-                }
-                const minId = findMatchingId(filter.min, tabellaMinId);
-                const maxId = findMatchingId(filter.max, tabellaMaxId);
-                tabellaMinId.value = minId;
-                tabellaMaxId.value = maxId;
-                renderTabellaOrdini();
-            }
-            
-            // 4. DASHBOARD
-            const dashboardMinId = document.getElementById('dashboardMinId');
-            const dashboardMaxId = document.getElementById('dashboardMaxId');
-            if (dashboardMinId && dashboardMaxId) {
-                // Popola i select se vuoti
-                if (dashboardMinId.options.length === 0) {
-                    populateDashboardIdFilters();
-                }
-                const minId = findMatchingId(filter.min, dashboardMinId);
-                const maxId = findMatchingId(filter.max, dashboardMaxId);
-                dashboardMinId.value = minId;
-                dashboardMaxId.value = maxId;
-                // I totali generali non cambiano, aggiorna solo la parte filtrata
-                renderChart();
-                renderKitAnalysis();
-            }
+  const filter = quickIdFilters[num];
+  if (!filter || !filter.min || !filter.max) return;
+
+  const minIdFull = findMatchingId(filter.min);
+  const maxIdFull = findMatchingId(filter.max);
+  if (!minIdFull || !maxIdFull) {
+    alert('ID non trovati per questo Quick ID.');
+    return;
+  }
+
+  // Gestione ordini
+  const filterMinId = document.getElementById('filterMinId');
+  const filterMaxId = document.getElementById('filterMaxId');
+  if (filterMinId && filterMaxId) {
+    filterMinId.value = minIdFull;
+    filterMaxId.value = maxIdFull;
+    renderTable();
+  }
+
+  // Distinta & Magazzino
+  const matrixMinId = document.getElementById('matrixMinId');
+  const matrixMaxId = document.getElementById('matrixMaxId');
+  if (matrixMinId && matrixMaxId) {
+    matrixMinId.value = minIdFull;
+    matrixMaxId.value = maxIdFull;
+    renderMatrices(true);
+  }
+
+  // Tabella Ordini Stampabile
+  const tabMinId = document.getElementById('tabellaOrdiniMinId');
+  const tabMaxId = document.getElementById('tabellaOrdiniMaxId');
+  if (tabMinId && tabMaxId) {
+    tabMinId.value = minIdFull;
+    tabMaxId.value = maxIdFull;
+    renderTabellaOrdini();
+  }
+
+  // Dashboard
+  const dashMin = document.getElementById('dashboardMinId');
+  const dashMax = document.getElementById('dashboardMaxId');
+  if (dashMin && dashMax) {
+    dashMin.value = minIdFull;
+    dashMax.value = maxIdFull;
+    renderChart();
+  }
+}
             
             console.log(`✅ Filtro Quick ID ${num} applicato: ${filter.min} → ${filter.max}`);
             showQuickNotification(`Filtro ${num}: ${filter.min} → ${filter.max}`, 'success');
