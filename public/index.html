@@ -1214,14 +1214,15 @@
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
 
         function startClock() {
-            const clockEl = document.getElementById('liveClock');
-            if (!clockEl) return;
+            const updateClock = () => {
+                const clockEl = document.getElementById('liveClock');
+                if (clockEl) {
+                    const now = new Date();
+                    clockEl.innerText = now.toLocaleString('it-IT');
+                }
+            };
             
             // Aggiorna subito
-            const updateClock = () => {
-                const now = new Date();
-                clockEl.innerText = now.toLocaleString('it-IT');
-            };
             updateClock();
             
             // Poi ogni secondo
@@ -4108,6 +4109,17 @@ function deleteOrder(id) {
         function renderChart() { 
             const validOrders = orders.filter(o => o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID');
             const ctx = document.getElementById('chartStatus').getContext('2d'); if(chartStatus) chartStatus.destroy(); chartStatus = new Chart(ctx, { type: 'doughnut', data: { labels: ['Nuovo', 'In Lav.', 'Pagato', 'Finito'], datasets: [{ data: [validOrders.filter(o=>o.status==='Nuovo').length, validOrders.filter(o=>o.status==='In Lavorazione').length, validOrders.filter(o=>o.status==='Pagato').length, validOrders.filter(o=>o.status==='Consegnato').length], backgroundColor: ['#fbbf24', '#3b82f6', '#15803d', '#374151'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+            
+            // Calcola totali GENERALI per il grafico (tutti gli ordini attivi)
+            let totalGross = 0; 
+            let totalDisc = 0;
+            validOrders.forEach(o => { 
+                const net = calculateOrderTotal(o); 
+                const disc = o.discount || 0; 
+                totalGross += (net + disc); 
+                totalDisc += disc; 
+            });
+            const totalNet = totalGross - totalDisc;
             
             // Popola filtri Dashboard se non ancora fatto
             populateDashboardIdFilters();
