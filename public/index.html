@@ -2021,66 +2021,67 @@
         }
         
         async function loadData() {
-            try {
-            // Load orders
-                const ordersRes = await fetch('/api/orders');
-                if (ordersRes.ok) {
-                const ordersData = await ordersRes.json();
-                if (ordersData.success && ordersData.data) {
-                    orders = ordersData.data.orders || [];
-                    lastOrderId = ordersData.data.lastOrderId || 0;
-                    currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                    highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+    try {
+        // Load orders
+        const ordersRes = await fetch('/api/orders');
+        if (ordersRes.ok) {
+            const ordersData = await ordersRes.json();
+            if (ordersData.success && ordersData.data) {
+                orders = ordersData.data.orders || [];
+                lastOrderId = ordersData.data.lastOrderId || 0;
+                currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
             }
         }
         
         // Load inventory
-    const invRes = await fetch('/api/inventory');
-    if (invRes.ok) {
-      const invData = await invRes.json();
-      if (invData.success && invData.data) {
-        inventory = invData.data.inventory || {};
-      }
-    }
+        const invRes = await fetch('/api/inventory');
+        if (invRes.ok) {
+            const invData = await invRes.json();
+            if (invData.success && invData.data) {
+                inventory = invData.data.inventory || {};
+            }
+        }
         
         // Load config
-    const configRes = await fetch('/api/config');
-    if (configRes.ok) {
-      const configData = await configRes.json();
-      if (configData.success && configData.data) {
-        globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
-        globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-        
-        quickIdFilters = configData.data.quickIdFilters || {};
-
-        catalogData = configData.data.catalog || {
-          title: "Catalogo Abbigliamento",
-          logo: "",
-          qrUrl: "",
-          fullCatalogUrl: "",
-          items: []
-        };
-      }
-    }
+        const configRes = await fetch('/api/config');
+        if (configRes.ok) {
+            const configData = await configRes.json();
+            if (configData.success && configData.data) {
+                globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
+                globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                
+                quickIdFilters = configData.data.quickIdFilters || {};
+                
+                catalogData = configData.data.catalog || {
+                    title: "Catalogo Abbigliamento",
+                    logo: "",
+                    qrUrl: "",
+                    fullCatalogUrl: "",
+                    items: []
+                };
+            }
+        }
         
         // Initialize defaults if empty
-    if (globalItems.length === 0) {
-      globalItems = [...DEFAULT_ITEMS_LIST];
-    }
-    if (Object.keys(globalKitTypes).length === 0) {
-      globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
-    }
-
+        if (globalItems.length === 0) {
+            globalItems = [...DEFAULT_ITEMS_LIST];
+        }
+        if (Object.keys(globalKitTypes).length === 0) {
+            globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+        }
+        
         // Repair import keys
-        function repairImportKeys() {
-        // placeholder
+        repairAllImportKeys();
+        
+        // ⬅️⬅️⬅️ AGGIUNGI QUESTA RIGA QUI ⬇️⬇️⬇️
+        initQuickIdButtons(); // Inizializza i pulsanti Quick ID dopo aver caricato quickIdFilters
+        
+        updateUI();
+    } catch (error) {
+        console.error('Errore caricamento dati:', error);
+        alert('Errore nel caricamento dei dati. Riprova.');
     }
-
-    updateUI();
-  } catch (error) {
-    console.error('Errore caricamento dati:', error);
-    alert('Errore nel caricamento dei dati. Riprova.');
-  }
 }
         
         // ===== SISTEMA NOTIFICHE =====
