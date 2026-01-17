@@ -1345,7 +1345,7 @@
                 updateDashboardCounts(); 
                 renderChart(); 
             }
-            if (tabName === 'catalogo') renderCatalogItems();
+            if (tabName === 'catalogo') loadCatalogData();
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
         
@@ -2394,6 +2394,17 @@
                     })
                 });
                 
+                // Save public catalog
+try {
+    await fetch('/api/catalog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(catalogData)
+    });
+    console.log('Catalogo pubblico salvato');
+} catch (err) {
+    console.error('Errore salvataggio catalogo pubblico', err);
+}
                 console.log('Data saved successfully');
             } catch (error) {
                 console.error('Error saving data:', error);
@@ -6747,7 +6758,7 @@ function resetFiltersToDefault() {
         // ===== SISTEMA CATALOGO =====
         
         // DATI CATALOGO CHE USI NELLA UI
-        let catalogConfig = {
+        let catalogData = {
             title: "Catalogo Abbigliamento",
             logo: "",
             qrUrl: "",
@@ -6755,24 +6766,27 @@ function resetFiltersToDefault() {
             items: []
         };
         // CARICA CATALOGO DA /api/catalog
-        async function loadCatalogConfig() {
-        try {
-            const res = await fetch(API_BASE + "catalog");
-            if (!res.ok) throw new Error("Errore caricamento catalogo");
-            const data = await res.json();
+        async function loadCatalogData() {
+    try {
+        const res = await fetch('/api/catalog');
+        if (!res.ok) throw new Error('Errore caricamento catalogo');
 
-            catalogConfig = data;
+        const data = await res.json();
+        catalogData = data || catalogData;
 
-            // TODO: qui aggiorni gli input della UI del tab "Gestione Catalogo"
-            // Esempio (adatta agli id reali degli input):
-            // document.getElementById("catalogTitleInput").value = data.title || "";
-            // document.getElementById("catalogFormUrlInput").value = data.qrUrl || "";
-            // document.getElementById("catalogPdfUrlInput").value = data.fullCatalogUrl || "";
-            // e così via per gli articoli...
-        } catch (err) {
-            console.error("Errore in loadCatalogConfig:", err);
-        }
+        // aggiorna i campi del tab Gestione Catalogo
+        // ATTENZIONE: usa gli id REALI dei tuoi input
+        document.getElementById('catalogQrUrlInput').value = catalogData.qrUrl || '';
+        document.getElementById('catalogFullUrlInput').value = catalogData.fullCatalogUrl || '';
+        document.getElementById('catalogTitleInput').value = catalogData.title || '';
+        document.getElementById('catalogLogoUrlInput').value = catalogData.logo || '';
+
+        // ridisegna la lista articoli
+        renderCatalogItems();
+    } catch (err) {
+        console.error('Errore loadCatalogData:', err);
     }
+}
         
         // Salva configurazione catalogo
         async function saveCatalogConfig() {
@@ -6784,11 +6798,11 @@ function resetFiltersToDefault() {
 
     // TODO: costruisci l'array items leggendo le righe della tabella articoli
     // Per ora manteniamo quello già in memoria
-    const items = catalogConfig.items || [];
+    const items = catalogData.items || [];
 
     const payload = {
       title,
-      logo: catalogConfig.logo || "",
+      logo: catalogData.logo || "",
       qrUrl,
       fullCatalogUrl,
       items
