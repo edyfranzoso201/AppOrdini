@@ -267,7 +267,7 @@
 
     <script>
         // Configurazione API
-        const response = await fetch(`${API_BASE}/catalog`);
+        const API_BASE = 'https://appordinigo.vercel.app/api';
         
         // Dati catalogo
         let catalogData = null;
@@ -398,8 +398,10 @@
             }
         });
         
-        // Avvia
-        loadCatalog();
+        // Carica catalogo all'avvio
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCatalog();
+        });
     </script>
 </body>
 </html>
