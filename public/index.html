@@ -6829,7 +6829,28 @@ async function saveCatalogConfig() {
         alert('❌ Errore nel salvataggio del catalogo: ' + error.message);
     }
 }
+        // Salva gli articoli del catalogo su Redis
+async function saveCatalogItems() {
+    try {
+        // Salva su Redis tramite /api/config
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save',
+                globalItems: globalItems,
+                globalKitTypes: globalKitTypes,
+                quickIdFilters: quickIdFilters,
+                catalog: catalogData  // ⬅️ Include tutti gli articoli
+            })
+        });
         
+        console.log('✅ Articoli catalogo salvati su Redis:', catalogData.items);
+        
+    } catch (error) {
+        console.error('❌ Errore salvataggio articoli catalogo:', error);
+    }
+}
         // Renderizza gli articoli del catalogo
         function renderCatalogItems() {
             
@@ -6889,72 +6910,75 @@ async function saveCatalogConfig() {
         }
         
         // Aggiorna un campo di un articolo
-        function updateCatalogItem(index, field, value) {
-            if (catalogData.items[index]) {
-                catalogData.items[index][field] = field === 'price' ? parseFloat(value) || 0 : value;
-            }
+        async function updateCatalogItem(index, field, value) {
+    if (catalogData.items[index]) {
+        catalogData.items[index][field] = field === 'price' ? parseFloat(value) || 0 : value;
+        await saveCatalogItems();  // ⬅️ AGGIUNGI QUESTA RIGA
         }
+    }
         
         // Aggiungi nuovo articolo
-        function addCatalogItem() {
-            catalogData.items.push({
-                name: 'Nuovo Articolo',
-                description: '',
-                price: 0,
-                images: []
-            });
-            renderCatalogItems();
-        }
+        async function addCatalogItem() {  // ✅ AGGIUNTO "async"
+        catalogData.items.push({
+        name: 'Nuovo Articolo',
+        description: '',
+        price: 0,
+        images: []
+        });
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ Ora funziona
+    }
         
         // Rimuovi articolo
-        function removeCatalogItem(index) {
-            if (confirm('Sei sicuro di voler rimuovere questo articolo?')) {
-                catalogData.items.splice(index, 1);
-                renderCatalogItems();
-            }
+        async function removeCatalogItem(index) {  // ✅ AGGIUNTO "async"
+        if (confirm('Sei sicuro di voler rimuovere questo articolo?')) {
+        catalogData.items.splice(index, 1);
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ AGGIUNTO
         }
+    }
         
         // Gestisci immagini articolo
-        function editCatalogItemImages(index) {
-            const item = catalogData.items[index];
-            const currentImages = (item.images || []).join('\n');
-            
-            const newImages = prompt(
-                'Inserisci gli URL delle immagini (uno per riga, max 3):\n\nEsempio:\nhttps://example.com/img1.jpg\nhttps://example.com/img2.jpg',
-                currentImages
-            );
-            
-            if (newImages !== null) {
-                item.images = newImages.split('\n').filter(url => url.trim()).slice(0, 3);
-                renderCatalogItems();
-            }
+        async function editCatalogItemImages(index) {  // ✅ AGGIUNTO "async"
+        const item = catalogData.items[index];
+        const currentImages = (item.images || []).join('\n');
+    
+        const newImages = prompt(
+        'Inserisci gli URL delle immagini (uno per riga, max 3):\n\nEsempio:\nhttps://example.com/img1.jpg\nhttps://example.com/img2.jpg',
+        currentImages
+        );
+    
+        if (newImages !== null) {
+        item.images = newImages.split('\n').filter(url => url.trim()).slice(0, 3);
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ AGGIUNTO
         }
+    }
         
         // Importa articoli dal database
-        function importItemsFromDB() {
-            if (confirm('Vuoi importare tutti gli articoli dal database? Gli articoli esistenti verranno mantenuti.')) {
-                globalItems.forEach(itemName => {
-                    // Estrai nome e prezzo
-                    const priceMatch = itemName.match(/\((\d+)€\)/);
-                    const price = priceMatch ? parseInt(priceMatch[1]) : 0;
-                    const name = itemName.replace(/\s*\(\d+€\)\s*$/, '').trim();
-                    
-                    // Verifica se esiste già
-                    const exists = catalogData.items.some(i => i.name === name);
-                    if (!exists) {
-                        catalogData.items.push({
-                            name: name,
-                            description: '',
-                            price: price,
-                            images: []
-                        });
-                    }
+        async function importItemsFromDB() {  // ✅ AGGIUNTO "async"
+    if (confirm('Vuoi importare tutti gli articoli dal database? Gli articoli esistenti verranno mantenuti.')) {
+        globalItems.forEach(itemName => {
+            const priceMatch = itemName.match(/\((\d+)€\)/);
+            const price = priceMatch ? parseInt(priceMatch[1]) : 0;
+            const name = itemName.replace(/\s*\(\d+€\)\s*$/, '').trim();
+            
+            const exists = catalogData.items.some(i => i.name === name);
+            if (!exists) {
+                catalogData.items.push({
+                    name: name,
+                    description: '',
+                    price: price,
+                    images: []
                 });
-                
-                renderCatalogItems();
-                showQuickNotification(`Importati ${globalItems.length} articoli dal DB`, 'success');
             }
-        }
+        });
+        
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ AGGIUNTO
+        showQuickNotification(`Importati ${globalItems.length} articoli dal DB`, 'success');
+    }
+}
         
         // Apri anteprima catalogo pubblico
         async function openCatalogPreview() {
