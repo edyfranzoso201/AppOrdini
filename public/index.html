@@ -6939,21 +6939,60 @@ async function saveCatalogItems() {
     }
         
         // Gestisci immagini articolo
-        async function editCatalogItemImages(index) {  // ✅ AGGIUNTO "async"
-        const item = catalogData.items[index];
-        const currentImages = (item.images || []).join('\n');
+        // Gestisci immagini articolo
+async function editCatalogItemImages(index) {
+    const item = catalogData.items[index];
+    const currentImages = (item.images || []).join('\n');
     
-        const newImages = prompt(
-        'Inserisci gli URL delle immagini (uno per riga, max 3):\n\nEsempio:\nhttps://example.com/img1.jpg\nhttps://example.com/img2.jpg',
-        currentImages
-        );
+    // Crea modal con textarea
+    const modalHtml = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="this.remove()">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full mx-4" onclick="event.stopPropagation()">
+                <h3 class="text-xl font-bold mb-4 text-gray-900">
+                    <i class="fas fa-images text-blue-600 mr-2"></i>
+                    Gestisci Immagini: ${item.name}
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">
+                    Inserisci gli URL delle immagini (uno per riga, max 3):
+                </p>
+                <textarea 
+                    id="imageUrlsTextarea" 
+                    rows="6" 
+                    class="w-full border rounded p-3 font-mono text-sm"
+                    placeholder="https://example.com/img1.jpg&#10;https://example.com/img2.jpg&#10;https://example.com/img3.jpg"
+                >${currentImages}</textarea>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button onclick="this.closest('.fixed').remove()" 
+                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold">
+                        Annulla
+                    </button>
+                    <button onclick="saveImageUrls(${index})" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                        <i class="fas fa-save mr-2"></i>Salva
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
     
-        if (newImages !== null) {
-        item.images = newImages.split('\n').filter(url => url.trim()).slice(0, 3);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('imageUrlsTextarea').focus();
+}
+
+// Funzione per salvare gli URL delle immagini
+async function saveImageUrls(index) {
+    const textarea = document.getElementById('imageUrlsTextarea');
+    const newImages = textarea.value;
+    
+    if (newImages !== null) {
+        catalogData.items[index].images = newImages.split('\n').filter(url => url.trim()).slice(0, 3);
         renderCatalogItems();
-        await saveCatalogItems();  // ✅ AGGIUNTO
-        }
+        await saveCatalogItems();
     }
+    
+    // Chiudi il modal
+    document.querySelector('.fixed.inset-0').remove();
+}
         
         // Importa articoli dal database
         async function importItemsFromDB() {  // ✅ AGGIUNTO "async"
