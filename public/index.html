@@ -7425,15 +7425,29 @@ async function clearActivityLog() {
         }
         
         // Salva configurazione Quick ID su Redis
-        async function saveQuickIdConfig() {
-    const newFilters = {};
-    for (let i = 1; i <= 15; i++) {
-        const min = document.getElementById(`quickIdMin_${i}`).value.trim();
-        const max = document.getElementById(`quickIdMax_${i}`).value.trim();
-        if (min && max) {
-            newFilters[i] = { min, max };
-        }
+        async function saveQuickIdFilter(buttonNumber) {
+    const startId = document.getElementById(`quickIdStart${buttonNumber}`).value.trim().toUpperCase();
+    const endId = document.getElementById(`quickIdEnd${buttonNumber}`).value.trim().toUpperCase();
+    
+    if (!startId || !endId) {
+        alert('❌ Inserisci sia ID Inizio che ID Fine');
+        return;
     }
+    
+    // Salva nel filtro
+    quickIdFilters[buttonNumber] = { start: startId, end: endId };
+    
+    // Salva su Redis tramite saveData()
+    await saveData();
+    
+    // Aggiorna i pulsanti
+    initQuickIdButtons();
+    
+    // Chiudi il popup
+    closeQuickIdConfig();
+    
+    alert(`✅ Quick ID ${buttonNumber} salvato: ${startId} → ${endId}`);
+}
     
     // Aggiorna la variabile globale
     quickIdFilters = newFilters;
