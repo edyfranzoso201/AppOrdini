@@ -7453,13 +7453,12 @@ async function clearActivityLog() {
     quickIdFilters = newFilters;
     
     // Salva su Redis tramite saveData
-    await saveData();
+    async saveData();
     closeQuickIdConfig();
     initQuickIdButtons(); // ⬅️ AGGIUNGI QUESTA RIGA!
     
     const configCount = Object.keys(quickIdFilters).length;
     alert(`Configurazione salvata su server!\n${configCount} pulsanti configurati su 15 disponibili.\n\nTutti gli utenti vedranno questa configurazione.`);
-}
         
         // Inizializza all'avvio
         initQuickIdButtons();
