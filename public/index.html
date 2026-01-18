@@ -7419,35 +7419,57 @@ async function clearActivityLog() {
         }
         
         // Chiudi modal
-        function closeQuickIdConfig() {
-            const modal = document.querySelector('.fixed.inset-0');
-            if (modal) modal.remove();
+        // Chiudi modal
+function closeQuickIdConfig() {
+    const modal = document.querySelector('.fixed.inset-0');
+    if (modal) modal.remove();
+}
+
+// Salva TUTTI i Quick ID Filters configurati nel modal
+async function saveQuickIdConfig() {
+    try {
+        // Leggi tutti i 15 filtri dal modal
+        const newFilters = {};
+        let configuredCount = 0;
+        
+        for (let i = 1; i <= 15; i++) {
+            const minInput = document.getElementById(`quickIdMin_${i}`);
+            const maxInput = document.getElementById(`quickIdMax_${i}`);
+            
+            if (minInput && maxInput) {
+                const min = minInput.value.trim().toUpperCase();
+                const max = maxInput.value.trim().toUpperCase();
+                
+                // Se entrambi i campi sono compilati, salva il filtro
+                if (min && max) {
+                    newFilters[i] = { min: min, max: max };
+                    configuredCount++;
+                }
+            }
         }
         
-        // Salva configurazione Quick ID su Redis
-        async function saveQuickIdFilter(buttonNumber) {
-    const startId = document.getElementById(`quickIdStart${buttonNumber}`).value.trim().toUpperCase();
-    const endId = document.getElementById(`quickIdEnd${buttonNumber}`).value.trim().toUpperCase();
-    
-    if (!startId || !endId) {
-        alert('❌ Inserisci sia ID Inizio che ID Fine');
-        return;
+        // Aggiorna la variabile globale
+        quickIdFilters = newFilters;
+        
+        // Salva su Redis tramite saveData()
+        await saveData();
+        
+        // Chiudi il modal
+        closeQuickIdConfig();
+        
+        // Aggiorna i pulsanti nella UI
+        initQuickIdButtons();
+        
+        // Mostra conferma
+        alert(`✅ Configurazione salvata su server!\n\n${configuredCount} pulsanti configurati su 15 disponibili.\n\nTutti gli utenti vedranno questa configurazione.`);
+        
+        console.log('✅ Quick ID Filters salvati:', quickIdFilters);
+        
+    } catch (error) {
+        console.error('❌ Errore salvataggio Quick ID Filters:', error);
+        alert('❌ Errore durante il salvataggio. Riprova.');
     }
-    
-    // Salva nel filtro
-    quickIdFilters[buttonNumber] = { start: startId, end: endId };
-    
-    // Salva su Redis tramite saveData()
-    await saveData();
-    
-    // Aggiorna i pulsanti
-    initQuickIdButtons();
-    
-    // Chiudi il popup
-    closeQuickIdConfig();
-    
-    alert(`✅ Quick ID ${buttonNumber} salvato: ${startId} → ${endId}`);
-    }
+}
         // Inizializza all'avvio
         initQuickIdButtons();
     </script>
