@@ -1288,6 +1288,13 @@
         let inventory = {}; 
         let globalKitTypes = {}; 
         let quickIdFilters = {}; // Filtri Quick ID condivisi su Redis
+        let catalogData = { // ✅ Variabile catalogo dichiarata
+            title: "Catalogo Abbigliamento",
+            logo: "",
+            qrUrl: "",
+            fullCatalogUrl: "",
+            items: []
+        };
         let currentEditId = null;
         let currentEditingKitKey = null; 
         let chartStatus = null;
