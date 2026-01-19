@@ -2067,6 +2067,10 @@
                     fullCatalogUrl: "",
                     items: []
                 };
+                
+                console.log('✅ Dati caricati da Redis:');
+                console.log('  - Items catalogo:', catalogData.items?.length || 0);
+                console.log('  - Quick ID filters:', Object.keys(quickIdFilters).length);
             }
         }
         
@@ -6794,6 +6798,37 @@ function resetFiltersToDefault() {
   }
 }
 
+// ✅ NUOVA FUNZIONE: Salva solo gli items del catalogo (senza controllare campi HTML)
+async function saveCatalogItems() {
+    try {
+        console.log('💾 Salvataggio items catalogo...', catalogData.items?.length || 0);
+        
+        // Salva TUTTO su Redis (con catalogData.items aggiornati)
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save',
+                globalItems: globalItems,
+                globalKitTypes: globalKitTypes,
+                quickIdFilters: quickIdFilters,
+                catalog: catalogData  // ✅ Include items aggiornati
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        console.log('✅ Items catalogo salvati - Totale:', catalogData.items?.length || 0);
+        
+    } catch (error) {
+        console.error('❌ Errore salvataggio items catalogo:', error);
+        alert('❌ Errore nel salvataggio degli articoli: ' + error.message);
+    }
+}
+
+// Salva la configurazione completa del catalogo (header + items)
 async function saveCatalogConfig() {
     try {
         const formUrlEl = document.getElementById('catalogFormUrlInput');
@@ -6802,9 +6837,9 @@ async function saveCatalogConfig() {
         const logoEl = document.getElementById('catalogLogoUrlInput');
         
         if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
-            console.warn('Elementi catalogo non trovati');
-            alert('Errore: campi del catalogo non trovati nella pagina.');
-            return;
+            console.warn('⚠️ Elementi header catalogo non trovati, salvo solo items');
+            // ✅ Se i campi header non ci sono, salva solo gli items
+            return await saveCatalogItems();
         }
         
         // Aggiorna SOLO i campi header (NON toccare items!)
@@ -6897,7 +6932,7 @@ async function saveCatalogConfig() {
         async function updateCatalogItem(index, field, value) {
     if (catalogData.items[index]) {
         catalogData.items[index][field] = field === 'price' ? parseFloat(value) || 0 : value;
-        await saveCatalogConfig();  // ⬅️ AGGIUNGI QUESTA RIGA
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
         }
     }
         
@@ -6910,7 +6945,7 @@ async function saveCatalogConfig() {
         images: []
         });
         renderCatalogItems();
-        await saveCatalogConfig();  // ✅ Ora funziona
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
     }
         
         // Rimuovi articolo
@@ -6918,7 +6953,7 @@ async function saveCatalogConfig() {
         if (confirm('Sei sicuro di voler rimuovere questo articolo?')) {
         catalogData.items.splice(index, 1);
         renderCatalogItems();
-        await saveCatalogConfig();  // ✅ AGGIUNTO
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
         }
     }
         
@@ -6970,7 +7005,7 @@ async function saveImageUrls(index) {
     if (newImages !== null) {
         catalogData.items[index].images = newImages.split('\n').filter(url => url.trim()).slice(0, 3);
         renderCatalogItems();
-        await saveCatalogConfig();  // ✅ CORRETTO
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
     }
     
     // Chiudi il modal
@@ -6997,7 +7032,7 @@ async function saveImageUrls(index) {
         });
         
         renderCatalogItems();
-        await saveCatalogConfig();  // ✅ AGGIUNTO
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
         showQuickNotification(`Importati ${globalItems.length} articoli dal DB`, 'success');
     }
 }
