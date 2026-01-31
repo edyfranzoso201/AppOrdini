@@ -1785,13 +1785,18 @@
             // URL per esportare come CSV
             const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
             
-            // Usa un proxy CORS più affidabile
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`;
+            // ✅ FIX: Accesso diretto senza proxy (Google Sheet pubblici hanno CORS)
+            const proxyUrl = csvUrl;
             
             console.log('🔄 Inizio importazione da Google Sheet...');
-            console.log('📡 URL proxy:', proxyUrl);
+            console.log('📡 URL diretto (no proxy):', proxyUrl);
             
-            fetch(proxyUrl)
+            fetch(proxyUrl, {
+                mode: 'cors',
+                headers: {
+                    'Accept': 'text/csv'
+                }
+            })
                 .then(response => {
                     console.log('📡 Risposta ricevuta:', response.status);
                     if (!response.ok) {
