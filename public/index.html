@@ -889,7 +889,19 @@
                     </div>
                 </div>
             </div>
-            
+             <!-- NUOVO: Nota Informativa Ordini -->
+                <div class="mb-6 p-4 bg-yellow-50 rounded border border-yellow-200">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>Nota Informativa Ordini (opzionale)
+                    </label>
+                    <textarea 
+                        id="catalogOrderNoteInput" 
+                        placeholder="Es: Gli ordini vengono inviati genericamente a fine del mese e necessitano circa 15 giorni per l'arrivo dell'ordine."
+                        class="w-full border rounded px-3 py-2 text-sm h-20"
+                        maxlength="300"
+                    ></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Questa nota apparirà sotto il pulsante "Clicca qui per Ordinare" nel catalogo pubblico. Max 300 caratteri.</p>
+                </div>
             <!-- Lista Articoli del Catalogo -->
             <div class="bg-white p-4 rounded shadow">
                 <div class="flex items-center justify-between mb-4">
@@ -1293,6 +1305,7 @@
             logo: "",
             qrUrl: "",
             fullCatalogUrl: "",
+            orderNote: '', // ✅ NUOVO
             items: []
         };
         let currentEditId = null;
@@ -6786,6 +6799,7 @@ function resetFiltersToDefault() {
     const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
     const titleEl = document.getElementById('catalogTitleInput');
     const logoEl = document.getElementById('catalogLogoUrlInput');
+    const noteEl = document.getElementById('catalogOrderNoteInput'); // ✅ NUOVO
 
     if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
       console.warn('Elementi catalogo non trovati');
@@ -6796,6 +6810,11 @@ function resetFiltersToDefault() {
     pdfUrlEl.value = catalogData.fullCatalogUrl || '';
     titleEl.value = catalogData.title || '';
     logoEl.value = catalogData.logo || '';
+    
+    // ✅ NUOVO: Carica la nota
+    if (noteEl) {
+        noteEl.value = catalogData.orderNote || '';
+    }
 
     renderCatalogItems();
   } catch (err) {
@@ -6840,10 +6859,10 @@ async function saveCatalogConfig() {
         const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
         const titleEl = document.getElementById('catalogTitleInput');
         const logoEl = document.getElementById('catalogLogoUrlInput');
+        const noteEl = document.getElementById('catalogOrderNoteInput'); // ✅ NUOVO
         
         if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
             console.warn('⚠️ Elementi header catalogo non trovati, salvo solo items');
-            // ✅ Se i campi header non ci sono, salva solo gli items
             return await saveCatalogItems();
         }
         
@@ -6852,6 +6871,7 @@ async function saveCatalogConfig() {
         catalogData.qrUrl = formUrlEl.value.trim();
         catalogData.fullCatalogUrl = pdfUrlEl.value.trim();
         catalogData.logo = logoEl.value.trim();
+        catalogData.orderNote = noteEl ? noteEl.value.trim() : ''; // ✅ NUOVO
         // ✅ catalogData.items rimane invariato!
         
         // Salva TUTTO su Redis
