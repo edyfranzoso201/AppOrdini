@@ -1274,15 +1274,31 @@
         }
         
         // Confronta due ID considerando prefisso + numero
-        // 2025_001 < 2025_002 < 2025A_001 < 2025A_244 < 2026_001
+        // Ordine corretto: 2025_001 < 2025_002 < 2025A_001 < 2025A_244 < 2026_001 < 2026_002
         function compareDisplayIds(idA, idB) {
             const a = parseDisplayId(idA);
             const b = parseDisplayId(idB);
             
-            // Prima confronta il prefisso (ordine alfabetico: 2025A_ < 2026_)
+            // ✅ FIX: Estrai l'anno dal prefisso per confronto numerico
+            const extractYear = (prefix) => {
+                const yearMatch = prefix.match(/^(\d{4})/); // Estrae i primi 4 digit (es. "2025" da "2025A_")
+                return yearMatch ? parseInt(yearMatch[1]) : 0;
+            };
+            
+            const yearA = extractYear(a.prefix);
+            const yearB = extractYear(b.prefix);
+            
+            // Prima confronta l'anno (numericamente)
+            if (yearA !== yearB) {
+                return yearA - yearB; // 2025 < 2026 (numerico)
+            }
+            
+            // Se stesso anno, confronta il prefisso completo (alfabetico)
+            // Es: "2025_" < "2025A_" perché "_" < "A"
             if (a.prefix !== b.prefix) {
                 return a.prefix.localeCompare(b.prefix);
             }
+            
             // Se stesso prefisso, confronta il numero
             return a.num - b.num;
         }
@@ -2975,15 +2991,10 @@
                             inputs.push(...col_p_items);
                         } 
                     } else { 
-                        // Import generico (NON Google Form, NON Backup)
                         if (!row[0] && !row[1] && !row[2]) return;
-                        
-                        // ✅ FIX: Per import non-backup, NON usare row[0] come displayId
-                        // Lascia rowDisplayId = null così verrà generato automaticamente
-                        rowDisplayId = null; // ✅ Sempre null per generare ID sequenziale
-                        
+                        rowDisplayId = row[0] ? row[0].toString().trim() : generateNewId(true); 
                         customer = `${(row[1]||'')} ${(row[2]||'')}`.trim() || `Cliente`; 
-                        importKey = row[0] ? row[0].toString().trim() : `${customer}_${Date.now()}`; // ✅ Usa row[0] solo per importKey
+                        importKey = rowDisplayId; 
                         notes = row[7] ? row[7].toString().trim() : ''; 
                         inputs = [row[8] ? row[8].toString().trim().toLowerCase() : '']; 
                         mainSize = row[4] ? row[4].toString().trim().toUpperCase() : "L";
@@ -4901,12 +4912,16 @@ function deleteOrder(id) {
                 filterMaxId.appendChild(optMax);
             });
             
-            // Ripristina selezioni o imposta default
-            if (currentMin && currentMax) {
+            // ✅ FIX: Ripristina selezioni SOLO se esistono ancora negli ordini
+            if (currentMin && sortedOrders.some(o => o.displayId === currentMin)) {
                 filterMinId.value = currentMin;
-                filterMaxId.value = currentMax;
             } else if (sortedOrders.length > 0) {
                 filterMinId.value = sortedOrders[0].displayId;
+            }
+            
+            if (currentMax && sortedOrders.some(o => o.displayId === currentMax)) {
+                filterMaxId.value = currentMax;
+            } else if (sortedOrders.length > 0) {
                 filterMaxId.value = sortedOrders[sortedOrders.length - 1].displayId;
             }
         }
