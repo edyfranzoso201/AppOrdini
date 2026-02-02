@@ -2054,14 +2054,27 @@
             if (ordersData.success && ordersData.data) {
                 orders = ordersData.data.orders || [];
                 lastOrderId = ordersData.data.lastOrderId || 0;
-                // ✅ FIX: Se currentPrefix non esiste, usa anno corrente invece di R68-
+                
+                // FIX: Se currentPrefix non esiste, usa anno corrente invece di R68-
                 currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
+                
+                // ✅ AGGIUNGI QUESTA VERIFICA
+                const currentYear = new Date().getFullYear().toString();
+                // Se il prefisso salvato non corrisponde all'anno corrente, aggiornalo
+                if (!currentPrefix.startsWith(currentYear)) {
+                    console.log(`🔄 Prefisso obsoleto rilevato: ${currentPrefix} → Aggiorno a ${currentYear}`);
+                    currentPrefix = currentYear;
+                    lastOrderId = 0; // Riparte da 001 per il nuovo anno
+                    // Salva immediatamente il nuovo prefisso su Redis
+                    saveData();
+                }
+                
                 highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
                 
                 console.log('✅ Dati caricati da Redis:');
-                console.log('   - Ordini:', orders.length);
-                console.log('   - lastOrderId:', lastOrderId);
-                console.log('   - currentPrefix:', currentPrefix);
+                console.log('  - Ordini:', orders.length);
+                console.log('  - lastOrderId:', lastOrderId);
+                console.log('  - currentPrefix:', currentPrefix);
             }
         }
         
@@ -3182,17 +3195,28 @@
             orders = [...newOrUpdatedOrders, ...existingOrdersMap.values(), ...manualOrdersSorted];
             
             // RICALCOLA lastOrderId basandoti sul massimo ID reale
-            const prefixRegex = new RegExp(`^${currentPrefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
-            const maxId = orders.reduce((max, o) => {
-                if (o.displayId && o.displayId.match(prefixRegex)) {
-                    const n = parseInt(o.displayId.replace(currentPrefix, ''));
-                    return isNaN(n) ? max : Math.max(max, n);
-                }
-                return max;
-            }, 0);
-            lastOrderId = maxId;
-            console.log(`🔢 lastOrderId ricalcolato: ${lastOrderId} (prossimo ID sarà ${currentPrefix}${(lastOrderId + 1).toString().padStart(3, '0')})`);
-            
+const currentYear = new Date().getFullYear().toString();
+
+// Se il prefisso salvato non corrisponde all'anno corrente, aggiornalo
+if (!currentPrefix.startsWith(currentYear)) {
+    currentPrefix = currentYear;
+    lastOrderId = 0; // Riparte da 001 per il nuovo anno
+    console.log(`✅ Prefisso aggiornato al nuovo anno: ${currentPrefix}`);
+} else {
+    // Calcola il massimo ID solo per gli ordini dell'anno corrente
+    const prefixRegex = new RegExp(currentPrefix.replace(/[-_.]/g, ''), '');
+    const maxId = orders.reduce((max, o) => {
+        if (o.displayId && o.displayId.match(prefixRegex)) {
+            const n = parseInt(o.displayId.replace(currentPrefix, ''));
+            return isNaN(n) ? max : Math.max(max, n);
+        }
+        return max;
+    }, 0);
+    lastOrderId = maxId;
+}
+
+console.log(`📝 lastOrderId ricalcolato: ${lastOrderId}, prossimo ID sarà ${currentPrefix}_${(lastOrderId + 1).toString().padStart(3, '0')}`);
+
             // DEBUG: Conta ordini trasferiti dopo import
             const transferredCount = orders.filter(o => o.status && o.status.includes('trasferito')).length;
             const newCount = newOrderIds.length;
