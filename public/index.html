@@ -2725,6 +2725,29 @@
             }
 
             const newOrUpdatedOrders = [];
+
+// Ricalcola lastOrderId PRIMA dell'import
+const currentYear = new Date().getFullYear().toString();
+if (!currentPrefix.startsWith(currentYear)) {
+    currentPrefix = currentYear;
+    console.log(`✅ Prefisso aggiornato: ${currentPrefix}`);
+}
+
+// Trova il massimo ID esistente con il prefisso corrente
+const prefixPattern = `${currentPrefix}_`;
+const maxId = orders.reduce((max, o) => {
+    if (o.displayId && o.displayId.startsWith(prefixPattern)) {
+        const numStr = o.displayId.replace(prefixPattern, '');
+        const n = parseInt(numStr);
+        return isNaN(n) ? max : Math.max(max, n);
+    }
+    return max;
+}, 0);
+
+lastOrderId = maxId;
+console.log(`📝 lastOrderId PRIMA import: ${lastOrderId}`);
+console.log(`   Prossimo ID sarà: ${currentPrefix}_${(lastOrderId + 1).toString().padStart(3, '0')}`);
+
             
             // STEP 1: Trova l'ULTIMO ordine nel database per data/ora
             let latestOrder = null;
@@ -3197,27 +3220,9 @@
             newOrUpdatedOrders.sort((a, b) => a.excelRowIndex - b.excelRowIndex);
             orders = [...newOrUpdatedOrders, ...existingOrdersMap.values(), ...manualOrdersSorted];
             
-            // RICALCOLA lastOrderId basandoti sul massimo ID reale
-const currentYear = new Date().getFullYear().toString();
-
-// Se il prefisso salvato non corrisponde all'anno corrente, aggiornalo
-if (!currentPrefix.startsWith(currentYear)) {
-    currentPrefix = currentYear;
-    console.log(`✅ Prefisso aggiornato al nuovo anno: ${currentPrefix}`);
-}
-
-// SEMPRE ricalcola il lastOrderId basandoti sugli ordini ESISTENTI con il prefisso corrente
-const prefixRegex = new RegExp(currentPrefix.replace(/[-_.]/g, ''), '');
-const maxId = orders.reduce((max, o) => {
-    if (o.displayId && o.displayId.match(prefixRegex)) {
-        const n = parseInt(o.displayId.replace(currentPrefix + '_', '').replace(currentPrefix, ''));
-        return isNaN(n) ? max : Math.max(max, n);
-    }
-    return max;
-}, 0);
-lastOrderId = maxId;
-
-console.log(`📝 lastOrderId ricalcolato: ${lastOrderId}, prossimo ID sarà ${currentPrefix}_${(lastOrderId + 1).toString().padStart(3, '0')}`);
+            // ✅ Salvamento finale
+            saveData();
+            console.log(`✅ Import completato. lastOrderId finale: ${lastOrderId}`);
 
             // DEBUG: Conta ordini trasferiti dopo import
             const transferredCount = orders.filter(o => o.status && o.status.includes('trasferito')).length;
