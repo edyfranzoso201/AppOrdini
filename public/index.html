@@ -3203,20 +3203,19 @@ const currentYear = new Date().getFullYear().toString();
 // Se il prefisso salvato non corrisponde all'anno corrente, aggiornalo
 if (!currentPrefix.startsWith(currentYear)) {
     currentPrefix = currentYear;
-    lastOrderId = 0; // Riparte da 001 per il nuovo anno
     console.log(`✅ Prefisso aggiornato al nuovo anno: ${currentPrefix}`);
-} else {
-    // Calcola il massimo ID solo per gli ordini dell'anno corrente
-    const prefixRegex = new RegExp(currentPrefix.replace(/[-_.]/g, ''), '');
-    const maxId = orders.reduce((max, o) => {
-        if (o.displayId && o.displayId.match(prefixRegex)) {
-            const n = parseInt(o.displayId.replace(currentPrefix, ''));
-            return isNaN(n) ? max : Math.max(max, n);
-        }
-        return max;
-    }, 0);
-    lastOrderId = maxId;
 }
+
+// SEMPRE ricalcola il lastOrderId basandoti sugli ordini ESISTENTI con il prefisso corrente
+const prefixRegex = new RegExp(currentPrefix.replace(/[-_.]/g, ''), '');
+const maxId = orders.reduce((max, o) => {
+    if (o.displayId && o.displayId.match(prefixRegex)) {
+        const n = parseInt(o.displayId.replace(currentPrefix + '_', '').replace(currentPrefix, ''));
+        return isNaN(n) ? max : Math.max(max, n);
+    }
+    return max;
+}, 0);
+lastOrderId = maxId;
 
 console.log(`📝 lastOrderId ricalcolato: ${lastOrderId}, prossimo ID sarà ${currentPrefix}_${(lastOrderId + 1).toString().padStart(3, '0')}`);
 
