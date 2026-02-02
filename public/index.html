@@ -2482,9 +2482,12 @@
     }
     localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
         }
-        function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
-        return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
-        
+        function generateNewId(isManual = false) {
+    lastOrderId++;
+    saveData();
+    const sequence = lastOrderId.toString().padStart(3, '0');
+    return isManual ? `MAN-${sequence}` : `${currentPrefix}_${sequence}`;
+        }
         function updatePrefixAndID() { 
             const inputEl = document.getElementById('startPrefixInput');
             const input = inputEl.value.trim(); 
