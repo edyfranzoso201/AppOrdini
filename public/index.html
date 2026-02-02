@@ -1274,31 +1274,15 @@
         }
         
         // Confronta due ID considerando prefisso + numero
-        // Ordine corretto: 2025_001 < 2025_002 < 2025A_001 < 2025A_244 < 2026_001 < 2026_002
+        // 2025_001 < 2025_002 < 2025A_001 < 2025A_244 < 2026_001
         function compareDisplayIds(idA, idB) {
             const a = parseDisplayId(idA);
             const b = parseDisplayId(idB);
             
-            // ✅ FIX: Estrai l'anno dal prefisso per confronto numerico
-            const extractYear = (prefix) => {
-                const yearMatch = prefix.match(/^(\d{4})/); // Estrae i primi 4 digit (es. "2025" da "2025A_")
-                return yearMatch ? parseInt(yearMatch[1]) : 0;
-            };
-            
-            const yearA = extractYear(a.prefix);
-            const yearB = extractYear(b.prefix);
-            
-            // Prima confronta l'anno (numericamente)
-            if (yearA !== yearB) {
-                return yearA - yearB; // 2025 < 2026 (numerico)
-            }
-            
-            // Se stesso anno, confronta il prefisso completo (alfabetico)
-            // Es: "2025_" < "2025A_" perché "_" < "A"
+            // Prima confronta il prefisso (ordine alfabetico: 2025A_ < 2026_)
             if (a.prefix !== b.prefix) {
                 return a.prefix.localeCompare(b.prefix);
             }
-            
             // Se stesso prefisso, confronta il numero
             return a.num - b.num;
         }
@@ -1329,7 +1313,7 @@
         let chartStatus = null;
         let chartRevenue = null; let chartItems = null;
         let chartKitItems = null; // Grafico capi per kit filtrato
-        let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}A_`;
+        let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}_`;
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
    
@@ -2070,8 +2054,14 @@
             if (ordersData.success && ordersData.data) {
                 orders = ordersData.data.orders || [];
                 lastOrderId = ordersData.data.lastOrderId || 0;
-                currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                // ✅ FIX: Se currentPrefix non esiste, usa anno corrente invece di R68-
+                currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                 highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                
+                console.log('✅ Dati caricati da Redis:');
+                console.log('   - Ordini:', orders.length);
+                console.log('   - lastOrderId:', lastOrderId);
+                console.log('   - currentPrefix:', currentPrefix);
             }
         }
         
@@ -2227,7 +2217,8 @@
                             // Aggiorna i dati
                             orders = ordersData.data.orders || [];
                             lastOrderId = ordersData.data.lastOrderId || 0;
-                            currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                            // ✅ FIX: Usa anno corrente se non presente
+                            currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                             highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
                             
                             // Re-render UI
@@ -4912,16 +4903,12 @@ function deleteOrder(id) {
                 filterMaxId.appendChild(optMax);
             });
             
-            // ✅ FIX: Ripristina selezioni SOLO se esistono ancora negli ordini
-            if (currentMin && sortedOrders.some(o => o.displayId === currentMin)) {
+            // Ripristina selezioni o imposta default
+            if (currentMin && currentMax) {
                 filterMinId.value = currentMin;
-            } else if (sortedOrders.length > 0) {
-                filterMinId.value = sortedOrders[0].displayId;
-            }
-            
-            if (currentMax && sortedOrders.some(o => o.displayId === currentMax)) {
                 filterMaxId.value = currentMax;
             } else if (sortedOrders.length > 0) {
+                filterMinId.value = sortedOrders[0].displayId;
                 filterMaxId.value = sortedOrders[sortedOrders.length - 1].displayId;
             }
         }
