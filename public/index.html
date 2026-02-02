@@ -2416,19 +2416,19 @@
         }
         
         async function saveData() {
-  try {
-    // Save orders
-    await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'save',
-        orders,
-        lastOrderId,
-        currentPrefix,
-        highlightedSizeCells
-      })
-    });
+    try {
+        // Save orders
+        await fetch(`/api/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'save', 
+                orders, 
+                lastOrderId, 
+                currentPrefix, 
+                highlightedSizeCells 
+            })
+        });
 
     // Registra nel log
     logActivity(
@@ -2447,23 +2447,23 @@
       })
     });
 
-    // Save config
-    await fetch('/api/config', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    action: 'save',  // ⬅️ AGGIUNGI QUESTA RIGA
-    globalItems: globalItems,
-    globalKitTypes: globalKitTypes,
-    quickIdFilters: quickIdFilters,
-    catalog: catalogData
-  })
-});
-
-    console.log('Data saved successfully');
-  } catch (error) {
-    console.error('Error saving data:', error);
-  }
+    // Save config (DEVE INCLUDERE quickIdFilters)
+        await fetch(`/api/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'save',
+                globalItems: globalItems,
+                globalKitTypes: globalKitTypes,
+                quickIdFilters: quickIdFilters,  // ← ASSICURATI CHE CI SIA
+                catalog: catalogData
+            })
+        });
+        
+        console.log('Data saved successfully');
+    } catch (error) {
+        console.error('Error saving data:', error);
+    }
 }
       // Funzione per registrare un'azione nello storico
        function logActivity(action, description, details = {}) {
