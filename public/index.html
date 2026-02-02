@@ -4894,15 +4894,16 @@ function deleteOrder(id) {
         let s = o.mainSize; if(val.includes("Calzettoni") || val.includes("Calzettone")) s = o.sockSize; if(val.includes("Borsone") || val.includes("Zaino") || val.includes("Cappellino") || val.includes("Scaldacollo") || val.includes("Guanti")) s = 'UNICA';
         o.itemsList.push({name: val, size: s}); openItemModal(currentEditId); }
         function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
-        function updateUI() { 
-            populateGestioneOrdiniIdSelects();
-            populateDashboardIdFilters(); // Inizializza filtri Dashboard
-            restoreFiltersState(); // Ripristina filtri salvati
-            renderTable(); 
-            updateDashboardCounts(); // Aggiorna conteggi Dashboard
-            renderChart(); 
-            saveData(); 
-        }
+        function updateUI() {
+        populateGestioneOrdiniIdSelects();
+        populateDashboardIdFilters();
+        initQuickIdButtons(); // ✅ AGGIUNGI QUESTA RIGA
+        restoreFiltersState();
+        renderTable();
+        updateDashboardCounts();
+        renderChart();
+        saveData();
+    }
         
         // Popola i select ID in Gestione Ordini
         function populateGestioneOrdiniIdSelects() {
@@ -6131,7 +6132,8 @@ function deleteOrder(id) {
                 loginButton.disabled = false;
                 loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
             }
-        }// Reimposta tutti i filtri ai valori predefiniti (mostra tutti gli ordini)
+        }
+    // Reimposta tutti i filtri ai valori predefiniti (mostra tutti gli ordini)
 function resetFiltersToDefault() {
     // Stato → "Tutti"
     const filterStatus = document.getElementById('filterStatus');
@@ -6142,12 +6144,13 @@ function resetFiltersToDefault() {
     if (filterRoleYear) filterRoleYear.value = '';
     
     // ID minimo / massimo → vuoti
-    const filterMinId = document.getElementById('filterMinId');
-    if (filterMinId) filterMinId.value = '';
-    const filterMaxId = document.getElementById('filterMaxId');
-    if (filterMaxId) filterMaxId.value = '';
-    
-    // Taglia, Kit, Articolo, Cliente → vuoti
+    //const filterMinId = document.getElementById('filterMinId');
+    //if (filterMinId) filterMinId.value = '';
+    //const filterMaxId = document.getElementById('filterMaxId');
+    //if (filterMaxId) filterMaxId.value = '';
+    // NON azzerare i filtri ID, mantieni l'ultima selezione o aggiorna al range completo
+    populateGestioneOrdiniIdSelects(); // Ricalcola il range ID ma mantiene la selezione
+    // Taglia, Kit, Articolo, Cliente: vuoti
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.value = '';
     
@@ -6160,7 +6163,7 @@ function resetFiltersToDefault() {
     const filterItem = document.getElementById('filterItem');
     if (filterItem) filterItem.value = 'all';
     
-    console.log('✅ Filtri reimpostati a "Tutti"');
+    console.log('✅ Filtri reimpostati (ID preservati)');
 }
         
         // Logout
