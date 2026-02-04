@@ -1313,7 +1313,7 @@
         let chartStatus = null;
         let chartRevenue = null; let chartItems = null;
         let chartKitItems = null; // Grafico capi per kit filtrato
-        let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}_`;
+        let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}A_`;
         let currentPrefix = DEFAULT_ID_PREFIX; 
         let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
    
@@ -2054,27 +2054,8 @@
             if (ordersData.success && ordersData.data) {
                 orders = ordersData.data.orders || [];
                 lastOrderId = ordersData.data.lastOrderId || 0;
-                
-                // FIX: Se currentPrefix non esiste, usa anno corrente invece di R68-
-                currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
-                
-                // ✅ AGGIUNGI QUESTA VERIFICA
-                const currentYear = new Date().getFullYear().toString();
-                // Se il prefisso salvato non corrisponde all'anno corrente, aggiornalo
-                if (!currentPrefix.startsWith(currentYear)) {
-                    console.log(`🔄 Prefisso obsoleto rilevato: ${currentPrefix} → Aggiorno a ${currentYear}`);
-                    currentPrefix = currentYear;
-                    lastOrderId = 0; // Riparte da 001 per il nuovo anno
-                    // Salva immediatamente il nuovo prefisso su Redis
-                    saveData();
-                }
-                
+                currentPrefix = ordersData.data.currentPrefix || 'R68-';
                 highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-                
-                console.log('✅ Dati caricati da Redis:');
-                console.log('  - Ordini:', orders.length);
-                console.log('  - lastOrderId:', lastOrderId);
-                console.log('  - currentPrefix:', currentPrefix);
             }
         }
         
@@ -2230,8 +2211,7 @@
                             // Aggiorna i dati
                             orders = ordersData.data.orders || [];
                             lastOrderId = ordersData.data.lastOrderId || 0;
-                            // ✅ FIX: Usa anno corrente se non presente
-                            currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
+                            currentPrefix = ordersData.data.currentPrefix || 'R68-';
                             highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
                             
                             // Re-render UI
@@ -2416,19 +2396,19 @@
         }
         
         async function saveData() {
-    try {
-        // Save orders
-        await fetch(`/api/orders`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'save', 
-                orders, 
-                lastOrderId, 
-                currentPrefix, 
-                highlightedSizeCells 
-            })
-        });
+  try {
+    // Save orders
+    await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        orders,
+        lastOrderId,
+        currentPrefix,
+        highlightedSizeCells
+      })
+    });
 
     // Registra nel log
     logActivity(
@@ -2447,47 +2427,63 @@
       })
     });
 
-    // Save config (DEVE INCLUDERE quickIdFilters)
-        await fetch(`/api/config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'save',
-                globalItems: globalItems,
-                globalKitTypes: globalKitTypes,
-                quickIdFilters: quickIdFilters,  // ← ASSICURATI CHE CI SIA
-                catalog: catalogData
-            })
-        });
-        
-        console.log('Data saved successfully');
-    } catch (error) {
-        console.error('Error saving data:', error);
-    }
+    // Save config
+    await fetch('/api/config', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'save',  // ⬅️ AGGIUNGI QUESTA RIGA
+    globalItems: globalItems,
+    globalKitTypes: globalKitTypes,
+    quickIdFilters: quickIdFilters,
+    catalog: catalogData
+  })
+});
+
+    console.log('Data saved successfully');
+  } catch (error) {
+    console.error('Error saving data:', error);
+  }
 }
       // Funzione per registrare un'azione nello storico
-       function logActivity(action, description, details = {}) {
-        const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
+      // ✅ MODIFICATO: Ora salva su Redis invece di localStorage
+      async function logActivity(action, description, details = {}) {
         const logEntry = {
-        timestamp: new Date().toISOString(),
-        user: currentUser ? currentUser.username : 'Sistema',
-        userName: currentUser ? currentUser.name : 'Sistema',
-        action: action,
-        description: description,
-        details: details
-      };
-        logs.unshift(logEntry);
-        if (logs.length > 100) {
-        logs.splice(100);
+            timestamp: new Date().toISOString(),
+            user: currentUser ? currentUser.username : 'Sistema',
+            userName: currentUser ? currentUser.name : 'Sistema',
+            action: action,
+            description: description,
+            details: details
+        };
+        
+        try {
+            // ✅ Salva su Redis tramite API
+            await fetch('/api/activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'add', 
+                    log: logEntry 
+                })
+            });
+            console.log('✅ Log salvato su Redis:', logEntry.action);
+        } catch (error) {
+            console.error('❌ Errore salvataggio log:', error);
+            // Fallback: salva in localStorage se Redis fallisce
+            try {
+                const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
+                logs.unshift(logEntry);
+                if (logs.length > 100) logs.splice(100);
+                localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
+            } catch (e) {
+                console.error('❌ Anche fallback localStorage fallito:', e);
+            }
+        }
     }
-    localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
-        }
-        function generateNewId(isManual = false) {
-    lastOrderId++;
-    saveData();
-    const sequence = lastOrderId.toString().padStart(3, '0');
-    return isManual ? `MAN-${sequence}` : `${currentPrefix}_${sequence}`;
-        }
+        function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
+        return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
+        
         function updatePrefixAndID() { 
             const inputEl = document.getElementById('startPrefixInput');
             const input = inputEl.value.trim(); 
@@ -2725,29 +2721,6 @@
             }
 
             const newOrUpdatedOrders = [];
-
-// Ricalcola lastOrderId PRIMA dell'import
-const currentYear = new Date().getFullYear().toString();
-if (!currentPrefix.startsWith(currentYear)) {
-    currentPrefix = currentYear;
-    console.log(`✅ Prefisso aggiornato: ${currentPrefix}`);
-}
-
-// Trova il massimo ID esistente con il prefisso corrente
-const prefixPattern = `${currentPrefix}_`;
-const maxId = orders.reduce((max, o) => {
-    if (o.displayId && o.displayId.startsWith(prefixPattern)) {
-        const numStr = o.displayId.replace(prefixPattern, '');
-        const n = parseInt(numStr);
-        return isNaN(n) ? max : Math.max(max, n);
-    }
-    return max;
-}, 0);
-
-lastOrderId = maxId;
-console.log(`📝 lastOrderId PRIMA import: ${lastOrderId}`);
-console.log(`   Prossimo ID sarà: ${currentPrefix}_${(lastOrderId + 1).toString().padStart(3, '0')}`);
-
             
             // STEP 1: Trova l'ULTIMO ordine nel database per data/ora
             let latestOrder = null;
@@ -3220,10 +3193,18 @@ console.log(`   Prossimo ID sarà: ${currentPrefix}_${(lastOrderId + 1).toString
             newOrUpdatedOrders.sort((a, b) => a.excelRowIndex - b.excelRowIndex);
             orders = [...newOrUpdatedOrders, ...existingOrdersMap.values(), ...manualOrdersSorted];
             
-            // ✅ Salvamento finale
-            saveData();
-            console.log(`✅ Import completato. lastOrderId finale: ${lastOrderId}`);
-
+            // RICALCOLA lastOrderId basandoti sul massimo ID reale
+            const prefixRegex = new RegExp(`^${currentPrefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
+            const maxId = orders.reduce((max, o) => {
+                if (o.displayId && o.displayId.match(prefixRegex)) {
+                    const n = parseInt(o.displayId.replace(currentPrefix, ''));
+                    return isNaN(n) ? max : Math.max(max, n);
+                }
+                return max;
+            }, 0);
+            lastOrderId = maxId;
+            console.log(`🔢 lastOrderId ricalcolato: ${lastOrderId} (prossimo ID sarà ${currentPrefix}${(lastOrderId + 1).toString().padStart(3, '0')})`);
+            
             // DEBUG: Conta ordini trasferiti dopo import
             const transferredCount = orders.filter(o => o.status && o.status.includes('trasferito')).length;
             const newCount = newOrderIds.length;
@@ -4894,16 +4875,15 @@ function deleteOrder(id) {
         let s = o.mainSize; if(val.includes("Calzettoni") || val.includes("Calzettone")) s = o.sockSize; if(val.includes("Borsone") || val.includes("Zaino") || val.includes("Cappellino") || val.includes("Scaldacollo") || val.includes("Guanti")) s = 'UNICA';
         o.itemsList.push({name: val, size: s}); openItemModal(currentEditId); }
         function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
-        function updateUI() {
-        populateGestioneOrdiniIdSelects();
-        populateDashboardIdFilters();
-        initQuickIdButtons(); // ✅ AGGIUNGI QUESTA RIGA
-        restoreFiltersState();
-        renderTable();
-        updateDashboardCounts();
-        renderChart();
-        saveData();
-    }
+        function updateUI() { 
+            populateGestioneOrdiniIdSelects();
+            populateDashboardIdFilters(); // Inizializza filtri Dashboard
+            restoreFiltersState(); // Ripristina filtri salvati
+            renderTable(); 
+            updateDashboardCounts(); // Aggiorna conteggi Dashboard
+            renderChart(); 
+            saveData(); 
+        }
         
         // Popola i select ID in Gestione Ordini
         function populateGestioneOrdiniIdSelects() {
@@ -6132,8 +6112,7 @@ function deleteOrder(id) {
                 loginButton.disabled = false;
                 loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
             }
-        }
-    // Reimposta tutti i filtri ai valori predefiniti (mostra tutti gli ordini)
+        }// Reimposta tutti i filtri ai valori predefiniti (mostra tutti gli ordini)
 function resetFiltersToDefault() {
     // Stato → "Tutti"
     const filterStatus = document.getElementById('filterStatus');
@@ -6144,13 +6123,12 @@ function resetFiltersToDefault() {
     if (filterRoleYear) filterRoleYear.value = '';
     
     // ID minimo / massimo → vuoti
-    //const filterMinId = document.getElementById('filterMinId');
-    //if (filterMinId) filterMinId.value = '';
-    //const filterMaxId = document.getElementById('filterMaxId');
-    //if (filterMaxId) filterMaxId.value = '';
-    // NON azzerare i filtri ID, mantieni l'ultima selezione o aggiorna al range completo
-    populateGestioneOrdiniIdSelects(); // Ricalcola il range ID ma mantiene la selezione
-    // Taglia, Kit, Articolo, Cliente: vuoti
+    const filterMinId = document.getElementById('filterMinId');
+    if (filterMinId) filterMinId.value = '';
+    const filterMaxId = document.getElementById('filterMaxId');
+    if (filterMaxId) filterMaxId.value = '';
+    
+    // Taglia, Kit, Articolo, Cliente → vuoti
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.value = '';
     
@@ -6163,7 +6141,7 @@ function resetFiltersToDefault() {
     const filterItem = document.getElementById('filterItem');
     if (filterItem) filterItem.value = 'all';
     
-    console.log('✅ Filtri reimpostati (ID preservati)');
+    console.log('✅ Filtri reimpostati a "Tutti"');
 }
         
         // Logout
@@ -7164,7 +7142,8 @@ async function saveImageUrls(index) {
         // Mostra lo storico CONDIVISO da Redis
         async function openActivityLog() {
         try {
-            const res = await fetch('/api/logs');
+            // ✅ MODIFICATO: Usa /api/activity invece di /api/logs
+            const res = await fetch('/api/activity');
             const data = await res.json();
             if (data.logs && data.logs.length > 0) {
         console.log('DEBUG LOGS[0]:', JSON.stringify(data.logs[0], null, 2));
@@ -7279,8 +7258,8 @@ async function clearActivityLog() {
   if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
 
   try {
-    // per ora usa l'azione 'clear' via POST, come da tuo server
-    await fetch('/api/logs', {
+    // ✅ MODIFICATO: Usa /api/activity invece di /api/logs
+    await fetch('/api/activity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'clear' })
