@@ -1,33 +1,40 @@
 import { getRedis } from './lib/redis.js';
-
 const ACTIVITY_LOG_KEY = 'orderflow:activity_log';
 const MAX_LOG_ENTRIES = 50;
 
 export default async function handler(req, res) {
+  // ✅ AGGIUNGI CORS HEADERS
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   const redis = getRedis();
   
   try {
     if (req.method === 'GET') {
-      // Get activity log
       const logs = await redis.get(ACTIVITY_LOG_KEY) || [];
       
       return res.status(200).json({
-  success: true,
-  logs: logs  // ← Cambia "data" in "logs"
-});
+        success: true,
+        logs: logs  // ← CAMBIATO: da "data" a "logs"
+      });
       
     } else if (req.method === 'POST') {
       const { action, type, message, user, orderId, details } = req.body;
       
       if (action === 'add') {
-        // Get current logs
         let logs = await redis.get(ACTIVITY_LOG_KEY) || [];
         
-        // Create new log entry
         const newLog = {
           id: Date.now(),
           timestamp: new Date().toISOString(),
-          type: type || 'INFO', // INFO, CREATE, UPDATE, DELETE, STATUS_CHANGE, LOGIN, LOGOUT
+          type: type || 'INFO',
           message: message || '',
           user: user || 'System',
           orderId: orderId || null,
@@ -42,15 +49,12 @@ export default async function handler(req, res) {
           })
         };
         
-        // Add to beginning of array
         logs.unshift(newLog);
         
-        // Keep only last 50 entries
         if (logs.length > MAX_LOG_ENTRIES) {
           logs = logs.slice(0, MAX_LOG_ENTRIES);
         }
         
-        // Save back to Redis
         await redis.set(ACTIVITY_LOG_KEY, logs);
         
         return res.status(200).json({
@@ -61,7 +65,6 @@ export default async function handler(req, res) {
       }
       
       if (action === 'clear') {
-        // Clear all logs
         await redis.set(ACTIVITY_LOG_KEY, []);
         
         return res.status(200).json({
