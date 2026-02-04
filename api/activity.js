@@ -12,9 +12,9 @@ export default async function handler(req, res) {
       const logs = await redis.get(ACTIVITY_LOG_KEY) || [];
       
       return res.status(200).json({
-        success: true,
-        data: logs
-      });
+  success: true,
+  logs: logs  // ← Cambia "data" in "logs"
+});
       
     } else if (req.method === 'POST') {
       const { action, type, message, user, orderId, details } = req.body;
