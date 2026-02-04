@@ -2446,41 +2446,22 @@
   }
 }
       // Funzione per registrare un'azione nello storico
-      // ✅ MODIFICATO: Ora salva su Redis invece di localStorage
-      async function logActivity(action, description, details = {}) {
+       function logActivity(action, description, details = {}) {
+        const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
         const logEntry = {
-            timestamp: new Date().toISOString(),
-            user: currentUser ? currentUser.username : 'Sistema',
-            userName: currentUser ? currentUser.name : 'Sistema',
-            action: action,
-            description: description,
-            details: details
-        };
-        
-        try {
-            // ✅ Salva su Redis tramite API
-            await fetch('/api/activity', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    action: 'add', 
-                    log: logEntry 
-                })
-            });
-            console.log('✅ Log salvato su Redis:', logEntry.action);
-        } catch (error) {
-            console.error('❌ Errore salvataggio log:', error);
-            // Fallback: salva in localStorage se Redis fallisce
-            try {
-                const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
-                logs.unshift(logEntry);
-                if (logs.length > 100) logs.splice(100);
-                localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
-            } catch (e) {
-                console.error('❌ Anche fallback localStorage fallito:', e);
-            }
-        }
+        timestamp: new Date().toISOString(),
+        user: currentUser ? currentUser.username : 'Sistema',
+        userName: currentUser ? currentUser.name : 'Sistema',
+        action: action,
+        description: description,
+        details: details
+      };
+        logs.unshift(logEntry);
+        if (logs.length > 100) {
+        logs.splice(100);
     }
+    localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
+        }
         function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
         return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
         
@@ -2726,33 +2707,46 @@
             let latestOrder = null;
             let latestTimestampDate = null;
             if (isGoogleForm && orders.length > 0) {
-                // Ordina gli ordini per ID (dal più alto al più basso)
-                const getNumId = (displayId) => {
-                    const match = displayId.match(/(\d+)$/);
-                    return match ? parseInt(match[1]) : 0;
-                };
+                // ✅ FIX: Trova l'ultimo ordine CON timestamp valido (non solo per ID)
+                // Ordina per timestamp invece che per displayId
+                const ordersWithTimestamp = orders.filter(o => o.timestamp);
                 
-                // Usa ordinamento globale (decrescente per trovare l'ultimo)
-                const sortedOrders = sortOrdersByDisplayId(orders, false);
-                latestOrder = sortedOrders[0];
-                
-                if (latestOrder && latestOrder.timestamp) {
-                    try {
-                        // IMPORTANTE: Normalizza timestamp prima di creare Date object
-                        const normalizedTimestamp = roundTimestampOnly(latestOrder.timestamp);
-                        latestTimestampDate = new Date(normalizedTimestamp);
-                        
-                        console.log(`\n🕐 === ULTIMO ORDINE NEL DATABASE ===`);
-                        console.log(`ID: ${latestOrder.displayId}`);
-                        console.log(`Cliente: ${latestOrder.customer}`);
-                        console.log(`Timestamp originale: ${latestOrder.timestamp}`);
-                        console.log(`Timestamp normalizzato: ${normalizedTimestamp}`);
-                        console.log(`Date object: ${latestTimestampDate.toLocaleString('it-IT')}`);
-                        console.log(`Valid? ${!isNaN(latestTimestampDate.getTime())}`);
-                        console.log(`\n📋 Importerò SOLO ordini con timestamp successivo`);
-                    } catch (e) {
-                        console.warn(`Errore timestamp: ${e.message}`);
+                if (ordersWithTimestamp.length > 0) {
+                    // Trova l'ordine con il timestamp più recente
+                    ordersWithTimestamp.sort((a, b) => {
+                        try {
+                            const dateA = new Date(roundTimestampOnly(a.timestamp));
+                            const dateB = new Date(roundTimestampOnly(b.timestamp));
+                            return dateB - dateA; // Decrescente (più recente prima)
+                        } catch (e) {
+                            return 0;
+                        }
+                    });
+                    
+                    latestOrder = ordersWithTimestamp[0];
+                    
+                    if (latestOrder && latestOrder.timestamp) {
+                        try {
+                            // IMPORTANTE: Normalizza timestamp prima di creare Date object
+                            const normalizedTimestamp = roundTimestampOnly(latestOrder.timestamp);
+                            latestTimestampDate = new Date(normalizedTimestamp);
+                            
+                            console.log(`\n🕐 === ULTIMO ORDINE NEL DATABASE (per timestamp) ===`);
+                            console.log(`ID: ${latestOrder.displayId}`);
+                            console.log(`Cliente: ${latestOrder.customer}`);
+                            console.log(`Timestamp originale: ${latestOrder.timestamp}`);
+                            console.log(`Timestamp normalizzato: ${normalizedTimestamp}`);
+                            console.log(`Date object: ${latestTimestampDate.toLocaleString('it-IT')}`);
+                            console.log(`Valid? ${!isNaN(latestTimestampDate.getTime())}`);
+                            console.log(`\n📋 Importerò SOLO ordini con timestamp successivo a ${latestTimestampDate.toLocaleString('it-IT')}`);
+                        } catch (e) {
+                            console.warn(`Errore timestamp: ${e.message}`);
+                            latestTimestampDate = null;
+                        }
                     }
+                } else {
+                    console.log(`\n⚠️ === NESSUN ORDINE CON TIMESTAMP NEL DATABASE ===`);
+                    console.log(`Importerò TUTTI gli ordini dal Google Sheet`);
                 }
             }
             
@@ -7142,8 +7136,7 @@ async function saveImageUrls(index) {
         // Mostra lo storico CONDIVISO da Redis
         async function openActivityLog() {
         try {
-            // ✅ MODIFICATO: Usa /api/activity invece di /api/logs
-            const res = await fetch('/api/activity');
+            const res = await fetch('/api/logs');
             const data = await res.json();
             if (data.logs && data.logs.length > 0) {
         console.log('DEBUG LOGS[0]:', JSON.stringify(data.logs[0], null, 2));
@@ -7258,8 +7251,8 @@ async function clearActivityLog() {
   if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
 
   try {
-    // ✅ MODIFICATO: Usa /api/activity invece di /api/logs
-    await fetch('/api/activity', {
+    // per ora usa l'azione 'clear' via POST, come da tuo server
+    await fetch('/api/logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'clear' })
