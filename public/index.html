@@ -2054,7 +2054,7 @@
             if (ordersData.success && ordersData.data) {
                 orders = ordersData.data.orders || [];
                 lastOrderId = ordersData.data.lastOrderId || 0;
-                currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                 highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
             }
         }
@@ -2162,73 +2162,38 @@
         let autoRefreshInterval = null;
         let lastDataHash = null;
         
-       // Calcola un hash semplice dei dati per rilevare modifiche
-       function getDataHash() {
-         return JSON.stringify({
-           ordersCount: orders.length,
-           lastOrderId: lastOrderId,
-           ordersData: orders.map(o => ({
-             id: o.id,
-             status: o.status,
-             customer: o.customer,
-             kitType: o.kitType,
-             mainSize: o.mainSize,
-             sockSize: o.sockSize,
-             notes: o.notes,
-             itemsCount: o.itemsList?.length || 0,
-             linkedId: o.linkedId,
-             partialDeliveryNote: o.partialDeliveryNote
-           })),
-           inventoryKeys: Object.keys(inventory).sort().join('|')
-         });
-       }
+        // ✅ FIX: Unica funzione hash - semplice e identica in entrambi i punti
+        function getDataHash(ordersArray, orderIdVal) {
+            const arr = ordersArray || orders;
+            const lid = (orderIdVal !== undefined) ? orderIdVal : lastOrderId;
+            return `count:${arr.length}|lastId:${lid}|ids:${arr.map(o => o.id).sort().join(',')}`;
+        }
         
         // Funzione di auto-refresh silenziosa
         async function autoRefreshData() {
             try {
-                // Salva posizione scroll
                 const scrollPos = window.scrollY;
-                
-                // Carica dati senza chiamare saveData
                 const ordersRes = await fetch('/api/orders');
-                if (ordersRes.ok) {
-                    const ordersData = await ordersRes.json();
-                    if (ordersData.success && ordersData.data) {
-                        const newHash = JSON.stringify({
-                            ordersCount: ordersData.data.orders?.length || 0,
-                            lastOrderId: ordersData.data.lastOrderId || 0,
-                            ordersData: (ordersData.data.orders || []).map(o => ({
-                                id: o.id,
-                                status: o.status,
-                                itemsCount: o.itemsList?.length || 0
-                            }))
-                        });
-                        
-                        // Controlla se ci sono modifiche
-                        if (lastDataHash && newHash !== lastDataHash) {
-                            console.log('🔄 Dati aggiornati da altro utente');
-                            
-                            // Aggiorna i dati
-                            orders = ordersData.data.orders || [];
-                            lastOrderId = ordersData.data.lastOrderId || 0;
-                            currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                            highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-                            
-                            // Re-render UI
-                            updateUI();
-                            
-                            // Mostra notifica
-                            showQuickNotification('🔄 Dati aggiornati', 'info');
-                            
-                            // Ripristina scroll
-                            setTimeout(() => window.scrollTo(0, scrollPos), 100);
-                        }
-                        
-                        lastDataHash = newHash;
-                    }
+                if (!ordersRes.ok) return;
+                const ordersData = await ordersRes.json();
+                if (!ordersData.success || !ordersData.data) return;
+
+                const remoteOrders = ordersData.data.orders || [];
+                const remoteLastId = ordersData.data.lastOrderId || 0;
+                const newHash = getDataHash(remoteOrders, remoteLastId);
+
+                if (lastDataHash !== null && newHash !== lastDataHash) {
+                    console.log(`🔄 Dati aggiornati da altro utente (${orders.length} → ${remoteOrders.length} ordini)`);
+                    orders = remoteOrders;
+                    lastOrderId = remoteLastId;
+                    currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
+                    highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                    updateUI();
+                    showQuickNotification('🔄 Dati aggiornati', 'info');
+                    setTimeout(() => window.scrollTo(0, scrollPos), 100);
                 }
-                
-                // Carica anche inventory
+                lastDataHash = newHash;
+
                 const invRes = await fetch('/api/inventory');
                 if (invRes.ok) {
                     const invData = await invRes.json();
@@ -2236,7 +2201,6 @@
                         inventory = invData.data.inventory || {};
                     }
                 }
-                
             } catch (error) {
                 console.warn('⚠️ Auto-refresh error:', error);
             }
@@ -2244,15 +2208,8 @@
         
         // Avvia auto-refresh
         function startAutoRefresh() {
-            // Ferma eventuale refresh precedente
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-            }
-            
-            // Inizializza hash
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             lastDataHash = getDataHash();
-            
-            // Avvia polling ogni 30 secondi
             autoRefreshInterval = setInterval(autoRefreshData, 30000);
             console.log('✅ Auto-refresh attivo (ogni 30 secondi)');
         }
@@ -2398,7 +2355,7 @@
         async function saveData() {
   try {
     // Save orders
-    await fetch('/api/orders', {
+    const ordersRes = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2409,13 +2366,11 @@
         highlightedSizeCells
       })
     });
-
-    // Registra nel log
-    logActivity(
-      'Salvataggio dati',
-      `Ordini: ${orders.length}, Articoli: ${Object.keys(inventory).length}`,
-      {}
-    );
+    if (!ordersRes.ok) {
+      const err = await ordersRes.text();
+      console.error('❌ Errore salvataggio ordini:', err);
+      return;
+    }
 
     // Save inventory
     await fetch('/api/inventory', {
@@ -2429,39 +2384,43 @@
 
     // Save config
     await fetch('/api/config', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    action: 'save',  // ⬅️ AGGIUNGI QUESTA RIGA
-    globalItems: globalItems,
-    globalKitTypes: globalKitTypes,
-    quickIdFilters: quickIdFilters,
-    catalog: catalogData
-  })
-});
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        globalItems: globalItems,
+        globalKitTypes: globalKitTypes,
+        quickIdFilters: quickIdFilters,
+        catalog: catalogData
+      })
+    });
 
     console.log('Data saved successfully');
   } catch (error) {
-    console.error('Error saving data:', error);
+    console.error('❌ Errore critico saveData:', error);
   }
 }
       // Funzione per registrare un'azione nello storico
-       function logActivity(action, description, details = {}) {
-        const logs = JSON.parse(localStorage.getItem('orderFlowActivityLog') || '[]');
+      // ✅ Salva su Redis via /api/activity
+      async function logActivity(action, description, details = {}) {
         const logEntry = {
-        timestamp: new Date().toISOString(),
-        user: currentUser ? currentUser.username : 'Sistema',
-        userName: currentUser ? currentUser.name : 'Sistema',
-        action: action,
-        description: description,
-        details: details
-      };
-        logs.unshift(logEntry);
-        if (logs.length > 100) {
-        logs.splice(100);
-    }
-    localStorage.setItem('orderFlowActivityLog', JSON.stringify(logs));
+            timestamp: new Date().toISOString(),
+            user: currentUser ? currentUser.username : 'Sistema',
+            userName: currentUser ? currentUser.name : 'Sistema',
+            action: action,
+            description: description,
+            details: details
+        };
+        try {
+            await fetch('/api/activity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'add', log: logEntry })
+            });
+        } catch (e) {
+            console.warn('Log non salvato:', e);
         }
+      }
         function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
         return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
         
@@ -2707,46 +2666,33 @@
             let latestOrder = null;
             let latestTimestampDate = null;
             if (isGoogleForm && orders.length > 0) {
-                // ✅ FIX: Trova l'ultimo ordine CON timestamp valido (non solo per ID)
-                // Ordina per timestamp invece che per displayId
-                const ordersWithTimestamp = orders.filter(o => o.timestamp);
+                // Ordina gli ordini per ID (dal più alto al più basso)
+                const getNumId = (displayId) => {
+                    const match = displayId.match(/(\d+)$/);
+                    return match ? parseInt(match[1]) : 0;
+                };
                 
-                if (ordersWithTimestamp.length > 0) {
-                    // Trova l'ordine con il timestamp più recente
-                    ordersWithTimestamp.sort((a, b) => {
-                        try {
-                            const dateA = new Date(roundTimestampOnly(a.timestamp));
-                            const dateB = new Date(roundTimestampOnly(b.timestamp));
-                            return dateB - dateA; // Decrescente (più recente prima)
-                        } catch (e) {
-                            return 0;
-                        }
-                    });
-                    
-                    latestOrder = ordersWithTimestamp[0];
-                    
-                    if (latestOrder && latestOrder.timestamp) {
-                        try {
-                            // IMPORTANTE: Normalizza timestamp prima di creare Date object
-                            const normalizedTimestamp = roundTimestampOnly(latestOrder.timestamp);
-                            latestTimestampDate = new Date(normalizedTimestamp);
-                            
-                            console.log(`\n🕐 === ULTIMO ORDINE NEL DATABASE (per timestamp) ===`);
-                            console.log(`ID: ${latestOrder.displayId}`);
-                            console.log(`Cliente: ${latestOrder.customer}`);
-                            console.log(`Timestamp originale: ${latestOrder.timestamp}`);
-                            console.log(`Timestamp normalizzato: ${normalizedTimestamp}`);
-                            console.log(`Date object: ${latestTimestampDate.toLocaleString('it-IT')}`);
-                            console.log(`Valid? ${!isNaN(latestTimestampDate.getTime())}`);
-                            console.log(`\n📋 Importerò SOLO ordini con timestamp successivo a ${latestTimestampDate.toLocaleString('it-IT')}`);
-                        } catch (e) {
-                            console.warn(`Errore timestamp: ${e.message}`);
-                            latestTimestampDate = null;
-                        }
+                // Usa ordinamento globale (decrescente per trovare l'ultimo)
+                const sortedOrders = sortOrdersByDisplayId(orders, false);
+                latestOrder = sortedOrders[0];
+                
+                if (latestOrder && latestOrder.timestamp) {
+                    try {
+                        // IMPORTANTE: Normalizza timestamp prima di creare Date object
+                        const normalizedTimestamp = roundTimestampOnly(latestOrder.timestamp);
+                        latestTimestampDate = new Date(normalizedTimestamp);
+                        
+                        console.log(`\n🕐 === ULTIMO ORDINE NEL DATABASE ===`);
+                        console.log(`ID: ${latestOrder.displayId}`);
+                        console.log(`Cliente: ${latestOrder.customer}`);
+                        console.log(`Timestamp originale: ${latestOrder.timestamp}`);
+                        console.log(`Timestamp normalizzato: ${normalizedTimestamp}`);
+                        console.log(`Date object: ${latestTimestampDate.toLocaleString('it-IT')}`);
+                        console.log(`Valid? ${!isNaN(latestTimestampDate.getTime())}`);
+                        console.log(`\n📋 Importerò SOLO ordini con timestamp successivo`);
+                    } catch (e) {
+                        console.warn(`Errore timestamp: ${e.message}`);
                     }
-                } else {
-                    console.log(`\n⚠️ === NESSUN ORDINE CON TIMESTAMP NEL DATABASE ===`);
-                    console.log(`Importerò TUTTI gli ordini dal Google Sheet`);
                 }
             }
             
