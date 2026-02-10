@@ -2054,7 +2054,7 @@
             if (ordersData.success && ordersData.data) {
                 orders = ordersData.data.orders || [];
                 lastOrderId = ordersData.data.lastOrderId || 0;
-                currentPrefix = ordersData.data.currentPrefix || 'R68-';
+                currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                 highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
             }
         }
@@ -2159,76 +2159,46 @@
         }
         
         // ===== SISTEMA AUTO-REFRESH =====
-        let autoRefreshInterval = null;
+       let autoRefreshInterval = null;
         let lastDataHash = null;
         
-       // Calcola un hash semplice dei dati per rilevare modifiche
-       function getDataHash() {
-         return JSON.stringify({
-           ordersCount: orders.length,
-           lastOrderId: lastOrderId,
-           ordersData: orders.map(o => ({
-             id: o.id,
-             status: o.status,
-             customer: o.customer,
-             kitType: o.kitType,
-             mainSize: o.mainSize,
-             sockSize: o.sockSize,
-             notes: o.notes,
-             itemsCount: o.itemsList?.length || 0,
-             linkedId: o.linkedId,
-             partialDeliveryNote: o.partialDeliveryNote
-           })),
-           inventoryKeys: Object.keys(inventory).sort().join('|')
-         });
-       }
+        // ✅ FIX: Unica funzione hash usata in entrambi i punti di confronto
+        function getDataHash(ordersArray, orderIdVal) {
+            const arr = ordersArray || orders;
+            const lid = (orderIdVal !== undefined) ? orderIdVal : lastOrderId;
+            return `count:${arr.length}|lastId:${lid}|ids:${arr.map(o => o.id).sort().join(',')}`;
+        }
         
         // Funzione di auto-refresh silenziosa
         async function autoRefreshData() {
             try {
-                // Salva posizione scroll
                 const scrollPos = window.scrollY;
                 
-                // Carica dati senza chiamare saveData
                 const ordersRes = await fetch('/api/orders');
-                if (ordersRes.ok) {
-                    const ordersData = await ordersRes.json();
-                    if (ordersData.success && ordersData.data) {
-                        const newHash = JSON.stringify({
-                            ordersCount: ordersData.data.orders?.length || 0,
-                            lastOrderId: ordersData.data.lastOrderId || 0,
-                            ordersData: (ordersData.data.orders || []).map(o => ({
-                                id: o.id,
-                                status: o.status,
-                                itemsCount: o.itemsList?.length || 0
-                            }))
-                        });
-                        
-                        // Controlla se ci sono modifiche
-                        if (lastDataHash && newHash !== lastDataHash) {
-                            console.log('🔄 Dati aggiornati da altro utente');
-                            
-                            // Aggiorna i dati
-                            orders = ordersData.data.orders || [];
-                            lastOrderId = ordersData.data.lastOrderId || 0;
-                            currentPrefix = ordersData.data.currentPrefix || 'R68-';
-                            highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
-                            
-                            // Re-render UI
-                            updateUI();
-                            
-                            // Mostra notifica
-                            showQuickNotification('🔄 Dati aggiornati', 'info');
-                            
-                            // Ripristina scroll
-                            setTimeout(() => window.scrollTo(0, scrollPos), 100);
-                        }
-                        
-                        lastDataHash = newHash;
-                    }
+                if (!ordersRes.ok) return;
+
+                const ordersData = await ordersRes.json();
+                if (!ordersData.success || !ordersData.data) return;
+
+                const remoteOrders = ordersData.data.orders || [];
+                const remoteLastId = ordersData.data.lastOrderId || 0;
+                const newHash = getDataHash(remoteOrders, remoteLastId);
+
+                if (lastDataHash !== null && newHash !== lastDataHash) {
+                    console.log(`🔄 Dati aggiornati da altro utente (${orders.length} → ${remoteOrders.length} ordini)`);
+
+                    orders = remoteOrders;
+                    lastOrderId = remoteLastId;
+                    currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
+                    highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+
+                    updateUI();
+                    showQuickNotification('🔄 Dati aggiornati', 'info');
+                    setTimeout(() => window.scrollTo(0, scrollPos), 100);
                 }
-                
-                // Carica anche inventory
+
+                lastDataHash = newHash;
+
                 const invRes = await fetch('/api/inventory');
                 if (invRes.ok) {
                     const invData = await invRes.json();
@@ -2244,15 +2214,12 @@
         
         // Avvia auto-refresh
         function startAutoRefresh() {
-            // Ferma eventuale refresh precedente
             if (autoRefreshInterval) {
                 clearInterval(autoRefreshInterval);
             }
             
-            // Inizializza hash
             lastDataHash = getDataHash();
             
-            // Avvia polling ogni 30 secondi
             autoRefreshInterval = setInterval(autoRefreshData, 30000);
             console.log('✅ Auto-refresh attivo (ogni 30 secondi)');
         }
