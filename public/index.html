@@ -2435,8 +2435,13 @@
             console.warn('Log non salvato:', e);
         }
       }
-        function generateNewId(isManual = false) { lastOrderId++; saveData(); const sequence = lastOrderId.toString().padStart(3, '0');
-        return isManual ? `MAN-${sequence}` : `${currentPrefix}${sequence}`; }
+        function generateNewId(isManual = false) { 
+            lastOrderId++; 
+            saveData(); 
+            const sequence = lastOrderId.toString().padStart(3, '0');
+            // ✅ FIX: anche gli ordini manuali usano currentPrefix (non MAN-)
+            return `${currentPrefix}${sequence}`;
+        }
         
         function updatePrefixAndID() { 
             const inputEl = document.getElementById('startPrefixInput');
@@ -4869,13 +4874,23 @@ function deleteOrder(id) {
                 filterMaxId.appendChild(optMax);
             });
             
-            // Ripristina selezioni o imposta default
-            if (currentMin && currentMax) {
-                filterMinId.value = currentMin;
-                filterMaxId.value = currentMax;
-            } else if (sortedOrders.length > 0) {
-                filterMinId.value = sortedOrders[0].displayId;
-                filterMaxId.value = sortedOrders[sortedOrders.length - 1].displayId;
+            // ✅ FIX: Ripristina selezioni solo se ancora esistono nella lista
+            if (sortedOrders.length > 0) {
+                const allIds = sortedOrders.map(o => o.displayId);
+                
+                // Ripristina Min se esiste ancora, altrimenti usa il primo
+                if (currentMin && allIds.includes(currentMin)) {
+                    filterMinId.value = currentMin;
+                } else {
+                    filterMinId.value = sortedOrders[0].displayId;
+                }
+                
+                // Ripristina Max se esiste ancora, altrimenti usa l'ULTIMO (include nuovi ordini)
+                if (currentMax && allIds.includes(currentMax)) {
+                    filterMaxId.value = currentMax;
+                } else {
+                    filterMaxId.value = sortedOrders[sortedOrders.length - 1].displayId;
+                }
             }
         }
         
