@@ -2159,10 +2159,14 @@
         }
         
         // ===== SISTEMA AUTO-REFRESH =====
-        let autoRefreshInterval = null;
+       let autoRefreshInterval = null;
         let lastDataHash = null;
         
+<<<<<<< HEAD
         // ✅ FIX: Unica funzione hash - semplice e identica in entrambi i punti
+=======
+        // ✅ FIX: Unica funzione hash usata in entrambi i punti di confronto
+>>>>>>> 38fd89b9a3962d5867e2c32ee15a85d388014021
         function getDataHash(ordersArray, orderIdVal) {
             const arr = ordersArray || orders;
             const lid = (orderIdVal !== undefined) ? orderIdVal : lastOrderId;
@@ -2173,8 +2177,15 @@
         async function autoRefreshData() {
             try {
                 const scrollPos = window.scrollY;
+<<<<<<< HEAD
                 const ordersRes = await fetch('/api/orders');
                 if (!ordersRes.ok) return;
+=======
+                
+                const ordersRes = await fetch('/api/orders');
+                if (!ordersRes.ok) return;
+
+>>>>>>> 38fd89b9a3962d5867e2c32ee15a85d388014021
                 const ordersData = await ordersRes.json();
                 if (!ordersData.success || !ordersData.data) return;
 
@@ -2184,14 +2195,26 @@
 
                 if (lastDataHash !== null && newHash !== lastDataHash) {
                     console.log(`🔄 Dati aggiornati da altro utente (${orders.length} → ${remoteOrders.length} ordini)`);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 38fd89b9a3962d5867e2c32ee15a85d388014021
                     orders = remoteOrders;
                     lastOrderId = remoteLastId;
                     currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                     highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+<<<<<<< HEAD
+=======
+
+>>>>>>> 38fd89b9a3962d5867e2c32ee15a85d388014021
                     updateUI();
                     showQuickNotification('🔄 Dati aggiornati', 'info');
                     setTimeout(() => window.scrollTo(0, scrollPos), 100);
                 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 38fd89b9a3962d5867e2c32ee15a85d388014021
                 lastDataHash = newHash;
 
                 const invRes = await fetch('/api/inventory');
@@ -2208,8 +2231,17 @@
         
         // Avvia auto-refresh
         function startAutoRefresh() {
+<<<<<<< HEAD
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             lastDataHash = getDataHash();
+=======
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            lastDataHash = getDataHash();
+            
+>>>>>>> 38fd89b9a3962d5867e2c32ee15a85d388014021
             autoRefreshInterval = setInterval(autoRefreshData, 30000);
             console.log('✅ Auto-refresh attivo (ogni 30 secondi)');
         }
