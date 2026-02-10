@@ -3152,6 +3152,10 @@
             newOrUpdatedOrders.sort((a, b) => a.excelRowIndex - b.excelRowIndex);
             orders = [...newOrUpdatedOrders, ...existingOrdersMap.values(), ...manualOrdersSorted];
             
+            // ✅ FIX 1: Dopo import, resetta filterMax per mostrare nuovi ordini
+            const filterMaxAfterImport = document.getElementById('filterMaxId');
+            if (filterMaxAfterImport) filterMaxAfterImport.value = '';
+            
             // RICALCOLA lastOrderId basandoti sul massimo ID reale
             const prefixRegex = new RegExp(`^${currentPrefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
             const maxId = orders.reduce((max, o) => {
@@ -3250,19 +3254,17 @@
         id: Date.now(),
         displayId: generateNewId(true),
         importKey: null,
+        // ✅ FIX 3: Aggiungi timestamp alla creazione manuale
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 23),
         customer: "Nuovo Ordine",
         mainSize: "L",
         sockSize: "43/46",
         notes: "",
-        itemsList: kitInfo.items.map(n => ({
-            name: n,
-            size: n.includes("Calzettoni")
-                ? "43/46"
-                : (n.includes("Borsone") || n.includes("Zaino") || n.includes("Cappellino") || n.includes("Scaldacollo") || n.includes("Guanti") ? "UNICA" : "L")
-        })),
+        // ✅ FIX 2: itemsList vuota - l'operatore compila manualmente
+        itemsList: [],
         status: 'Nuovo',
         type: 'Giocatore',
-        kitType: kitInfo.display,
+        kitType: '',
         linkedId: null,
         discount: 0,
         email: "",
@@ -3273,6 +3275,10 @@
     orders.push(newOrder);
 
     logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
+
+    // ✅ FIX 1: Forza il filtro MAX ad avanzare al nuovo ordine
+    const filterMaxEl = document.getElementById('filterMaxId');
+    if (filterMaxEl) filterMaxEl.value = '';
 
     updateUI();
 }
