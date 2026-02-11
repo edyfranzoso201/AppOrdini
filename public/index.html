@@ -8165,7 +8165,7 @@ async function saveQuickIdConfig() {
             const sortOrder = { arancione:0, giallo:1, bianco:2, verde:3 };
             filtered.sort((a,b) => (sortOrder[a.status.stato]||9) - (sortOrder[b.status.stato]||9));
 
-            tbody.innerHTML = filtered.map(({ order: o, status: s }) => {
+            tbody.innerHTML = filtered.map(({ order: o, status: s, iscr }) => {
                 const c = PAY_COLORS[s.stato] || PAY_COLORS.bianco;
                 const deltaColor = s.delta > 0 ? 'text-green-600' : s.delta < 0 ? 'text-red-600' : 'text-gray-500';
                 const overrideIcon = s.isOverride ? '<i class="fas fa-user-edit text-blue-500 ml-1" title="Override manuale"></i>' : '';
