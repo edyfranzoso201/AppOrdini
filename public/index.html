@@ -917,13 +917,14 @@
                     <th class="px-3 py-2 text-right">Dovuto €</th>
                     <th class="px-3 py-2 text-right">Pagato €</th>
                     <th class="px-3 py-2 text-right">Delta €</th>
-                    <th class="px-3 py-2 text-center">Stato</th>
+                    <th class="px-3 py-2 text-center">Abbigliamento</th>
+                    <th class="px-3 py-2 text-center">Iscrizione</th>
                     <th class="px-3 py-2 text-left">Dettaglio</th>
                     <th class="px-3 py-2 text-center">Azioni</th>
                   </tr>
                 </thead>
                 <tbody id="payments-table-body">
-                  <tr><td colspan="10" class="text-center py-8 text-gray-400">Importa un file CSV per iniziare</td></tr>
+                  <tr><td colspan="11" class="text-center py-8 text-gray-400">Importa un file CSV per iniziare</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1008,10 +1009,10 @@
             </div>
 
             <div>
-              <h4 class="font-bold text-sm text-gray-700 mb-2">Quote Annuali per Categoria</h4>
-              <p class="text-xs text-gray-500 mb-2">Usate per verificare la quota iscrizione degli altri atleti</p>
-              <div id="qc-annual-quotas" class="space-y-2"></div>
-              <button onclick="addAnnualQuota()" class="mt-2 text-xs text-blue-600 hover:underline"><i class="fas fa-plus mr-1"></i>Aggiungi categoria</button>
+              <h4 class="font-bold text-sm text-gray-700 mb-2">Quote Iscrizione per Annata</h4>
+              <p class="text-xs text-gray-500 mb-2">Il campo "Anno/Ruolo" dell'ordine deve corrispondere esattamente (es. <code class="bg-gray-100 px-1 rounded">2007</code>, <code class="bg-gray-100 px-1 rounded">Dirigente</code>)</p>
+              <div class="grid grid-cols-2 gap-x-4" id="qc-annual-quotas"></div>
+              <button onclick="addAnnualQuota()" class="mt-2 text-xs text-blue-600 hover:underline"><i class="fas fa-plus mr-1"></i>Aggiungi annata</button>
             </div>
 
             <div class="flex gap-2 mt-6">
@@ -7880,7 +7881,9 @@ async function saveQuickIdConfig() {
         function getPaymentStatus(order) {
             const emptyData = !paymentsData.payments || paymentsData.payments.length === 0;
             const key = (order.customer || '').trim();
-            const role = (order.roleOrYear || '').trim().toLowerCase();
+            // ✅ FIX: normalizza il ruolo rimuovendo spazi doppi e confronta in modo flessibile
+            const roleRaw = (order.roleOrYear || '').trim();
+            const role = roleRaw.toLowerCase().replace(/\s+/g, ' ');
 
             // Override manuale ha priorità assoluta
             const ov = paymentsData.manualOverrides?.[key];
@@ -7891,23 +7894,40 @@ async function saveQuickIdConfig() {
 
             if (emptyData) return { stato:'bianco', label:'Nessun dato', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
 
-            const dovuto = calculateOrderTotal(order);
-            const isPrimaSquadra = PAY_CONFIG.primaSquadraRoles.some(r => role.includes(r.toLowerCase()));
-            const isAllenatore   = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
             const kitName = (order.kitType || '').toLowerCase();
             const isKitBase = kitName.includes('kit') || (order.itemsList?.length > 1);
+
+            // ✅ FIX: match flessibile per Prima Squadra (gestisce "1^Squadra", "1^ Squadra", "1^squadra" ecc.)
+            const roleNorm = role.replace(/[\s^°]/g, '');  // rimuovi spazi, ^ e °
+            const isPrimaSquadra = PAY_CONFIG.primaSquadraRoles.some(r => {
+                const rNorm = r.toLowerCase().replace(/[\s^°]/g, '');
+                return roleNorm === rNorm || role.includes(r.toLowerCase());
+            });
+            const isAllenatore = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
 
             // Allenatori: kit base gratuito
             if (isAllenatore && isKitBase && !kitName.includes('extra') && !kitName.includes('singol')) {
                 return { stato:'verde', label:'🎁 Gratuito', pagato:0, dovuto:0, delta:0, dettaglio:'Allenatore: kit incluso' };
             }
 
-            // Cerca pagamenti per questo atleta
-            const trovati = trovaPagamentiAtleta(key, isPrimaSquadra, isKitBase);
+            // ✅ Prima Squadra: il kit è INCLUSO nella quota
+            // La colonna Abbigliamento mostra "Kit incluso" (Verde),
+            // la verifica del pagamento avviene nella colonna Iscrizione tramite getIscrizioneStatus
+            if (isPrimaSquadra && isKitBase) {
+                return { stato:'verde', label:'🎽 Kit incluso', pagato:0, dovuto:0, delta:0,
+                         dettaglio:'Kit incluso nella quota PS — verifica in colonna Iscrizione' };
+            }
+
+            // Per tutti gli altri: verifica pagamento kit/abbigliamento
+            const dovuto = calculateOrderTotal(order);
+            const logicaLabel = '';
+
+            // Cerca pagamenti kit per questo atleta
+            const trovati = trovaPagamentiAtleta(key, false, isKitBase);
 
             if (trovati.length === 0) {
                 return { stato:'bianco', label:'Non trovato', pagato:0, dovuto, delta:-dovuto,
-                         dettaglio:'Nessun pagamento nel CSV', pagamenti:[] };
+                         dettaglio:'Nessun pagamento abbigliamento nel CSV', pagamenti:[] };
             }
 
             const totalePagato = trovati.reduce((s,p) => s + p.importo, 0);
@@ -7921,7 +7941,91 @@ async function saveQuickIdConfig() {
             else                                                     { stato = 'arancione'; label = `🟠 Debito ${Math.abs(Math.round(delta))}€`; }
 
             return { stato, label, pagato: totalePagato, dovuto, delta,
-                     dettaglio: trovati.map(p=>`${p.causale}: ${p.importo}€`).join(' | '), pagamenti: trovati };
+                     dettaglio: trovati.map(p=>`${p.causale}: ${p.importo}€`).join(' | ') + logicaLabel,
+                     pagamenti: trovati };
+        }
+
+        // ─── STATO ISCRIZIONE ANNUALE (separato dall'abbigliamento) ──────────────
+        function getIscrizioneStatus(order) {
+            const key      = (order.customer || '').trim();
+            const roleRaw  = (order.roleOrYear || '').trim();
+            const role     = roleRaw.toLowerCase();
+
+            // ✅ Prima Squadra: verifica quota PS nella colonna Iscrizione
+            const roleNorm = role.replace(/[\s^°]/g, '');
+            const isPrimaSquadra = PAY_CONFIG.primaSquadraRoles.some(r =>
+                roleNorm === r.toLowerCase().replace(/[\s^°]/g,'') || role.includes(r.toLowerCase()));
+
+            if (isPrimaSquadra) {
+                // Cerca pagamenti tipo prima_squadra o quota_annuale PS
+                const quotaPS = paymentsData.quotaConfig?.primaSquadraQuota || 0;
+                const target = normName(key);
+                const pagsPS = (paymentsData.payments || []).filter(p => {
+                    if (!['prima_squadra','quota_annuale'].includes(p.tipo)) return false;
+                    return nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`)) >= 0.65;
+                });
+                const totalePagatoPS = pagsPS.reduce((s,p) => s + p.importo, 0);
+
+                if (pagsPS.length === 0)
+                    return { stato:'bianco', label:'Non pagata', pagato:0, dovuto: quotaPS,
+                             delta: -quotaPS, dettaglio:'Nessuna quota PS nel CSV' };
+
+                if (quotaPS === 0)
+                    return { stato:'giallo', label:`${totalePagatoPS}€ pagati`, pagato: totalePagatoPS,
+                             dovuto:0, delta:0, dettaglio:'⚠️ Configura quota PS in Config Quote' };
+
+                const deltaPS = totalePagatoPS - quotaPS;
+                const percPS  = Math.abs(deltaPS / quotaPS) * 100;
+                let stato, label;
+                if (deltaPS >= 0)                               { stato='verde';    label=`✅ ${totalePagatoPS}€`; }
+                else if (percPS <= PAY_CONFIG.tolerancePercent) { stato='giallo';   label=`🟡 ${totalePagatoPS}/${quotaPS}€`; }
+                else                                            { stato='arancione';label=`🟠 ${totalePagatoPS}/${quotaPS}€`; }
+
+                return { stato, label, pagato: totalePagatoPS, dovuto: quotaPS, delta: deltaPS,
+                         dettaglio: pagsPS.map(p=>`${p.causale.split(',')[0]}: ${p.importo}€`).join(' + ') };
+            }
+
+            // Allenatori: iscrizione gratuita
+            const isAllenatore = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
+            if (isAllenatore) return { stato:'verde', label:'🎁 Gratis', pagato:0, dovuto:0, delta:0, dettaglio:'Allenatore' };
+
+            if (!paymentsData.payments || paymentsData.payments.length === 0)
+                return { stato:'bianco', label:'—', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
+
+            // Quota annuale configurata per questa annata
+            const quotaConfigurata = paymentsData.quotaConfig?.annualQuotas?.[roleRaw] || 0;
+
+            // Cerca pagamenti tipo quota_annuale per questo atleta
+            const target = normName(key);
+            const pagsIscrizione = (paymentsData.payments || []).filter(p => {
+                if (!['quota_annuale'].includes(p.tipo)) return false;
+                const score = nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`));
+                return score >= 0.65;
+            });
+
+            const totalePagato = pagsIscrizione.reduce((s,p) => s + p.importo, 0);
+
+            if (pagsIscrizione.length === 0) {
+                return { stato:'bianco', label:'Non pagata', pagato:0, dovuto: quotaConfigurata,
+                         delta: -quotaConfigurata, dettaglio:'Nessuna quota nel CSV' };
+            }
+
+            // Se non c'è quota configurata mostra solo il pagato senza confronto
+            if (quotaConfigurata === 0) {
+                return { stato:'giallo', label:`${totalePagato}€ pagati`, pagato: totalePagato,
+                         dovuto:0, delta:0, dettaglio:'⚠️ Configura quota per ' + roleRaw };
+            }
+
+            const delta = totalePagato - quotaConfigurata;
+            const percDiff = Math.abs(delta / quotaConfigurata) * 100;
+
+            let stato, label;
+            if (delta >= 0)                                    { stato='verde';    label=`✅ ${totalePagato}€`; }
+            else if (percDiff <= PAY_CONFIG.tolerancePercent)  { stato='giallo';   label=`🟡 ${totalePagato}/${quotaConfigurata}€`; }
+            else                                               { stato='arancione';label=`🟠 ${totalePagato}/${quotaConfigurata}€`; }
+
+            return { stato, label, pagato: totalePagato, dovuto: quotaConfigurata, delta,
+                     dettaglio: pagsIscrizione.map(p=>`${p.causale.split(',')[0]}: ${p.importo}€`).join(' + ') };
         }
 
         // ─── FUZZY MATCH ATLETA ────────────────────────────────────────────────
@@ -7934,11 +8038,17 @@ async function saveQuickIdConfig() {
                 const score = nameScore(target, pName);
                 if (score < 0.65) return false;
 
-                if (isPrimaSquadra && isKitBase)
+                if (isPrimaSquadra && isKitBase) {
+                    // Prima Squadra: cerca sia quota PS che pagamenti kit specifici
                     return ['prima_squadra','quota_annuale'].includes(p.tipo);
-                if (isKitBase)
-                    return ['kit_completo','mini_kit','kit_dirigente','quota_annuale','prima_squadra'].includes(p.tipo);
-                return true; // capi singoli: accetta qualunque
+                }
+                if (isKitBase) {
+                    // ✅ FIX: abbigliamento = solo pagamenti kit, NON quota_annuale
+                    // La quota annuale viene valutata separatamente nella colonna Iscrizione
+                    return ['kit_completo','mini_kit','kit_dirigente','capo_singolo'].includes(p.tipo);
+                }
+                // Capi singoli: solo pagamenti capo/kit
+                return ['capo_singolo','kit_completo','mini_kit'].includes(p.tipo);
             }).map(p => ({
                 ...p,
                 confidence: nameScore(target, normName(p.fullName||`${p.cognome} ${p.nome}`)) >= 0.85 ? 'alta' : 'bassa'
@@ -8005,8 +8115,12 @@ async function saveQuickIdConfig() {
                 return true;
             });
 
-            // Calcola stato per ciascuno
-            const rows = ordiniDaVerificare.map(o => ({ order:o, status: getPaymentStatus(o) }));
+            // Calcola stato abbigliamento + iscrizione per ciascuno
+            const rows = ordiniDaVerificare.map(o => ({
+                order:   o,
+                status:  getPaymentStatus(o),
+                iscr:    getIscrizioneStatus(o)
+            }));
 
             // Filtra per stato
             const filtered = filterStato === 'tutti' ? rows : rows.filter(r => r.status.stato === filterStato);
@@ -8043,7 +8157,7 @@ async function saveQuickIdConfig() {
 
             // Tabella
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-gray-400">Nessun ordine trovato con questi filtri</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center py-6 text-gray-400">Nessun ordine trovato con questi filtri</td></tr>';
                 return;
             }
 
@@ -8055,6 +8169,13 @@ async function saveQuickIdConfig() {
                 const c = PAY_COLORS[s.stato] || PAY_COLORS.bianco;
                 const deltaColor = s.delta > 0 ? 'text-green-600' : s.delta < 0 ? 'text-red-600' : 'text-gray-500';
                 const overrideIcon = s.isOverride ? '<i class="fas fa-user-edit text-blue-500 ml-1" title="Override manuale"></i>' : '';
+
+                // Colonna Iscrizione
+                const iColors = PAY_COLORS[iscr.stato] || PAY_COLORS.bianco;
+                const iscrCell = iscr.stato === 'n/a'
+                    ? `<span class="text-gray-300 text-xs">—</span>`
+                    : `<span class="px-2 py-1 rounded text-xs font-bold" style="background:${iColors.bg};color:${iColors.text};border:1px solid ${iColors.border}" title="${iscr.dettaglio||''}">${iscr.label}</span>`;
+
                 return `<tr class="border-b hover:bg-gray-50">
                     <td class="px-3 py-2 font-mono text-xs font-bold text-blue-800">${o.displayId}</td>
                     <td class="px-3 py-2 font-bold text-xs">${o.customer || '-'}</td>
@@ -8068,6 +8189,7 @@ async function saveQuickIdConfig() {
                             ${s.label}${overrideIcon}
                         </span>
                     </td>
+                    <td class="px-3 py-2 text-center">${iscrCell}</td>
                     <td class="px-3 py-2 text-xs text-gray-500 max-w-xs truncate" title="${s.dettaglio||''}">${s.dettaglio||'-'}</td>
                     <td class="px-3 py-2 text-center">
                         <div class="flex gap-1 justify-center">
@@ -8215,6 +8337,12 @@ async function saveQuickIdConfig() {
         }
 
         // ─── MODAL CONFIG QUOTE ────────────────────────────────────────────────
+        // Annate standard da pre-popolare (mappate dalle causali CSV)
+        const ANNATE_DEFAULT = [
+            '2019','2018','2017','2016','2015','2014','2013','2012','2011','2010',
+            '2009','2008','2007','2006','Dirigente','Allenatore 20'
+        ];
+
         function openQuotaConfigModal() {
             const qc = paymentsData.quotaConfig || {};
             document.getElementById('qc-prima-squadra-quota').value = qc.primaSquadraQuota || 250;
@@ -8224,10 +8352,18 @@ async function saveQuickIdConfig() {
             container.innerHTML = '';
             (qc.primaSquadraTranches || []).forEach((t,i) => addTrancheRow(t, i));
 
-            // Quote annuali
+            // Quote annuali — usa quelle salvate oppure prepopola con annate default
             const aqContainer = document.getElementById('qc-annual-quotas');
             aqContainer.innerHTML = '';
-            Object.entries(qc.annualQuotas || {}).forEach(([cat, val]) => addAnnualQuotaRow(cat, val));
+            const savedQuotas = qc.annualQuotas || {};
+
+            if (Object.keys(savedQuotas).length > 0) {
+                // Mostra quelle salvate
+                Object.entries(savedQuotas).forEach(([cat, val]) => addAnnualQuotaRow(cat, val));
+            } else {
+                // Prima volta: pre-popola con le annate standard (importo da compilare)
+                ANNATE_DEFAULT.forEach(cat => addAnnualQuotaRow(cat, ''));
+            }
 
             document.getElementById('quotaConfigModal').classList.remove('hidden');
         }
@@ -8255,11 +8391,11 @@ async function saveQuickIdConfig() {
         function addAnnualQuotaRow(cat, val) {
             const container = document.getElementById('qc-annual-quotas');
             const div = document.createElement('div');
-            div.className = 'flex gap-2 items-center';
-            div.innerHTML = `<input type="text" placeholder="Categoria (es. 2018)" value="${cat}" class="border rounded px-2 py-1 text-xs w-28 qc-aq-cat">
-                <span class="text-xs text-gray-400">€</span>
-                <input type="number" placeholder="Quota €" value="${val}" class="border rounded px-2 py-1 text-xs w-20 qc-aq-val">
-                <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-times"></i></button>`;
+            div.className = 'flex gap-1 items-center mb-1';
+            div.innerHTML = `<input type="text" placeholder="Annata/Ruolo" value="${cat}" class="border rounded px-2 py-1 text-xs w-24 qc-aq-cat font-bold">
+                <span class="text-xs text-gray-400 flex-shrink-0">€</span>
+                <input type="number" placeholder="0" value="${val}" class="border rounded px-2 py-1 text-xs w-20 qc-aq-val">
+                <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 text-xs flex-shrink-0"><i class="fas fa-times"></i></button>`;
             container.appendChild(div);
         }
 
@@ -8275,7 +8411,8 @@ async function saveQuickIdConfig() {
             document.querySelectorAll('#qc-annual-quotas > div').forEach(div => {
                 const cat = div.querySelector('.qc-aq-cat')?.value?.trim();
                 const val = parseFloat(div.querySelector('.qc-aq-val')?.value) || 0;
-                if (cat && val > 0) annualQuotas[cat] = val;
+                // ✅ Salva anche con val=0 (significa "non ancora configurata") se ha una categoria
+                if (cat) annualQuotas[cat] = val;
             });
 
             const quotaConfig = { primaSquadraQuota, primaSquadraTranches: tranches, annualQuotas };
