@@ -870,7 +870,7 @@
                   <i class="fas fa-cog mr-1"></i>Config Quote
                 </button>
                 <!-- Ricalcola -->
-                <button onclick="renderPaymentsTab()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded font-bold text-xs transition">
+                <button onclick="loadPaymentsData().then(() => { renderPaymentsTab(); showQuickNotification('🔄 ' + (paymentsData.payments?.length||0) + ' pagamenti caricati da Redis', 'success'); })" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded font-bold text-xs transition">
                   <i class="fas fa-sync mr-1"></i>Aggiorna
                 </button>
               </div>
@@ -7880,93 +7880,59 @@ async function saveQuickIdConfig() {
 
         // ─── IMPORT CSV ───────────────────────────────────────────────────────
         async function handlePaymentsCSVImport(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            event.target.value = '';
-
-            const text = await file.text();
-            const payments = parsePaymentsCSV(text);
-
-            if (payments.length === 0) {
-                alert('❌ Nessun pagamento trovato nel file. Verifica il formato CSV.');
-                return;
-            }
-
-            // ✅ FIX: prima dell'import, calcola quali ordini sono già Verdi
-            // (per analisi CSV precedente o override manuale) e preservali
-            const greenSnapshot = {};
-            orders.forEach(o => {
-                const key = (o.customer || '').trim();
-                // Già override manuale verde → già salvato in manualOverrides, non serve toccare
-                // Calcola stato corrente con i dati vecchi
-                const currentStatus    = getPaymentStatus(o);
-                const currentIscrStatus = getIscrizioneStatus(o);
-                if (currentStatus.stato === 'verde' && !currentStatus.isOverride) {
-                    greenSnapshot[key] = greenSnapshot[key] || {};
-                    greenSnapshot[key].abbigliamento = true;
-                }
-                if (currentIscrStatus.stato === 'verde' && !currentIscrStatus.isOverride) {
-                    greenSnapshot[key] = greenSnapshot[key] || {};
-                    greenSnapshot[key].iscrizione = true;
-                }
-            });
-
             try {
+                const file = event.target.files[0];
+                if (!file) return;
+                event.target.value = '';
+
+                showQuickNotification('⏳ Lettura file in corso...', 'info');
+
+                const text = await file.text();
+                const payments = parsePaymentsCSV(text);
+
+                if (payments.length === 0) {
+                    alert('❌ Nessun pagamento trovato nel file. Verifica il formato CSV (separatore ; e colonna Stato=Completato).');
+                    return;
+                }
+
+                showQuickNotification(`⏳ Importazione ${payments.length} pagamenti...`, 'info');
+
+                // Snapshot degli override manuali verde già esistenti (da preservare)
+                // Non calcoliamo getPaymentStatus qui per evitare errori — usiamo solo
+                // gli override già salvati su Redis come sorgente di verità
+                const existingOverrides = JSON.parse(JSON.stringify(paymentsData.manualOverrides || {}));
+
+                // Salva i nuovi pagamenti su Redis
                 const res = await fetch('/api/payments', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'import', payments })
                 });
-                const json = await res.json();
-                if (json.success) {
-                    paymentsData.payments = payments;
-                    paymentsData.importedAt = new Date().toISOString();
 
-                    // ✅ Dopo l'import, verifica quali ordini erano Verdi e ora non lo sono più
-                    // → aggiunge override manuale Verde per preservarli
-                    let preserved = 0;
-                    for (const [key, snap] of Object.entries(greenSnapshot)) {
-                        // Salta se ha già override manuale (lo gestisce lui)
-                        if (paymentsData.manualOverrides?.[key]) continue;
-
-                        const order = orders.find(o => (o.customer||'').trim() === key);
-                        if (!order) continue;
-
-                        const newStatus     = getPaymentStatus(order);
-                        const newIscrStatus = getIscrizioneStatus(order);
-
-                        const abbigOk = !snap.abbigliamento || newStatus.stato === 'verde';
-                        const iscrOk  = !snap.iscrizione    || newIscrStatus.stato === 'verde';
-
-                        if (!abbigOk || !iscrOk) {
-                            // Era verde, ora non più → aggiungi override manuale
-                            await fetch('/api/payments', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    action: 'override', key,
-                                    stato: 'verde',
-                                    nota: '✅ Verde preservato da import precedente'
-                                })
-                            });
-                            if (!paymentsData.manualOverrides) paymentsData.manualOverrides = {};
-                            paymentsData.manualOverrides[key] = {
-                                stato: 'verde',
-                                nota: '✅ Verde preservato da import precedente'
-                            };
-                            preserved++;
-                        }
-                    }
-
-                    applyPaymentColorsToOrders();
-                    renderPaymentsTab();
-                    const msg = preserved > 0
-                        ? `✅ Importati ${payments.length} pagamenti — ${preserved} stati Verdi preservati`
-                        : `✅ Importati ${payments.length} pagamenti`;
-                    showQuickNotification(msg, 'success');
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${errText.slice(0,200)}`);
                 }
+
+                const json = await res.json();
+
+                if (!json.success) {
+                    throw new Error(json.error || 'Risposta API non success');
+                }
+
+                // Aggiorna stato locale
+                paymentsData.payments  = payments;
+                paymentsData.importedAt = new Date().toISOString();
+                // Ripristina gli override manuali che potrebbero essere stati sovrascritti
+                paymentsData.manualOverrides = existingOverrides;
+
+                applyPaymentColorsToOrders();
+                renderPaymentsTab();
+                showQuickNotification(`✅ Importati ${payments.length} pagamenti`, 'success');
+
             } catch (e) {
-                alert('❌ Errore salvataggio pagamenti: ' + e.message);
+                console.error('Import CSV error:', e);
+                alert('❌ Errore import: ' + e.message);
             }
         }
 
@@ -8283,7 +8249,14 @@ async function saveQuickIdConfig() {
                 }
 
                 // ── Tipo pagamento ────────────────────────────────────────────────
-                if (!tipiAttesi.includes(p.tipo)) return false;
+                // ✅ Per kit, accetta sia mini_kit che kit_completo:
+                // alcune famiglie usano la causale G. KIT anche per il Mini Kit
+                // (es. Curci Alessandro: ordine Mini Kit 135€, causale G. KIT 2025-2026)
+                const tipiKitFlessibili = ['mini_kit','kit_completo'];
+                const tuttiTipiKitFlessibili = tipiAttesi.every(t => tipiKitFlessibili.includes(t));
+                const matchTipo = tipiAttesi.includes(p.tipo) ||
+                    (tuttiTipiKitFlessibili && tipiKitFlessibili.includes(p.tipo));
+                if (!matchTipo) return false;
 
                 // ── Capi singoli: match per nome articolo nella causale ───────────
                 // Se abbiamo keyword dagli articoli, verifica che la causale
