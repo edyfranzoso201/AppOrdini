@@ -8204,14 +8204,16 @@ async function saveQuickIdConfig() {
 
         // ── Estrai keyword da nome articolo per match causale CSV ─────────────────
         function extractItemKeywords(itemName) {
-            // Rimuove prefisso "I. ", suffissi "(CALCIO)", prezzi "(7€)", ecc.
+            // ✅ Rimuove solo prefisso "X. " (lettera + PUNTO + SPAZIO obbligatorio)
+            // NON rimuovere lettere singole senza punto (es. "KWAY" non è un prefisso)
             let clean = (itemName || '')
-                .replace(/^[A-Z]\.?\s*/i, '')          // rimuovi "I. " o "G. "
-                .replace(/\s*\([^)€\d]*\)\s*/g, ' ') // rimuovi (CALCIO), (SPOLF)
-                .replace(/\s*\(\d+€\)\s*/g, '')       // rimuovi (7€)
+                .replace(/^[A-Z]\. /i, '')               // rimuovi solo "I. " "G. " (punto + spazio)
+                .replace(/\s*\([^)€\d]*\)\s*/g, ' ')   // rimuovi (CALCIO), (SPOLF)
+                .replace(/\s*\(\d+€\)\s*/g, '')         // rimuovi (7€)
                 .replace(/\s+/g, ' ').trim().toLowerCase();
-            // Restituisce parole significative (>2 chars), incluse quelle con trattino
-            return clean.split(/\s+/).filter(w => w.length > 2);
+            // ✅ NON rimuovere il trattino: "t-shirt" rimane "t-shirt" per il match
+            // Soglia >= 2 per parole corte (es. "kw")
+            return clean.split(/\s+/).filter(w => w.length >= 2);
         }
 
         // ── Trova pagamenti per atleta con matching tipo-specifico ────────────────
@@ -8263,7 +8265,17 @@ async function saveQuickIdConfig() {
                 // contenga almeno una di esse (es. "calzettoni" in "I. CALZETTONI")
                 if (isCapoSingolo && itemKeywords.length > 0) {
                     const causNorm = normName(p.causale);
-                    if (!itemKeywords.some(kw => causNorm.includes(kw))) return false;
+                    // ✅ Confronta sia con trattino che senza (t-shirt ↔ t shirt)
+                    const kwMatch = itemKeywords.some(kw => {
+                        if (causNorm.includes(kw)) return true;
+                        // Prova con trattino→spazio (t-shirt → t shirt)
+                        const kwNoHyphen = kw.replace(/-/g, ' ');
+                        if (causNorm.includes(kwNoHyphen)) return true;
+                        // Prova rimuovendo il trattino (t-shirt → tshirt)
+                        const kwNoHyphen2 = kw.replace(/-/g, '');
+                        return causNorm.replace(/ /g,'').includes(kwNoHyphen2);
+                    });
+                    if (!kwMatch) return false;
                 }
 
                 return true;
