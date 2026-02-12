@@ -7842,8 +7842,9 @@ async function saveQuickIdConfig() {
             tolerancePercent:  20,
             causalePatterns: {
                 prima_squadra: ['PRIMA SQUADRA', '1^ SQUADRA', '1° SQUADRA', 'F. PRIMA', 'GO CALCIO 1°', '11.PRIMA', 'F. GO CALCIO 1°'],
-                kit_completo:  ['G. KIT', 'KIT 2025', 'KIT COMPLETO'],
-                mini_kit:      ['H. MINI KIT', 'MINI KIT 2025'],
+                // ✅ mini_kit PRIMA di kit_completo — evita che 'KIT 2025' generico ingoii i Mini Kit
+                mini_kit:      ['H. MINI KIT', 'MINI KIT'],
+                kit_completo:  ['G. KIT', 'KIT COMPLETO'],  // rimossa 'KIT 2025': troppo generico
                 kit_dirigente: ['I. KIT DIRIGENTE', 'KIT DIRIGENTE'],
                 quota_annuale: ['GO CALCIO', 'ESORDIENTI', 'PRE-ISCRIZIONE', 'PREISCRIZIONE', 'PRE ISCRIZIONE'],
                 capo_singolo:  ['I. BORSONE', 'I. FELPA', 'I. GIACCONE', 'I. CALZETTONI',
