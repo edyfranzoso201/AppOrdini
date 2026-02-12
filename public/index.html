@@ -345,11 +345,7 @@
             <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
             <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
             <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
-<<<<<<< HEAD
             <button onclick="showTab('pagamenti')" id="nav-pagamenti" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-euro-sign mr-1"></i>Pagamenti</button>
-=======
-            <button onclick="showTab('pagamenti')" id="nav-pagamenti" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200"><i class="fas fa-euro-sign mr-1"></i>Pagamenti</button>
->>>>>>> a48284854fec4d16c65d51e626f380059b1ce51c
             <button onclick="showTab('catalogo')" id="nav-catalogo" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-book-open mr-1"></i>Catalogo</button>
         </nav>
 
@@ -7914,14 +7910,11 @@ async function saveQuickIdConfig() {
 
             if (emptyData) return { stato:'bianco', label:'Nessun dato', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
 
-<<<<<<< HEAD
             // ✅ Ordine annullato/trasferito → Verde (non deve pagare)
             if (order.status === 'Ordine annullato' || order.status === 'Ordine trasferito ad altro ID') {
                 return { stato:'verde', label:'🚫 Annullato', pagato:0, dovuto:0, delta:0, dettaglio:'Ordine annullato — nessun pagamento richiesto' };
             }
 
-=======
->>>>>>> a48284854fec4d16c65d51e626f380059b1ce51c
             const kitName = (order.kitType || '').toLowerCase();
             const isKitBase = kitName.includes('kit') || (order.itemsList?.length > 1);
 
@@ -8017,14 +8010,11 @@ async function saveQuickIdConfig() {
             const isAllenatore = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
             if (isAllenatore) return { stato:'verde', label:'🎁 Gratis', pagato:0, dovuto:0, delta:0, dettaglio:'Allenatore' };
 
-<<<<<<< HEAD
             // ✅ Ordine annullato/trasferito → Verde (nessun pagamento richiesto)
             if (order.status === 'Ordine annullato' || order.status === 'Ordine trasferito ad altro ID') {
                 return { stato:'verde', label:'🚫 Annullato', pagato:0, dovuto:0, delta:0, dettaglio:'Ordine annullato' };
             }
 
-=======
->>>>>>> a48284854fec4d16c65d51e626f380059b1ce51c
             if (!paymentsData.payments || paymentsData.payments.length === 0)
                 return { stato:'bianco', label:'—', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
 
