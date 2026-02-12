@@ -8101,8 +8101,8 @@ async function saveQuickIdConfig() {
             const dovuto = calculateOrderTotal(order);
             const logicaLabel = '';
 
-            // Cerca pagamenti kit per questo atleta
-            const trovati = trovaPagamentiAtleta(key, false, isKitBase);
+            // Cerca pagamenti kit per questo atleta (tipo specifico dell'ordine)
+            const trovati = trovaPagamentiAtleta(key, false, isKitBase, order.kitType);
 
             if (trovati.length === 0) {
                 return { stato:'bianco', label:'Non trovato', pagato:0, dovuto, delta:-dovuto,
@@ -8222,7 +8222,20 @@ async function saveQuickIdConfig() {
         }
 
         // ─── FUZZY MATCH ATLETA ────────────────────────────────────────────────
-        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase) {
+        // ── Mappa kitType dell'ordine → tipo/i di pagamento CSV attesi ─────────────
+        function kitTypeToPaymentTipi(kitName) {
+            const k = (kitName || '').toLowerCase();
+            if (k.includes('kit dirigente'))                     return ['kit_dirigente'];
+            if (k.includes('mini kit'))                         return ['mini_kit'];
+            if (k.includes('kit portiere') || k.includes('kit allenatore') ||
+                k.includes('kit completo') || k.includes('kit giocatore'))
+                                                                return ['kit_completo'];
+            if (k.includes('kit'))                              return ['kit_completo','mini_kit','kit_dirigente'];
+            // Abbigliamento singolo / capi → capo_singolo
+            return ['capo_singolo'];
+        }
+
+        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase, kitName) {
             const target = normName(nomeCompleto);
             if (!target) return [];
 
@@ -8236,16 +8249,28 @@ async function saveQuickIdConfig() {
                 if (score < 0.65) return false;
 
                 if (isPrimaSquadra && isKitBase) {
-                    // Prima Squadra: cerca sia quota PS che pagamenti kit specifici
                     return ['prima_squadra','quota_annuale'].includes(p.tipo);
                 }
-                if (isKitBase) {
-                    // ✅ FIX: abbigliamento = solo pagamenti kit, NON quota_annuale
-                    // La quota annuale viene valutata separatamente nella colonna Iscrizione
-                    return ['kit_completo','mini_kit','kit_dirigente','capo_singolo'].includes(p.tipo);
+                // ✅ Usa i tipi specifici del kit dell'ordine
+                // es. Kit Dirigente → cerca solo kit_dirigente
+                //     Abbigliamento Singolo → cerca solo capo_singolo
+                //     Mini Kit → cerca solo mini_kit
+                const tipiAttesi = kitTypeToPaymentTipi(kitName);
+                if (!tipiAttesi.includes(p.tipo)) return false;
+
+                // ✅ Per capi singoli: verifica anche che la causale CSV
+                // menzioni il nome del capo specifico dell'ordine
+                // es. ordine "Calzettoni" → pagamento causale deve contenere "CALZETT"
+                if (tipiAttesi[0] === 'capo_singolo' && kitName) {
+                    const kitNorm  = normName(kitName).replace(/[()€\d]/g,'').trim();
+                    const causNorm = normName(p.causale);
+                    // Match fuzzy: almeno 1 parola significativa in comune
+                    const kitWords = kitNorm.split(' ').filter(w => w.length > 3);
+                    if (kitWords.length > 0 && !kitWords.some(w => causNorm.includes(w))) {
+                        return false; // capo diverso
+                    }
                 }
-                // Capi singoli: solo pagamenti capo/kit
-                return ['capo_singolo','kit_completo','mini_kit'].includes(p.tipo);
+                return true;
             }).map(p => ({
                 ...p,
                 confidence: Math.max(
@@ -8253,7 +8278,7 @@ async function saveQuickIdConfig() {
                     ...( (p.altNames||[]).map(n => nameScore(target, normName(n))) )
                 ) >= 0.85 ? 'alta' : 'bassa'
             }));
-        }
+        }  // fine trovaPagamentiAtleta
 
         function normName(n) {
             return (n||'').toLowerCase()
