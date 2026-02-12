@@ -7819,6 +7819,25 @@ async function saveQuickIdConfig() {
                 return;
             }
 
+            // ✅ FIX: prima dell'import, calcola quali ordini sono già Verdi
+            // (per analisi CSV precedente o override manuale) e preservali
+            const greenSnapshot = {};
+            orders.forEach(o => {
+                const key = (o.customer || '').trim();
+                // Già override manuale verde → già salvato in manualOverrides, non serve toccare
+                // Calcola stato corrente con i dati vecchi
+                const currentStatus    = getPaymentStatus(o);
+                const currentIscrStatus = getIscrizioneStatus(o);
+                if (currentStatus.stato === 'verde' && !currentStatus.isOverride) {
+                    greenSnapshot[key] = greenSnapshot[key] || {};
+                    greenSnapshot[key].abbigliamento = true;
+                }
+                if (currentIscrStatus.stato === 'verde' && !currentIscrStatus.isOverride) {
+                    greenSnapshot[key] = greenSnapshot[key] || {};
+                    greenSnapshot[key].iscrizione = true;
+                }
+            });
+
             try {
                 const res = await fetch('/api/payments', {
                     method: 'POST',
@@ -7829,16 +7848,56 @@ async function saveQuickIdConfig() {
                 if (json.success) {
                     paymentsData.payments = payments;
                     paymentsData.importedAt = new Date().toISOString();
+
+                    // ✅ Dopo l'import, verifica quali ordini erano Verdi e ora non lo sono più
+                    // → aggiunge override manuale Verde per preservarli
+                    let preserved = 0;
+                    for (const [key, snap] of Object.entries(greenSnapshot)) {
+                        // Salta se ha già override manuale (lo gestisce lui)
+                        if (paymentsData.manualOverrides?.[key]) continue;
+
+                        const order = orders.find(o => (o.customer||'').trim() === key);
+                        if (!order) continue;
+
+                        const newStatus     = getPaymentStatus(order);
+                        const newIscrStatus = getIscrizioneStatus(order);
+
+                        const abbigOk = !snap.abbigliamento || newStatus.stato === 'verde';
+                        const iscrOk  = !snap.iscrizione    || newIscrStatus.stato === 'verde';
+
+                        if (!abbigOk || !iscrOk) {
+                            // Era verde, ora non più → aggiungi override manuale
+                            await fetch('/api/payments', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'override', key,
+                                    stato: 'verde',
+                                    nota: '✅ Verde preservato da import precedente'
+                                })
+                            });
+                            if (!paymentsData.manualOverrides) paymentsData.manualOverrides = {};
+                            paymentsData.manualOverrides[key] = {
+                                stato: 'verde',
+                                nota: '✅ Verde preservato da import precedente'
+                            };
+                            preserved++;
+                        }
+                    }
+
                     applyPaymentColorsToOrders();
                     renderPaymentsTab();
-                    showQuickNotification(`✅ Importati ${payments.length} pagamenti`, 'success');
+                    const msg = preserved > 0
+                        ? `✅ Importati ${payments.length} pagamenti — ${preserved} stati Verdi preservati`
+                        : `✅ Importati ${payments.length} pagamenti`;
+                    showQuickNotification(msg, 'success');
                 }
             } catch (e) {
                 alert('❌ Errore salvataggio pagamenti: ' + e.message);
             }
         }
 
-        // ─── PARSER CSV ────────────────────────────────────────────────────────
+        // ─── PARSER CSV ────────────────────────────────────────────────────────────
         function parsePaymentsCSV(csvText) {
             const lines = csvText.split(/\r?\n/).filter(l => l.trim());
             if (lines.length < 2) return [];
@@ -7852,38 +7911,65 @@ async function saveQuickIdConfig() {
                 const row = {};
                 headers.forEach((h, idx) => row[h] = cols[idx] || '');
 
-                // Normalizza importo
+                // Normalizza importo (col F)
                 const importoRaw = (row['Importo'] || '0')
-                    .replace(/â‚¬|€|EUR/gi,'').replace(',','.').trim();
+                    .replace(/â¬|€|EUR/gi,'').replace(',','.').trim();
                 const importo = parseFloat(importoRaw) || 0;
 
                 if ((row['Stato'] || '') !== 'Completato') continue;
                 if (importo <= 0) continue;
 
-                let cognome = (row['Cognome'] || '').trim();
-                let nome    = (row['Nome']    || '').trim();
+                // Col B, C, H
+                let cognome = (row['Cognome'] || '').trim();   // Col B
+                let nome    = (row['Nome']    || '').trim();   // Col C
+                const pagante = (row['Pagante'] || '').trim(); // Col H
+                const causale = row['Causale'] || '';
 
-                if (!cognome) {
-                    const m = (row['Causale']||'').match(/,\s*per\s+(.+)$/i);
-                    if (m) {
-                        const p = m[1].trim().split(/\s+/);
-                        cognome = p[0] || ''; nome = p.slice(1).join(' ');
-                    }
+                // ✅ Sorgente 1: Col G — estrai "per Cognome Nome" dalla causale
+                const mCausale = causale.match(/,\s*per\s+(.+)$/i)
+                               || causale.match(/\bper\s+([A-ZÀ-Ùa-zà-ù][A-ZÀ-Ùa-zà-ù\s']+?)(?:\s+stagione|\s*$)/i);
+                const nomeFromCausale = mCausale ? mCausale[1].trim().replace(/\s+/g,' ') : '';
+
+                // Se B+C vuoti, usa col G come fonte principale
+                if (!cognome && !nome && nomeFromCausale) {
+                    const parts = nomeFromCausale.split(/\s+/);
+                    cognome = parts[0] || '';
+                    nome    = parts.slice(1).join(' ');
                 }
+
+                // ✅ Sorgente 3: Col H (Pagante) se ancora vuoto
+                if (!cognome && !nome && pagante) {
+                    const parts = pagante.split(/\s+/);
+                    cognome = parts[0] || '';
+                    nome    = parts.slice(1).join(' ');
+                }
+
                 if (!cognome) continue;
 
-                const causaleUp = (row['Causale']||'').toUpperCase();
+                const causaleUp = causale.toUpperCase();
                 let tipo = 'quota_annuale';
                 for (const [t, patterns] of Object.entries(PAY_CONFIG.causalePatterns)) {
                     if (patterns.some(p => causaleUp.includes(p.toUpperCase()))) { tipo = t; break; }
+                }
+
+                // ✅ Lista nomi alternativi per fuzzy matching multi-sorgente
+                const altNamesSet = new Set();
+                altNamesSet.add(`${cognome} ${nome}`.trim());
+                if (nomeFromCausale) altNamesSet.add(nomeFromCausale);
+                if (pagante) {
+                    altNamesSet.add(pagante);
+                    // Prova anche invertito (Nome Cognome → Cognome Nome)
+                    const pp = pagante.split(/\s+/);
+                    if (pp.length >= 2) altNamesSet.add(`${pp[pp.length-1]} ${pp.slice(0,-1).join(' ')}`);
                 }
 
                 parsed.push({
                     id: row['ID'] || `csv_${i}`,
                     cognome, nome,
                     fullName: `${cognome} ${nome}`.trim(),
+                    altNames: [...altNamesSet].filter(Boolean), // ✅ tutti i nomi alternativi
                     importo,
-                    causale: row['Causale'] || '',
+                    causale,
                     tipo,
                     isPreiscrizione: causaleUp.includes('PRE-ISCRIZIONE') || causaleUp.includes('PREISCRIZIONE'),
                     data: row['Data'] || '',
@@ -7983,7 +8069,12 @@ async function saveQuickIdConfig() {
                 const target = normName(key);
                 const pagsPS = (paymentsData.payments || []).filter(p => {
                     if (!['prima_squadra','quota_annuale'].includes(p.tipo)) return false;
-                    return nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`)) >= 0.65;
+                    // ✅ Controlla anche altNames (G, B+C, H)
+                    const namesToCheck = [
+                        normName(p.fullName || `${p.cognome} ${p.nome}`),
+                        ...(p.altNames || []).map(n => normName(n))
+                    ].filter(Boolean);
+                    return Math.max(...namesToCheck.map(n => nameScore(target, n))) >= 0.65;
                 });
                 const totalePagatoPS = pagsPS.reduce((s,p) => s + p.importo, 0);
 
@@ -8025,8 +8116,12 @@ async function saveQuickIdConfig() {
             const target = normName(key);
             const pagsIscrizione = (paymentsData.payments || []).filter(p => {
                 if (!['quota_annuale'].includes(p.tipo)) return false;
-                const score = nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`));
-                return score >= 0.65;
+                // ✅ Controlla anche altNames (G, B+C, H)
+                const namesToCheck = [
+                    normName(p.fullName || `${p.cognome} ${p.nome}`),
+                    ...(p.altNames || []).map(n => normName(n))
+                ].filter(Boolean);
+                return Math.max(...namesToCheck.map(n => nameScore(target, n))) >= 0.65;
             });
 
             const totalePagato = pagsIscrizione.reduce((s,p) => s + p.importo, 0);
@@ -8060,8 +8155,12 @@ async function saveQuickIdConfig() {
             if (!target) return [];
 
             return (paymentsData.payments || []).filter(p => {
-                const pName = normName(p.fullName || `${p.cognome} ${p.nome}`);
-                const score = nameScore(target, pName);
+                // ✅ Confronta contro tutti i nomi alternativi (G, B+C, H)
+                const namesToCheck = [
+                    normName(p.fullName || `${p.cognome} ${p.nome}`),
+                    ...(p.altNames || []).map(n => normName(n))
+                ].filter(Boolean);
+                const score = Math.max(...namesToCheck.map(n => nameScore(target, n)));
                 if (score < 0.65) return false;
 
                 if (isPrimaSquadra && isKitBase) {
@@ -8077,7 +8176,10 @@ async function saveQuickIdConfig() {
                 return ['capo_singolo','kit_completo','mini_kit'].includes(p.tipo);
             }).map(p => ({
                 ...p,
-                confidence: nameScore(target, normName(p.fullName||`${p.cognome} ${p.nome}`)) >= 0.85 ? 'alta' : 'bassa'
+                confidence: Math.max(
+                    nameScore(target, normName(p.fullName||`${p.cognome} ${p.nome}`)),
+                    ...( (p.altNames||[]).map(n => nameScore(target, normName(n))) )
+                ) >= 0.85 ? 'alta' : 'bassa'
             }));
         }
 
