@@ -345,6 +345,7 @@
             <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
             <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
             <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
+            <button onclick="showTab('pagamenti')" id="nav-pagamenti" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-euro-sign mr-1"></i>Pagamenti</button>
             <button onclick="showTab('catalogo')" id="nav-catalogo" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-book-open mr-1"></i>Catalogo</button>
         </nav>
 
@@ -840,6 +841,185 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- TAB PAGAMENTI                                                  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <div id="tab-pagamenti" class="tab-content">
+          <div class="bg-white p-4 rounded shadow mb-4">
+
+            <!-- HEADER -->
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 class="font-bold text-xl text-blue-900"><i class="fas fa-euro-sign mr-2"></i>Verifica Pagamenti</h2>
+                <p class="text-xs text-gray-500" id="payments-import-date">Nessun file importato</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <!-- Import CSV -->
+                <label class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded font-bold text-xs cursor-pointer transition">
+                  <i class="fas fa-upload mr-1"></i>Importa CSV
+                  <input type="file" accept=".csv" class="hidden" onchange="handlePaymentsCSVImport(event)">
+                </label>
+                <!-- Aggiungi pagamento manuale -->
+                <button onclick="openManualPaymentModal()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded font-bold text-xs transition">
+                  <i class="fas fa-plus mr-1"></i>Pagamento Manuale
+                </button>
+                <!-- Config quote -->
+                <button onclick="openQuotaConfigModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded font-bold text-xs transition">
+                  <i class="fas fa-cog mr-1"></i>Config Quote
+                </button>
+                <!-- Ricalcola -->
+                <button onclick="renderPaymentsTab()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded font-bold text-xs transition">
+                  <i class="fas fa-sync mr-1"></i>Aggiorna
+                </button>
+              </div>
+            </div>
+
+            <!-- LEGENDA STATI -->
+            <div class="flex flex-wrap gap-3 mb-4 p-3 bg-gray-50 rounded border">
+              <span class="text-xs font-bold text-gray-600">Legenda:</span>
+              <span class="text-xs px-2 py-1 rounded border-2" style="background:#fff;border-color:#dee2e6">⬜ Non trovato</span>
+              <span class="text-xs px-2 py-1 rounded border-2" style="background:#d4edda;border-color:#28a745">🟢 Pagato</span>
+              <span class="text-xs px-2 py-1 rounded border-2" style="background:#fff3cd;border-color:#ffc107">🟡 Parziale / Da verificare (±20%)</span>
+              <span class="text-xs px-2 py-1 rounded border-2" style="background:#ffe0b2;border-color:#ff9800">🟠 Debito &gt;20%</span>
+            </div>
+
+            <!-- FILTRI TAB PAGAMENTI -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <input id="pay-search" type="text" placeholder="🔍 Cerca cliente..." class="border rounded px-2 py-1 text-xs" oninput="renderPaymentsTab()">
+              <select id="pay-filter-stato" class="border rounded px-2 py-1 text-xs" onchange="renderPaymentsTab()">
+                <option value="tutti">Tutti gli stati</option>
+                <option value="bianco">⬜ Non trovati</option>
+                <option value="verde">🟢 Pagati</option>
+                <option value="giallo">🟡 Da verificare</option>
+                <option value="arancione">🟠 Con debito</option>
+              </select>
+              <select id="pay-filter-tipo" class="border rounded px-2 py-1 text-xs" onchange="renderPaymentsTab()">
+                <option value="tutti">Tutti i tipi ordine</option>
+                <option value="kit">Solo Kit</option>
+                <option value="singolo">Solo Capi Singoli</option>
+              </select>
+            </div>
+
+            <!-- RIEPILOGO STATISTICHE -->
+            <div id="payments-stats" class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4"></div>
+
+            <!-- TABELLA PAGAMENTI -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs border-collapse">
+                <thead>
+                  <tr class="bg-blue-900 text-white">
+                    <th class="px-3 py-2 text-left">ID Ordine</th>
+                    <th class="px-3 py-2 text-left">Cliente</th>
+                    <th class="px-3 py-2 text-left">Anno/Ruolo</th>
+                    <th class="px-3 py-2 text-left">Tipo Kit</th>
+                    <th class="px-3 py-2 text-right">Dovuto €</th>
+                    <th class="px-3 py-2 text-right">Pagato €</th>
+                    <th class="px-3 py-2 text-right">Delta €</th>
+                    <th class="px-3 py-2 text-center">Abbigliamento</th>
+                    <th class="px-3 py-2 text-center">Iscrizione</th>
+                    <th class="px-3 py-2 text-left">Dettaglio</th>
+                    <th class="px-3 py-2 text-center">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody id="payments-table-body">
+                  <tr><td colspan="11" class="text-center py-8 text-gray-400">Importa un file CSV per iniziare</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- PANNELLO PAGAMENTI TROVATI PER ATLETA (espandibile) -->
+          <div id="payments-detail-panel" class="hidden bg-white p-4 rounded shadow mb-4">
+            <h3 class="font-bold text-blue-900 mb-3" id="payments-detail-title"></h3>
+            <div id="payments-detail-list"></div>
+          </div>
+        </div>
+
+        <!-- MODAL: Pagamento Manuale -->
+        <div id="manualPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+          <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 class="font-bold text-lg text-blue-900 mb-4"><i class="fas fa-plus-circle mr-2"></i>Aggiungi Pagamento Manuale</h3>
+            <div class="space-y-3">
+              <div><label class="text-xs font-bold text-gray-600">Cliente (Cognome Nome)</label>
+                <input id="mp-cliente" type="text" class="w-full border rounded px-2 py-1.5 text-sm mt-1" placeholder="es. Barbon Federico"></div>
+              <div><label class="text-xs font-bold text-gray-600">Importo €</label>
+                <input id="mp-importo" type="number" class="w-full border rounded px-2 py-1.5 text-sm mt-1" placeholder="135"></div>
+              <div><label class="text-xs font-bold text-gray-600">Tipo pagamento</label>
+                <select id="mp-tipo" class="w-full border rounded px-2 py-1.5 text-sm mt-1">
+                  <option value="kit_completo">Kit Completo</option>
+                  <option value="mini_kit">Mini Kit</option>
+                  <option value="kit_dirigente">Kit Dirigente</option>
+                  <option value="prima_squadra">Prima Squadra - Quota</option>
+                  <option value="quota_annuale">Quota Annuale</option>
+                  <option value="capo_singolo">Capo Singolo</option>
+                  <option value="altro">Altro</option>
+                </select></div>
+              <div><label class="text-xs font-bold text-gray-600">Causale / Nota</label>
+                <input id="mp-causale" type="text" class="w-full border rounded px-2 py-1.5 text-sm mt-1" placeholder="es. Pagamento contanti"></div>
+              <div><label class="text-xs font-bold text-gray-600">Data</label>
+                <input id="mp-data" type="date" class="w-full border rounded px-2 py-1.5 text-sm mt-1"></div>
+            </div>
+            <div class="flex gap-2 mt-4">
+              <button onclick="saveManualPayment()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded font-bold text-sm">Salva</button>
+              <button onclick="closeManualPaymentModal()" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold text-sm">Annulla</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL: Override Manuale stato pagamento -->
+        <div id="overridePaymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+          <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-4">
+            <h3 class="font-bold text-lg text-blue-900 mb-2"><i class="fas fa-user-edit mr-2"></i>Override Stato Pagamento</h3>
+            <p class="text-xs text-gray-500 mb-4" id="override-cliente-label"></p>
+            <div class="space-y-3">
+              <div><label class="text-xs font-bold text-gray-600">Stato manuale</label>
+                <select id="override-stato" class="w-full border rounded px-2 py-1.5 text-sm mt-1">
+                  <option value="verde">🟢 Pagato (Verde)</option>
+                  <option value="giallo">🟡 Da verificare (Giallo)</option>
+                  <option value="arancione">🟠 Con debito (Arancione)</option>
+                  <option value="bianco">⬜ Non trovato (Bianco)</option>
+                </select></div>
+              <div><label class="text-xs font-bold text-gray-600">Nota</label>
+                <input id="override-nota" type="text" class="w-full border rounded px-2 py-1.5 text-sm mt-1" placeholder="es. Pagato in contanti il 10/02"></div>
+            </div>
+            <div class="flex gap-2 mt-4">
+              <button onclick="savePaymentOverride()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-bold text-sm">Salva Override</button>
+              <button onclick="removePaymentOverride()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded font-bold text-sm">Rimuovi Override</button>
+              <button onclick="closeOverrideModal()" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded font-bold text-sm">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL: Config Quote -->
+        <div id="quotaConfigModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+          <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4 max-h-screen overflow-y-auto">
+            <h3 class="font-bold text-lg text-blue-900 mb-4"><i class="fas fa-cog mr-2"></i>Configurazione Quote Annuali</h3>
+            
+            <div class="mb-4">
+              <h4 class="font-bold text-sm text-gray-700 mb-2">Prima Squadra</h4>
+              <div class="flex gap-2 items-center mb-2">
+                <label class="text-xs text-gray-600 w-32">Quota totale €</label>
+                <input id="qc-prima-squadra-quota" type="number" class="border rounded px-2 py-1 text-sm w-24" placeholder="250">
+              </div>
+              <p class="text-xs text-gray-500 mb-2">Tranche (opzionale - fino a 4):</p>
+              <div id="qc-tranches-container" class="space-y-2"></div>
+              <button onclick="addTranche()" class="mt-2 text-xs text-blue-600 hover:underline"><i class="fas fa-plus mr-1"></i>Aggiungi tranche</button>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-sm text-gray-700 mb-2">Quote Iscrizione per Annata</h4>
+              <p class="text-xs text-gray-500 mb-2">Il campo "Anno/Ruolo" dell'ordine deve corrispondere esattamente (es. <code class="bg-gray-100 px-1 rounded">2007</code>, <code class="bg-gray-100 px-1 rounded">Dirigente</code>)</p>
+              <div class="grid grid-cols-2 gap-x-4" id="qc-annual-quotas"></div>
+              <button onclick="addAnnualQuota()" class="mt-2 text-xs text-blue-600 hover:underline"><i class="fas fa-plus mr-1"></i>Aggiungi annata</button>
+            </div>
+
+            <div class="flex gap-2 mt-6">
+              <button onclick="saveQuotaConfig()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded font-bold text-sm">Salva Configurazione</button>
+              <button onclick="closeQuotaConfigModal()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded font-bold text-sm">Chiudi</button>
+            </div>
+          </div>
         </div>
 
         <!-- TAB CATALOGO (solo admin) -->
@@ -1345,11 +1525,17 @@
                 alert('⚠️ Non hai i permessi per visualizzare il Catalogo.');
                 return;
             }
+
+            // Verifica permessi per Pagamenti (solo admin)
+            if (tabName === 'pagamenti' && currentUser?.role !== 'admin') {
+                alert('⚠️ Non hai i permessi per visualizzare i Pagamenti.');
+                return;
+            }
             
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             
             // Reset stili nav buttons MA rispetta i permessi
-            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-catalogo'];
+            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-pagamenti', 'nav-catalogo'];
             navButtons.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn && !btn.classList.contains('hidden')) {
@@ -1366,6 +1552,7 @@
                 renderChart(); 
             }
             if (tabName === 'catalogo') loadCatalogData();
+            if (tabName === 'pagamenti') renderPaymentsTab();
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
         
@@ -2199,6 +2386,7 @@
                     highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
                     updateUI();
                     showQuickNotification('🔄 Dati aggiornati', 'info');
+                    loadPaymentsData(); // ✅ Ricarica anche i pagamenti
                     setTimeout(() => window.scrollTo(0, scrollPos), 100);
                 }
                 lastDataHash = newHash;
@@ -3769,7 +3957,7 @@ function deleteOrder(id) {
                     `<span class="text-[9px] bg-green-100 text-green-800 px-1 py-0.5 rounded font-bold border border-green-300" title="Scalato dal magazzino il ${o.inventoryScaledAt}">📦 SCALATO</span>` : '';
                 
                 tr.innerHTML = `<td class="px-4 py-3 text-xs text-gray-500 font-bold"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-left border rounded px-1 text-xs font-bold uppercase"></td>
-                <td class="px-2 py-1 font-medium text-xs" style="min-width: 120px; max-width: 150px;"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
+                <td class="px-2 py-1 font-medium text-xs" style="min-width: 120px; max-width: 150px;" data-payment-id="${o.id}"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
                 <td class="px-4 py-3"><input value="${o.roleOrYear || ''}" onblur="updateOrderField(${o.id}, 'roleOrYear', this.value)" class="w-full border rounded px-1 text-xs text-center" placeholder="Anno/Ruolo"></td>
                 <td class="px-4 py-3 text-sm text-gray-700"><select onchange="updateOrderField(${o.id}, 'kitType', this.value)" class="text-xs border rounded p-1 w-full">${kitOptions}</select></td>
                 <td class="px-4 py-3 text-xs text-gray-500 note-cell" onclick="openNotesPopup(${o.id})" title="Clicca per modificare la nota">
@@ -6197,6 +6385,16 @@ function resetFiltersToDefault() {
                 if (catalogoBtn) catalogoBtn.classList.add('hidden');
                 if (catalogoTab) catalogoTab.classList.add('hidden');
             }
+
+            // Mostra Pagamenti SOLO per admin
+            const pagamentiBtn = document.getElementById('nav-pagamenti');
+            const pagamentiTab = document.getElementById('tab-pagamenti');
+            if (currentUser.role === 'admin') {
+                if (pagamentiBtn) pagamentiBtn.classList.remove('hidden');
+            } else {
+                if (pagamentiBtn) pagamentiBtn.classList.add('hidden');
+                if (pagamentiTab) pagamentiTab.classList.add('hidden');
+            }
             
             // Nascondi Quick ID filters se non ha permesso
             if (!perms.useQuickIdFilters) {
@@ -7556,7 +7754,705 @@ async function saveQuickIdConfig() {
 }
         // Inizializza all'avvio
         initQuickIdButtons();
-    </script>
+        // ✅ Carica dati pagamenti da Redis all'avvio
+        loadPaymentsData();
+    
+
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║              SISTEMA VERIFICA PAGAMENTI                         ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+
+        // ─── CONFIGURAZIONE (adatta ai tuoi ruoli reali) ─────────────────────
+        const PAY_CONFIG = {
+            // ✅ Valori confermati dall'utente
+            primaSquadraRoles: ['1^ Squadra'],
+            allenatoreRoles:   ['Allenatore'],
+            tolerancePercent:  20,
+            causalePatterns: {
+                prima_squadra: ['PRIMA SQUADRA', '1^ SQUADRA', '1° SQUADRA', 'F. PRIMA', 'GO CALCIO 1°', '11.PRIMA', 'F. GO CALCIO 1°'],
+                kit_completo:  ['G. KIT', 'KIT 2025', 'KIT COMPLETO'],
+                mini_kit:      ['H. MINI KIT', 'MINI KIT 2025'],
+                kit_dirigente: ['I. KIT DIRIGENTE', 'KIT DIRIGENTE'],
+                quota_annuale: ['GO CALCIO', 'ESORDIENTI', 'PRE-ISCRIZIONE', 'PREISCRIZIONE', 'PRE ISCRIZIONE'],
+                capo_singolo:  ['I. BORSONE', 'I. FELPA', 'I. GIACCONE', 'I. CALZETTONI',
+                                'I. CAPPELLO', 'I. KWAY', 'I. SCALDACOLLO', 'I. POLO',
+                                'I. T-SHIRT', 'I. ZAINETTO', 'I. PANTALONCINO', 'I.FELPA',
+                                'I.CALZETTONE', 'I.PALLONE', 'I. SCIARPA', 'I. SHORTS']
+            }
+        };
+
+        // ─── STATO IN MEMORIA ─────────────────────────────────────────────────
+        let paymentsData = {
+            payments: [],
+            manualOverrides: {},
+            quotaConfig: { primaSquadraQuota: 250, primaSquadraTranches: [], annualQuotas: {} },
+            importedAt: null
+        };
+        let currentOverrideKey = null;
+
+        // ─── CARICA DA REDIS ──────────────────────────────────────────────────
+        async function loadPaymentsData() {
+            try {
+                const res = await fetch('/api/payments');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        paymentsData = json.data;
+                        console.log(`💳 Pagamenti caricati: ${paymentsData.payments?.length || 0} voci`);
+                        applyPaymentColorsToOrders();
+                    }
+                }
+            } catch (e) { console.warn('⚠️ Errore caricamento pagamenti:', e); }
+        }
+
+        // ─── IMPORT CSV ───────────────────────────────────────────────────────
+        async function handlePaymentsCSVImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            event.target.value = '';
+
+            const text = await file.text();
+            const payments = parsePaymentsCSV(text);
+
+            if (payments.length === 0) {
+                alert('❌ Nessun pagamento trovato nel file. Verifica il formato CSV.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/payments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'import', payments })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    paymentsData.payments = payments;
+                    paymentsData.importedAt = new Date().toISOString();
+                    applyPaymentColorsToOrders();
+                    renderPaymentsTab();
+                    showQuickNotification(`✅ Importati ${payments.length} pagamenti`, 'success');
+                }
+            } catch (e) {
+                alert('❌ Errore salvataggio pagamenti: ' + e.message);
+            }
+        }
+
+        // ─── PARSER CSV ────────────────────────────────────────────────────────
+        function parsePaymentsCSV(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) return [];
+            const sep = lines[0].includes(';') ? ';' : ',';
+            const headers = lines[0].split(sep).map(h => h.trim().replace(/"/g,''));
+            const parsed = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(sep).map(c => c.trim().replace(/"/g,''));
+                if (cols.length < 6) continue;
+                const row = {};
+                headers.forEach((h, idx) => row[h] = cols[idx] || '');
+
+                // Normalizza importo
+                const importoRaw = (row['Importo'] || '0')
+                    .replace(/â‚¬|€|EUR/gi,'').replace(',','.').trim();
+                const importo = parseFloat(importoRaw) || 0;
+
+                if ((row['Stato'] || '') !== 'Completato') continue;
+                if (importo <= 0) continue;
+
+                let cognome = (row['Cognome'] || '').trim();
+                let nome    = (row['Nome']    || '').trim();
+
+                if (!cognome) {
+                    const m = (row['Causale']||'').match(/,\s*per\s+(.+)$/i);
+                    if (m) {
+                        const p = m[1].trim().split(/\s+/);
+                        cognome = p[0] || ''; nome = p.slice(1).join(' ');
+                    }
+                }
+                if (!cognome) continue;
+
+                const causaleUp = (row['Causale']||'').toUpperCase();
+                let tipo = 'quota_annuale';
+                for (const [t, patterns] of Object.entries(PAY_CONFIG.causalePatterns)) {
+                    if (patterns.some(p => causaleUp.includes(p.toUpperCase()))) { tipo = t; break; }
+                }
+
+                parsed.push({
+                    id: row['ID'] || `csv_${i}`,
+                    cognome, nome,
+                    fullName: `${cognome} ${nome}`.trim(),
+                    importo,
+                    causale: row['Causale'] || '',
+                    tipo,
+                    isPreiscrizione: causaleUp.includes('PRE-ISCRIZIONE') || causaleUp.includes('PREISCRIZIONE'),
+                    data: row['Data'] || '',
+                    manuale: false
+                });
+            }
+            return parsed;
+        }
+
+        // ─── MOTORE DI CALCOLO STATO PAGAMENTO ───────────────────────────────
+        function getPaymentStatus(order) {
+            const emptyData = !paymentsData.payments || paymentsData.payments.length === 0;
+            const key = (order.customer || '').trim();
+            // ✅ FIX: normalizza il ruolo rimuovendo spazi doppi e confronta in modo flessibile
+            const roleRaw = (order.roleOrYear || '').trim();
+            const role = roleRaw.toLowerCase().replace(/\s+/g, ' ');
+
+            // Override manuale ha priorità assoluta
+            const ov = paymentsData.manualOverrides?.[key];
+            if (ov) {
+                return { stato: ov.stato, label: '✏️ Manuale', pagato:0, dovuto:0, delta:0,
+                         dettaglio: ov.nota || 'Override manuale', isOverride: true };
+            }
+
+            if (emptyData) return { stato:'bianco', label:'Nessun dato', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
+
+            // ✅ Ordine annullato/trasferito → Verde (non deve pagare)
+            if (order.status === 'Ordine annullato' || order.status === 'Ordine trasferito ad altro ID') {
+                return { stato:'verde', label:'🚫 Annullato', pagato:0, dovuto:0, delta:0, dettaglio:'Ordine annullato — nessun pagamento richiesto' };
+            }
+
+            const kitName = (order.kitType || '').toLowerCase();
+            const isKitBase = kitName.includes('kit') || (order.itemsList?.length > 1);
+
+            // ✅ FIX: match flessibile per Prima Squadra (gestisce "1^Squadra", "1^ Squadra", "1^squadra" ecc.)
+            const roleNorm = role.replace(/[\s^°]/g, '');  // rimuovi spazi, ^ e °
+            const isPrimaSquadra = PAY_CONFIG.primaSquadraRoles.some(r => {
+                const rNorm = r.toLowerCase().replace(/[\s^°]/g, '');
+                return roleNorm === rNorm || role.includes(r.toLowerCase());
+            });
+            const isAllenatore = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
+
+            // Allenatori: kit base gratuito
+            if (isAllenatore && isKitBase && !kitName.includes('extra') && !kitName.includes('singol')) {
+                return { stato:'verde', label:'🎁 Gratuito', pagato:0, dovuto:0, delta:0, dettaglio:'Allenatore: kit incluso' };
+            }
+
+            // ✅ Prima Squadra: il kit è INCLUSO nella quota
+            // La colonna Abbigliamento mostra "Kit incluso" (Verde),
+            // la verifica del pagamento avviene nella colonna Iscrizione tramite getIscrizioneStatus
+            if (isPrimaSquadra && isKitBase) {
+                return { stato:'verde', label:'🎽 Kit incluso', pagato:0, dovuto:0, delta:0,
+                         dettaglio:'Kit incluso nella quota PS — verifica in colonna Iscrizione' };
+            }
+
+            // Per tutti gli altri: verifica pagamento kit/abbigliamento
+            const dovuto = calculateOrderTotal(order);
+            const logicaLabel = '';
+
+            // Cerca pagamenti kit per questo atleta
+            const trovati = trovaPagamentiAtleta(key, false, isKitBase);
+
+            if (trovati.length === 0) {
+                return { stato:'bianco', label:'Non trovato', pagato:0, dovuto, delta:-dovuto,
+                         dettaglio:'Nessun pagamento abbigliamento nel CSV', pagamenti:[] };
+            }
+
+            const totalePagato = trovati.reduce((s,p) => s + p.importo, 0);
+            const delta = totalePagato - dovuto;
+            const percDiff = dovuto > 0 ? Math.abs(delta/dovuto)*100 : 0;
+            const hasDubbio = trovati.some(p => p.confidence === 'bassa');
+
+            let stato, label;
+            if (delta >= 0)                                          { stato = 'verde';    label = `✅ Pagato`; }
+            else if (percDiff <= PAY_CONFIG.tolerancePercent || hasDubbio) { stato = 'giallo';   label = hasDubbio ? '⚠️ Verifica' : `🟡 Parziale (${Math.round(percDiff)}%)`; }
+            else                                                     { stato = 'arancione'; label = `🟠 Debito ${Math.abs(Math.round(delta))}€`; }
+
+            return { stato, label, pagato: totalePagato, dovuto, delta,
+                     dettaglio: trovati.map(p=>`${p.causale}: ${p.importo}€`).join(' | ') + logicaLabel,
+                     pagamenti: trovati };
+        }
+
+        // ─── STATO ISCRIZIONE ANNUALE (separato dall'abbigliamento) ──────────────
+        function getIscrizioneStatus(order) {
+            const key      = (order.customer || '').trim();
+            const roleRaw  = (order.roleOrYear || '').trim();
+            const role     = roleRaw.toLowerCase();
+
+            // ✅ Prima Squadra: verifica quota PS nella colonna Iscrizione
+            const roleNorm = role.replace(/[\s^°]/g, '');
+            const isPrimaSquadra = PAY_CONFIG.primaSquadraRoles.some(r =>
+                roleNorm === r.toLowerCase().replace(/[\s^°]/g,'') || role.includes(r.toLowerCase()));
+
+            if (isPrimaSquadra) {
+                // Cerca pagamenti tipo prima_squadra o quota_annuale PS
+                const quotaPS = paymentsData.quotaConfig?.primaSquadraQuota || 0;
+                const target = normName(key);
+                const pagsPS = (paymentsData.payments || []).filter(p => {
+                    if (!['prima_squadra','quota_annuale'].includes(p.tipo)) return false;
+                    return nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`)) >= 0.65;
+                });
+                const totalePagatoPS = pagsPS.reduce((s,p) => s + p.importo, 0);
+
+                if (pagsPS.length === 0)
+                    return { stato:'bianco', label:'Non pagata', pagato:0, dovuto: quotaPS,
+                             delta: -quotaPS, dettaglio:'Nessuna quota PS nel CSV' };
+
+                if (quotaPS === 0)
+                    return { stato:'giallo', label:`${totalePagatoPS}€ pagati`, pagato: totalePagatoPS,
+                             dovuto:0, delta:0, dettaglio:'⚠️ Configura quota PS in Config Quote' };
+
+                const deltaPS = totalePagatoPS - quotaPS;
+                const percPS  = Math.abs(deltaPS / quotaPS) * 100;
+                let stato, label;
+                if (deltaPS >= 0)                               { stato='verde';    label=`✅ ${totalePagatoPS}€`; }
+                else if (percPS <= PAY_CONFIG.tolerancePercent) { stato='giallo';   label=`🟡 ${totalePagatoPS}/${quotaPS}€`; }
+                else                                            { stato='arancione';label=`🟠 ${totalePagatoPS}/${quotaPS}€`; }
+
+                return { stato, label, pagato: totalePagatoPS, dovuto: quotaPS, delta: deltaPS,
+                         dettaglio: pagsPS.map(p=>`${p.causale.split(',')[0]}: ${p.importo}€`).join(' + ') };
+            }
+
+            // Allenatori: iscrizione gratuita
+            const isAllenatore = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
+            if (isAllenatore) return { stato:'verde', label:'🎁 Gratis', pagato:0, dovuto:0, delta:0, dettaglio:'Allenatore' };
+
+            // ✅ Ordine annullato/trasferito → Verde (nessun pagamento richiesto)
+            if (order.status === 'Ordine annullato' || order.status === 'Ordine trasferito ad altro ID') {
+                return { stato:'verde', label:'🚫 Annullato', pagato:0, dovuto:0, delta:0, dettaglio:'Ordine annullato' };
+            }
+
+            if (!paymentsData.payments || paymentsData.payments.length === 0)
+                return { stato:'bianco', label:'—', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
+
+            // Quota annuale configurata per questa annata
+            const quotaConfigurata = paymentsData.quotaConfig?.annualQuotas?.[roleRaw] || 0;
+
+            // Cerca pagamenti tipo quota_annuale per questo atleta
+            const target = normName(key);
+            const pagsIscrizione = (paymentsData.payments || []).filter(p => {
+                if (!['quota_annuale'].includes(p.tipo)) return false;
+                const score = nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`));
+                return score >= 0.65;
+            });
+
+            const totalePagato = pagsIscrizione.reduce((s,p) => s + p.importo, 0);
+
+            if (pagsIscrizione.length === 0) {
+                return { stato:'bianco', label:'Non pagata', pagato:0, dovuto: quotaConfigurata,
+                         delta: -quotaConfigurata, dettaglio:'Nessuna quota nel CSV' };
+            }
+
+            // Se non c'è quota configurata mostra solo il pagato senza confronto
+            if (quotaConfigurata === 0) {
+                return { stato:'giallo', label:`${totalePagato}€ pagati`, pagato: totalePagato,
+                         dovuto:0, delta:0, dettaglio:'⚠️ Configura quota per ' + roleRaw };
+            }
+
+            const delta = totalePagato - quotaConfigurata;
+            const percDiff = Math.abs(delta / quotaConfigurata) * 100;
+
+            let stato, label;
+            if (delta >= 0)                                    { stato='verde';    label=`✅ ${totalePagato}€`; }
+            else if (percDiff <= PAY_CONFIG.tolerancePercent)  { stato='giallo';   label=`🟡 ${totalePagato}/${quotaConfigurata}€`; }
+            else                                               { stato='arancione';label=`🟠 ${totalePagato}/${quotaConfigurata}€`; }
+
+            return { stato, label, pagato: totalePagato, dovuto: quotaConfigurata, delta,
+                     dettaglio: pagsIscrizione.map(p=>`${p.causale.split(',')[0]}: ${p.importo}€`).join(' + ') };
+        }
+
+        // ─── FUZZY MATCH ATLETA ────────────────────────────────────────────────
+        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase) {
+            const target = normName(nomeCompleto);
+            if (!target) return [];
+
+            return (paymentsData.payments || []).filter(p => {
+                const pName = normName(p.fullName || `${p.cognome} ${p.nome}`);
+                const score = nameScore(target, pName);
+                if (score < 0.65) return false;
+
+                if (isPrimaSquadra && isKitBase) {
+                    // Prima Squadra: cerca sia quota PS che pagamenti kit specifici
+                    return ['prima_squadra','quota_annuale'].includes(p.tipo);
+                }
+                if (isKitBase) {
+                    // ✅ FIX: abbigliamento = solo pagamenti kit, NON quota_annuale
+                    // La quota annuale viene valutata separatamente nella colonna Iscrizione
+                    return ['kit_completo','mini_kit','kit_dirigente','capo_singolo'].includes(p.tipo);
+                }
+                // Capi singoli: solo pagamenti capo/kit
+                return ['capo_singolo','kit_completo','mini_kit'].includes(p.tipo);
+            }).map(p => ({
+                ...p,
+                confidence: nameScore(target, normName(p.fullName||`${p.cognome} ${p.nome}`)) >= 0.85 ? 'alta' : 'bassa'
+            }));
+        }
+
+        function normName(n) {
+            return (n||'').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+                .replace(/['\-]/g,' ').replace(/\s+/g,' ').trim();
+        }
+
+        function nameScore(a, b) {
+            if (a === b) return 1;
+            const wa = a.split(' ').filter(w=>w.length>1);
+            const wb = b.split(' ').filter(w=>w.length>1);
+            const hits = wa.filter(w => wb.some(x => x.includes(w)||w.includes(x)));
+            return hits.length / Math.max(wa.length, wb.length);
+        }
+
+        // ─── COLORI ───────────────────────────────────────────────────────────
+        const PAY_COLORS = {
+            verde:    { bg:'#d4edda', border:'#28a745', text:'#155724' },
+            giallo:   { bg:'#fff3cd', border:'#ffc107', text:'#856404' },
+            arancione:{ bg:'#ffe0b2', border:'#ff9800', text:'#e65100' },
+            bianco:   { bg:'#ffffff', border:'#dee2e6', text:'#495057' }
+        };
+
+        // ─── APPLICA COLORI NELLA LISTA ORDINI ───────────────────────────────
+        function applyPaymentColorsToOrders() {
+            orders.forEach(order => {
+                const status = getPaymentStatus(order);
+                const color  = PAY_COLORS[status.stato] || PAY_COLORS.bianco;
+                const el = document.querySelector(`[data-payment-id="${order.id}"]`);
+                if (el) {
+                    el.style.backgroundColor = color.bg;
+                    el.style.borderLeft = `3px solid ${color.border}`;
+                    el.title = `${status.label} | Pagato: ${status.pagato}€ | Dovuto: ${status.dovuto}€`;
+                }
+            });
+        }
+
+        // ─── RENDER TAB PAGAMENTI ─────────────────────────────────────────────
+        function renderPaymentsTab() {
+            const tbody = document.getElementById('payments-table-body');
+            const statsEl = document.getElementById('payments-stats');
+            const dateEl = document.getElementById('payments-import-date');
+            if (!tbody) return;
+
+            if (paymentsData.importedAt) {
+                const d = new Date(paymentsData.importedAt);
+                dateEl.textContent = `Ultimo import: ${d.toLocaleString('it-IT')} — ${paymentsData.payments?.length||0} voci`;
+            }
+
+            const search = (document.getElementById('pay-search')?.value||'').toLowerCase();
+            const filterStato = document.getElementById('pay-filter-stato')?.value || 'tutti';
+            const filterTipo  = document.getElementById('pay-filter-tipo')?.value  || 'tutti';
+
+            // Ordini da mostrare, escludi stati non rilevanti (consegnato ecc.)
+            let ordiniDaVerificare = orders.filter(o => {
+                if (search && !o.customer?.toLowerCase().includes(search) && !o.displayId?.toLowerCase().includes(search)) return false;
+                if (filterTipo === 'kit') { const k=(o.kitType||'').toLowerCase(); return k.includes('kit'); }
+                if (filterTipo === 'singolo') { const k=(o.kitType||'').toLowerCase(); return !k.includes('kit') || o.itemsList?.length===1; }
+                return true;
+            });
+
+            // Calcola stato abbigliamento + iscrizione per ciascuno
+            const rows = ordiniDaVerificare.map(o => ({
+                order:   o,
+                status:  getPaymentStatus(o),
+                iscr:    getIscrizioneStatus(o)
+            }));
+
+            // Filtra per stato
+            const filtered = filterStato === 'tutti' ? rows : rows.filter(r => r.status.stato === filterStato);
+
+            // Statistiche
+            const stats = { verde:0, giallo:0, arancione:0, bianco:0, totDovuto:0, totPagato:0 };
+            rows.forEach(r => {
+                stats[r.status.stato]++;
+                stats.totDovuto += r.status.dovuto || 0;
+                stats.totPagato += r.status.pagato || 0;
+            });
+
+            statsEl.innerHTML = `
+                <div class="bg-green-50 border border-green-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-green-700">${stats.verde}</div>
+                    <div class="text-xs text-green-600">✅ Pagati</div>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-yellow-600">${stats.giallo}</div>
+                    <div class="text-xs text-yellow-600">🟡 Da verificare</div>
+                </div>
+                <div class="bg-orange-50 border border-orange-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-orange-600">${stats.arancione}</div>
+                    <div class="text-xs text-orange-600">🟠 Con debito</div>
+                </div>
+                <div class="bg-gray-50 border border-gray-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-gray-500">${stats.bianco}</div>
+                    <div class="text-xs text-gray-500">⬜ Non trovati</div>
+                </div>
+                <div class="bg-blue-50 border border-blue-300 rounded p-2 text-center">
+                    <div class="text-sm font-bold text-blue-700">${stats.totPagato}€ / ${stats.totDovuto}€</div>
+                    <div class="text-xs text-blue-600">💰 Incassato / Dovuto</div>
+                </div>`;
+
+            // Tabella
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center py-6 text-gray-400">Nessun ordine trovato con questi filtri</td></tr>';
+                return;
+            }
+
+            // Ordina: arancione > giallo > bianco > verde
+            const sortOrder = { arancione:0, giallo:1, bianco:2, verde:3 };
+            filtered.sort((a,b) => (sortOrder[a.status.stato]||9) - (sortOrder[b.status.stato]||9));
+
+            tbody.innerHTML = filtered.map(({ order: o, status: s, iscr }) => {
+                const c = PAY_COLORS[s.stato] || PAY_COLORS.bianco;
+                const deltaColor = s.delta > 0 ? 'text-green-600' : s.delta < 0 ? 'text-red-600' : 'text-gray-500';
+                const overrideIcon = s.isOverride ? '<i class="fas fa-user-edit text-blue-500 ml-1" title="Override manuale"></i>' : '';
+
+                // Colonna Iscrizione
+                const iColors = PAY_COLORS[iscr.stato] || PAY_COLORS.bianco;
+                const iscrCell = iscr.stato === 'n/a'
+                    ? `<span class="text-gray-300 text-xs">—</span>`
+                    : `<span class="px-2 py-1 rounded text-xs font-bold" style="background:${iColors.bg};color:${iColors.text};border:1px solid ${iColors.border}" title="${iscr.dettaglio||''}">${iscr.label}</span>`;
+
+                return `<tr class="border-b hover:bg-gray-50">
+                    <td class="px-3 py-2 font-mono text-xs font-bold text-blue-800">${o.displayId}</td>
+                    <td class="px-3 py-2 font-bold text-xs">${o.customer || '-'}</td>
+                    <td class="px-3 py-2 text-xs text-gray-600">${o.roleOrYear || '-'}</td>
+                    <td class="px-3 py-2 text-xs text-gray-600">${(o.kitType||'-').split('(')[0].trim()}</td>
+                    <td class="px-3 py-2 text-right font-bold text-xs">${s.dovuto > 0 ? s.dovuto+'€' : '<span class="text-green-600">Gratis</span>'}</td>
+                    <td class="px-3 py-2 text-right text-xs">${s.pagato > 0 ? s.pagato+'€' : '-'}</td>
+                    <td class="px-3 py-2 text-right text-xs font-bold ${deltaColor}">${s.dovuto > 0 ? (s.delta >= 0 ? '+' : '')+Math.round(s.delta)+'€' : '-'}</td>
+                    <td class="px-3 py-2 text-center">
+                        <span class="px-2 py-1 rounded text-xs font-bold" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">
+                            ${s.label}${overrideIcon}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-center">${iscrCell}</td>
+                    <td class="px-3 py-2 text-xs text-gray-500 max-w-xs truncate" title="${s.dettaglio||''}">${s.dettaglio||'-'}</td>
+                    <td class="px-3 py-2 text-center">
+                        <div class="flex gap-1 justify-center">
+                            <button onclick="showPaymentDetail('${o.id}')" class="text-blue-500 hover:text-blue-700 text-xs" title="Dettaglio pagamenti">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button onclick="openOverrideModal('${o.customer}')" class="text-orange-500 hover:text-orange-700 text-xs" title="Override manuale">
+                                <i class="fas fa-user-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            // Applica anche i colori nella lista ordini
+            applyPaymentColorsToOrders();
+        }
+
+        // ─── DETTAGLIO PAGAMENTI ATLETA ────────────────────────────────────────
+        function showPaymentDetail(orderId) {
+            const order = orders.find(o => String(o.id) === String(orderId));
+            if (!order) return;
+
+            const status = getPaymentStatus(order);
+            const panel = document.getElementById('payments-detail-panel');
+            const title = document.getElementById('payments-detail-title');
+            const list  = document.getElementById('payments-detail-list');
+
+            title.textContent = `Pagamenti trovati per: ${order.customer} (${order.displayId})`;
+
+            if (!status.pagamenti || status.pagamenti.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-sm">Nessun pagamento trovato nel CSV per questo cliente.</p>';
+            } else {
+                list.innerHTML = `
+                    <table class="w-full text-xs border-collapse">
+                        <thead><tr class="bg-gray-100">
+                            <th class="px-3 py-2 text-left">Data</th>
+                            <th class="px-3 py-2 text-left">Causale</th>
+                            <th class="px-3 py-2 text-left">Tipo</th>
+                            <th class="px-3 py-2 text-right">Importo</th>
+                            <th class="px-3 py-2 text-center">Confidenza</th>
+                        </tr></thead>
+                        <tbody>
+                            ${status.pagamenti.map(p => `
+                                <tr class="border-b">
+                                    <td class="px-3 py-1">${p.data||'-'}</td>
+                                    <td class="px-3 py-1">${p.causale||'-'}</td>
+                                    <td class="px-3 py-1"><span class="bg-blue-100 text-blue-700 px-1 rounded">${p.tipo}</span>${p.manuale?'<span class="ml-1 bg-green-100 text-green-700 px-1 rounded">manuale</span>':''}</td>
+                                    <td class="px-3 py-1 text-right font-bold">${p.importo}€</td>
+                                    <td class="px-3 py-1 text-center">
+                                        <span class="${p.confidence==='alta'?'text-green-600':'text-orange-500'} font-bold">
+                                            ${p.confidence==='alta'?'✅ Alta':'⚠️ Bassa'}
+                                        </span>
+                                    </td>
+                                </tr>`).join('')}
+                            <tr class="bg-gray-50 font-bold">
+                                <td colspan="3" class="px-3 py-2 text-right">TOTALE PAGATO:</td>
+                                <td class="px-3 py-2 text-right">${status.pagato}€</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>`;
+            }
+
+            panel.classList.remove('hidden');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ─── MODAL OVERRIDE MANUALE ────────────────────────────────────────────
+        function openOverrideModal(clienteKey) {
+            currentOverrideKey = clienteKey;
+            document.getElementById('override-cliente-label').textContent = 'Cliente: ' + clienteKey;
+            const ov = paymentsData.manualOverrides?.[clienteKey];
+            document.getElementById('override-stato').value = ov?.stato || 'verde';
+            document.getElementById('override-nota').value  = ov?.nota  || '';
+            document.getElementById('overridePaymentModal').classList.remove('hidden');
+        }
+
+        function closeOverrideModal() {
+            document.getElementById('overridePaymentModal').classList.add('hidden');
+            currentOverrideKey = null;
+        }
+
+        async function savePaymentOverride() {
+            if (!currentOverrideKey) return;
+            const stato = document.getElementById('override-stato').value;
+            const nota  = document.getElementById('override-nota').value;
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'override', key: currentOverrideKey, stato, nota }) });
+                if (!paymentsData.manualOverrides) paymentsData.manualOverrides = {};
+                paymentsData.manualOverrides[currentOverrideKey] = { stato, nota };
+                closeOverrideModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Override salvato', 'success');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
+        async function removePaymentOverride() {
+            if (!currentOverrideKey) return;
+            if (!confirm('Rimuovere l\'override manuale per ' + currentOverrideKey + '?')) return;
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'override', key: currentOverrideKey, stato: null }) });
+                if (paymentsData.manualOverrides) delete paymentsData.manualOverrides[currentOverrideKey];
+                closeOverrideModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Override rimosso', 'info');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
+        // ─── MODAL PAGAMENTO MANUALE ───────────────────────────────────────────
+        function openManualPaymentModal() {
+            document.getElementById('mp-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('manualPaymentModal').classList.remove('hidden');
+        }
+
+        function closeManualPaymentModal() {
+            document.getElementById('manualPaymentModal').classList.add('hidden');
+        }
+
+        async function saveManualPayment() {
+            const cliente = document.getElementById('mp-cliente').value.trim();
+            const importo = parseFloat(document.getElementById('mp-importo').value) || 0;
+            const tipo    = document.getElementById('mp-tipo').value;
+            const causale = document.getElementById('mp-causale').value.trim();
+            const data    = document.getElementById('mp-data').value;
+
+            if (!cliente || importo <= 0) { alert('Inserisci cliente e importo'); return; }
+
+            const parts = cliente.split(/\s+/);
+            const payment = {
+                cognome: parts[0], nome: parts.slice(1).join(' '),
+                fullName: cliente, importo, tipo, causale, data, manuale: true
+            };
+
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'addManual', payment }) });
+                paymentsData.payments.push({ ...payment, id:`manual_${Date.now()}`, stato:'Completato' });
+                closeManualPaymentModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Pagamento manuale aggiunto', 'success');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
+        // ─── MODAL CONFIG QUOTE ────────────────────────────────────────────────
+        // Annate standard da pre-popolare (mappate dalle causali CSV)
+        const ANNATE_DEFAULT = [
+            '2019','2018','2017','2016','2015','2014','2013','2012','2011','2010',
+            '2009','2008','2007','2006','Dirigente','Allenatore 20'
+        ];
+
+        function openQuotaConfigModal() {
+            const qc = paymentsData.quotaConfig || {};
+            document.getElementById('qc-prima-squadra-quota').value = qc.primaSquadraQuota || 250;
+
+            // Tranche
+            const container = document.getElementById('qc-tranches-container');
+            container.innerHTML = '';
+            (qc.primaSquadraTranches || []).forEach((t,i) => addTrancheRow(t, i));
+
+            // Quote annuali — usa quelle salvate oppure prepopola con annate default
+            const aqContainer = document.getElementById('qc-annual-quotas');
+            aqContainer.innerHTML = '';
+            const savedQuotas = qc.annualQuotas || {};
+
+            if (Object.keys(savedQuotas).length > 0) {
+                // Mostra quelle salvate
+                Object.entries(savedQuotas).forEach(([cat, val]) => addAnnualQuotaRow(cat, val));
+            } else {
+                // Prima volta: pre-popola con le annate standard (importo da compilare)
+                ANNATE_DEFAULT.forEach(cat => addAnnualQuotaRow(cat, ''));
+            }
+
+            document.getElementById('quotaConfigModal').classList.remove('hidden');
+        }
+
+        function closeQuotaConfigModal() {
+            document.getElementById('quotaConfigModal').classList.add('hidden');
+        }
+
+        function addTranche() { addTrancheRow({}, document.getElementById('qc-tranches-container').children.length); }
+
+        function addTrancheRow(t, i) {
+            const container = document.getElementById('qc-tranches-container');
+            if (container.children.length >= 4) { alert('Massimo 4 tranche'); return; }
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 items-center';
+            div.innerHTML = `<span class="text-xs text-gray-500 w-16">Tranche ${i+1}</span>
+                <input type="number" placeholder="Importo €" value="${t.importo||''}" class="border rounded px-2 py-1 text-xs w-24 qc-tranche-importo">
+                <input type="date" value="${t.scadenza||''}" class="border rounded px-2 py-1 text-xs qc-tranche-scadenza">
+                <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-times"></i></button>`;
+            container.appendChild(div);
+        }
+
+        function addAnnualQuota() { addAnnualQuotaRow('', ''); }
+
+        function addAnnualQuotaRow(cat, val) {
+            const container = document.getElementById('qc-annual-quotas');
+            const div = document.createElement('div');
+            div.className = 'flex gap-1 items-center mb-1';
+            div.innerHTML = `<input type="text" placeholder="Annata/Ruolo" value="${cat}" class="border rounded px-2 py-1 text-xs w-24 qc-aq-cat font-bold">
+                <span class="text-xs text-gray-400 flex-shrink-0">€</span>
+                <input type="number" placeholder="0" value="${val}" class="border rounded px-2 py-1 text-xs w-20 qc-aq-val">
+                <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 text-xs flex-shrink-0"><i class="fas fa-times"></i></button>`;
+            container.appendChild(div);
+        }
+
+        async function saveQuotaConfig() {
+            const primaSquadraQuota = parseFloat(document.getElementById('qc-prima-squadra-quota').value) || 0;
+
+            const tranches = Array.from(document.querySelectorAll('#qc-tranches-container > div')).map(div => ({
+                importo:  parseFloat(div.querySelector('.qc-tranche-importo')?.value) || 0,
+                scadenza: div.querySelector('.qc-tranche-scadenza')?.value || ''
+            })).filter(t => t.importo > 0);
+
+            const annualQuotas = {};
+            document.querySelectorAll('#qc-annual-quotas > div').forEach(div => {
+                const cat = div.querySelector('.qc-aq-cat')?.value?.trim();
+                const val = parseFloat(div.querySelector('.qc-aq-val')?.value) || 0;
+                // ✅ Salva anche con val=0 (significa "non ancora configurata") se ha una categoria
+                if (cat) annualQuotas[cat] = val;
+            });
+
+            const quotaConfig = { primaSquadraQuota, primaSquadraTranches: tranches, annualQuotas };
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'saveConfig', quotaConfig }) });
+                paymentsData.quotaConfig = quotaConfig;
+                closeQuotaConfigModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Configurazione quote salvata', 'success');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
+</script>
     <!-- Copyright Footer - Fisso in basso -->
     <footer class="no-print" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 6px 15px; font-size: 9px; z-index: 9999; text-align: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.2);">
         © 2025 Edy Franzoso. Codice sorgente e contenuti protetti ai sensi della Legge sul Diritto d'Autore (L. 633/1941). Riproduzione, distribuzione o modifica vietati senza autorizzazione scritta.
