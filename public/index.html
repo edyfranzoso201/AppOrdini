@@ -886,20 +886,92 @@
             </div>
 
             <!-- FILTRI TAB PAGAMENTI -->
-            <div class="flex flex-wrap gap-2 mb-4">
-              <input id="pay-search" type="text" placeholder="🔍 Cerca cliente..." class="border rounded px-2 py-1 text-xs" oninput="renderPaymentsTab()">
-              <select id="pay-filter-stato" class="border rounded px-2 py-1 text-xs" onchange="renderPaymentsTab()">
-                <option value="tutti">Tutti gli stati</option>
-                <option value="bianco">⬜ Non trovati</option>
-                <option value="verde">🟢 Pagati</option>
-                <option value="giallo">🟡 Da verificare</option>
-                <option value="arancione">🟠 Con debito</option>
-              </select>
-              <select id="pay-filter-tipo" class="border rounded px-2 py-1 text-xs" onchange="renderPaymentsTab()">
-                <option value="tutti">Tutti i tipi ordine</option>
-                <option value="kit">Solo Kit</option>
-                <option value="singolo">Solo Capi Singoli</option>
-              </select>
+            <div class="bg-gray-50 border rounded p-3 mb-4">
+              <div class="flex flex-wrap gap-2 items-end">
+
+                <!-- ID Ordine / Cliente -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">ID / Cliente</label>
+                  <input id="pay-search" type="text" placeholder="🔍 ID o nome..." class="border rounded px-2 py-1 text-xs w-36" oninput="renderPaymentsTab()">
+                </div>
+
+                <!-- Anno/Ruolo -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Anno/Ruolo</label>
+                  <input id="pay-filter-ruolo" type="text" placeholder="es. 2013, 1^ Squadra" class="border rounded px-2 py-1 text-xs w-36" oninput="renderPaymentsTab()">
+                </div>
+
+                <!-- Tipo Kit -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Tipo Kit</label>
+                  <input id="pay-filter-kit" type="text" placeholder="es. Mini Kit, Completo" class="border rounded px-2 py-1 text-xs w-36" oninput="renderPaymentsTab()">
+                </div>
+
+                <!-- Dovuto € -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Dovuto €</label>
+                  <div class="flex gap-1">
+                    <input id="pay-filter-dovuto-min" type="number" placeholder="Min" class="border rounded px-2 py-1 text-xs w-16" oninput="renderPaymentsTab()">
+                    <input id="pay-filter-dovuto-max" type="number" placeholder="Max" class="border rounded px-2 py-1 text-xs w-16" oninput="renderPaymentsTab()">
+                  </div>
+                </div>
+
+                <!-- Pagato € -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Pagato €</label>
+                  <div class="flex gap-1">
+                    <input id="pay-filter-pagato-min" type="number" placeholder="Min" class="border rounded px-2 py-1 text-xs w-16" oninput="renderPaymentsTab()">
+                    <input id="pay-filter-pagato-max" type="number" placeholder="Max" class="border rounded px-2 py-1 text-xs w-16" oninput="renderPaymentsTab()">
+                  </div>
+                </div>
+
+                <!-- Delta € -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Delta €</label>
+                  <div class="flex gap-1">
+                    <input id="pay-filter-delta-min" type="number" placeholder="Min" class="border rounded px-2 py-1 text-xs w-16" oninput="renderPaymentsTab()">
+                    <input id="pay-filter-delta-max" type="number" placeholder="Max" class="border rounded px-2 py-1 text-xs w-16" oninput="renderPaymentsTab()">
+                  </div>
+                </div>
+
+                <!-- Abbigliamento -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Abbigliamento</label>
+                  <select id="pay-filter-abbigliamento" class="border rounded px-2 py-1 text-xs" onchange="renderPaymentsTab()">
+                    <option value="tutti">Tutti</option>
+                    <option value="verde">🟢 Pagato</option>
+                    <option value="giallo">🟡 Parziale</option>
+                    <option value="arancione">🟠 Debito</option>
+                    <option value="bianco">⬜ Non trovato</option>
+                  </select>
+                </div>
+
+                <!-- Iscrizione -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Iscrizione</label>
+                  <select id="pay-filter-iscrizione" class="border rounded px-2 py-1 text-xs" onchange="renderPaymentsTab()">
+                    <option value="tutti">Tutti</option>
+                    <option value="verde">🟢 Pagata</option>
+                    <option value="giallo">🟡 Parziale</option>
+                    <option value="arancione">🟠 Debito</option>
+                    <option value="bianco">⬜ Non trovata</option>
+                  </select>
+                </div>
+
+                <!-- Dettaglio (ricerca testo libero) -->
+                <div class="flex flex-col gap-0.5">
+                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Dettaglio</label>
+                  <input id="pay-filter-dettaglio" type="text" placeholder="es. PRIMA SQUADRA" class="border rounded px-2 py-1 text-xs w-36" oninput="renderPaymentsTab()">
+                </div>
+
+                <!-- Reset -->
+                <div class="flex flex-col gap-0.5 justify-end">
+                  <button onclick="resetPaymentFilters()" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-xs font-bold transition">
+                    ✕ Reset
+                  </button>
+                </div>
+
+              </div>
             </div>
 
             <!-- RIEPILOGO STATISTICHE -->
@@ -8231,15 +8303,28 @@ async function saveQuickIdConfig() {
                 dateEl.textContent = `Ultimo import: ${d.toLocaleString('it-IT')} — ${paymentsData.payments?.length||0} voci`;
             }
 
-            const search = (document.getElementById('pay-search')?.value||'').toLowerCase();
-            const filterStato = document.getElementById('pay-filter-stato')?.value || 'tutti';
-            const filterTipo  = document.getElementById('pay-filter-tipo')?.value  || 'tutti';
+            // ── Leggi tutti i filtri ─────────────────────────────────────────────
+            const search          = (document.getElementById('pay-search')?.value||'').toLowerCase().trim();
+            const filterRuolo     = (document.getElementById('pay-filter-ruolo')?.value||'').toLowerCase().trim();
+            const filterKit       = (document.getElementById('pay-filter-kit')?.value||'').toLowerCase().trim();
+            const filterDovutoMin = parseFloat(document.getElementById('pay-filter-dovuto-min')?.value) || null;
+            const filterDovutoMax = parseFloat(document.getElementById('pay-filter-dovuto-max')?.value) || null;
+            const filterPagatoMin = parseFloat(document.getElementById('pay-filter-pagato-min')?.value) || null;
+            const filterPagatoMax = parseFloat(document.getElementById('pay-filter-pagato-max')?.value) || null;
+            const filterDeltaMin  = parseFloat(document.getElementById('pay-filter-delta-min')?.value) || null;
+            const filterDeltaMax  = parseFloat(document.getElementById('pay-filter-delta-max')?.value) || null;
+            const filterAbbig     = document.getElementById('pay-filter-abbigliamento')?.value || 'tutti';
+            const filterIscr      = document.getElementById('pay-filter-iscrizione')?.value   || 'tutti';
+            const filterDettaglio = (document.getElementById('pay-filter-dettaglio')?.value||'').toLowerCase().trim();
 
-            // Ordini da mostrare, escludi stati non rilevanti (consegnato ecc.)
+            // ── Prima passa: filtra ordini per campi dell'ordine (senza calcolare status) ─
             let ordiniDaVerificare = orders.filter(o => {
+                // ID / Cliente
                 if (search && !o.customer?.toLowerCase().includes(search) && !o.displayId?.toLowerCase().includes(search)) return false;
-                if (filterTipo === 'kit') { const k=(o.kitType||'').toLowerCase(); return k.includes('kit'); }
-                if (filterTipo === 'singolo') { const k=(o.kitType||'').toLowerCase(); return !k.includes('kit') || o.itemsList?.length===1; }
+                // Anno/Ruolo
+                if (filterRuolo && !(o.roleOrYear||'').toLowerCase().includes(filterRuolo)) return false;
+                // Tipo Kit
+                if (filterKit   && !(o.kitType||'').toLowerCase().includes(filterKit)) return false;
                 return true;
             });
 
@@ -8250,8 +8335,34 @@ async function saveQuickIdConfig() {
                 iscr:    getIscrizioneStatus(o)
             }));
 
-            // Filtra per stato
-            const filtered = filterStato === 'tutti' ? rows : rows.filter(r => r.status.stato === filterStato);
+            // ── Seconda passa: filtra per valori calcolati (dovuto/pagato/delta/stato) ──
+            const filtered = rows.filter(r => {
+                const s    = r.status;
+                const iscr = r.iscr;
+
+                // Abbigliamento stato
+                if (filterAbbig !== 'tutti' && s.stato !== filterAbbig) return false;
+                // Iscrizione stato
+                if (filterIscr  !== 'tutti' && iscr.stato !== filterIscr) return false;
+
+                // Dovuto €
+                if (filterDovutoMin !== null && s.dovuto < filterDovutoMin) return false;
+                if (filterDovutoMax !== null && s.dovuto > filterDovutoMax) return false;
+                // Pagato €
+                if (filterPagatoMin !== null && s.pagato < filterPagatoMin) return false;
+                if (filterPagatoMax !== null && s.pagato > filterPagatoMax) return false;
+                // Delta €
+                if (filterDeltaMin  !== null && s.delta  < filterDeltaMin)  return false;
+                if (filterDeltaMax  !== null && s.delta  > filterDeltaMax)  return false;
+
+                // Dettaglio (ricerca testo libero su label + dettaglio)
+                if (filterDettaglio) {
+                    const haystack = ((s.dettaglio||'') + ' ' + (iscr.dettaglio||'')).toLowerCase();
+                    if (!haystack.includes(filterDettaglio)) return false;
+                }
+
+                return true;
+            });
 
             // Statistiche
             const stats = { verde:0, giallo:0, arancione:0, bianco:0, totDovuto:0, totPagato:0 };
@@ -8334,6 +8445,23 @@ async function saveQuickIdConfig() {
 
             // Applica anche i colori nella lista ordini
             applyPaymentColorsToOrders();
+        }
+
+        // ─── RESET FILTRI PAGAMENTI ───────────────────────────────────────────────
+        function resetPaymentFilters() {
+            ['pay-search','pay-filter-ruolo','pay-filter-kit',
+             'pay-filter-dovuto-min','pay-filter-dovuto-max',
+             'pay-filter-pagato-min','pay-filter-pagato-max',
+             'pay-filter-delta-min','pay-filter-delta-max',
+             'pay-filter-dettaglio'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            ['pay-filter-abbigliamento','pay-filter-iscrizione'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = 'tutti';
+            });
+            renderPaymentsTab();
         }
 
         // ─── DETTAGLIO PAGAMENTI ATLETA ────────────────────────────────────────
