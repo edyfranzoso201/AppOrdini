@@ -2945,33 +2945,30 @@
             let latestOrder = null;
             let latestTimestampDate = null;
             if (isGoogleForm && orders.length > 0) {
-                // Ordina gli ordini per ID (dal più alto al più basso)
-                const getNumId = (displayId) => {
-                    const match = displayId.match(/(\d+)$/);
-                    return match ? parseInt(match[1]) : 0;
-                };
-                
-                // Usa ordinamento globale (decrescente per trovare l'ultimo)
-                const sortedOrders = sortOrdersByDisplayId(orders, false);
-                latestOrder = sortedOrders[0];
-                
-                if (latestOrder && latestOrder.timestamp) {
+                // ✅ FIX: Trova il timestamp MÀS RECENTE tra TUTTI gli ordini con timestamp
+                // NON usare l'ordine con ID più alto (alfabetico) — potrebbe non avere timestamp
+                let latestTimestampMs = 0;
+                orders.forEach(o => {
+                    if (!o.timestamp) return;
                     try {
-                        // IMPORTANTE: Normalizza timestamp prima di creare Date object
-                        const normalizedTimestamp = roundTimestampOnly(latestOrder.timestamp);
-                        latestTimestampDate = new Date(normalizedTimestamp);
-                        
-                        console.log(`\n🕐 === ULTIMO ORDINE NEL DATABASE ===`);
-                        console.log(`ID: ${latestOrder.displayId}`);
-                        console.log(`Cliente: ${latestOrder.customer}`);
-                        console.log(`Timestamp originale: ${latestOrder.timestamp}`);
-                        console.log(`Timestamp normalizzato: ${normalizedTimestamp}`);
-                        console.log(`Date object: ${latestTimestampDate.toLocaleString('it-IT')}`);
-                        console.log(`Valid? ${!isNaN(latestTimestampDate.getTime())}`);
-                        console.log(`\n📋 Importerò SOLO ordini con timestamp successivo`);
-                    } catch (e) {
-                        console.warn(`Errore timestamp: ${e.message}`);
-                    }
+                        const ts = new Date(roundTimestampOnly(o.timestamp));
+                        if (!isNaN(ts.getTime()) && ts.getTime() > latestTimestampMs) {
+                            latestTimestampMs = ts.getTime();
+                            latestOrder = o;
+                        }
+                    } catch(e) {}
+                });
+
+                if (latestOrder && latestTimestampMs > 0) {
+                    latestTimestampDate = new Date(latestTimestampMs);
+                    console.log(`\n🕐 === TIMESTAMP PIÙ RECENTE NEL DATABASE ===`);
+                    console.log(`ID: ${latestOrder.displayId}`);
+                    console.log(`Cliente: ${latestOrder.customer}`);
+                    console.log(`Timestamp: ${latestOrder.timestamp}`);
+                    console.log(`Date: ${latestTimestampDate.toLocaleString('it-IT')}`);
+                    console.log(`\n📋 Importerò SOLO ordini con timestamp successivo a questo`);
+                } else {
+                    console.log(`⚠️ Nessun ordine con timestamp valido nel DB — importo tutti`);
                 }
             }
             
