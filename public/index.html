@@ -8101,8 +8101,8 @@ async function saveQuickIdConfig() {
             const dovuto = calculateOrderTotal(order);
             const logicaLabel = '';
 
-            // Cerca pagamenti kit per questo atleta (tipo specifico dell'ordine)
-            const trovati = trovaPagamentiAtleta(key, false, isKitBase, order.kitType);
+            // Cerca pagamenti kit per questo atleta (tipo + articoli specifici)
+            const trovati = trovaPagamentiAtleta(key, false, isKitBase, order.kitType, order.itemsList);
 
             if (trovati.length === 0) {
                 return { stato:'bianco', label:'Non trovato', pagato:0, dovuto, delta:-dovuto,
@@ -8222,25 +8222,53 @@ async function saveQuickIdConfig() {
         }
 
         // ─── FUZZY MATCH ATLETA ────────────────────────────────────────────────
-        // ── Mappa kitType dell'ordine → tipo/i di pagamento CSV attesi ─────────────
+        // ── Mappa kitType ordine → tipo pagamento CSV ─────────────────────────────
         function kitTypeToPaymentTipi(kitName) {
             const k = (kitName || '').toLowerCase();
-            if (k.includes('kit dirigente'))                     return ['kit_dirigente'];
-            if (k.includes('mini kit'))                         return ['mini_kit'];
+            if (k.includes('kit dirigente'))                                      return ['kit_dirigente'];
+            if (k.includes('mini kit'))                                           return ['mini_kit'];
             if (k.includes('kit portiere') || k.includes('kit allenatore') ||
-                k.includes('kit completo') || k.includes('kit giocatore'))
-                                                                return ['kit_completo'];
-            if (k.includes('kit'))                              return ['kit_completo','mini_kit','kit_dirigente'];
-            // Abbigliamento singolo / capi → capo_singolo
+                k.includes('kit completo') || k.includes('kit giocatore') ||
+                k.includes('kit calcio'))                                         return ['kit_completo'];
+            if (k.includes('kit'))                                                return ['kit_completo','mini_kit','kit_dirigente'];
+            // Abbigliamento Singolo o qualsiasi cosa senza "kit"
             return ['capo_singolo'];
         }
 
-        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase, kitName) {
+        // ── Estrai keyword da nome articolo per match causale CSV ─────────────────
+        function extractItemKeywords(itemName) {
+            // Rimuove prefisso "I. ", suffissi "(CALCIO)", prezzi "(7€)", ecc.
+            let clean = (itemName || '')
+                .replace(/^[A-Z]\.?\s*/i, '')          // rimuovi "I. " o "G. "
+                .replace(/\s*\([^)€\d]*\)\s*/g, ' ') // rimuovi (CALCIO), (SPOLF)
+                .replace(/\s*\(\d+€\)\s*/g, '')       // rimuovi (7€)
+                .replace(/\s+/g, ' ').trim().toLowerCase();
+            // Restituisce parole significative (>2 chars), incluse quelle con trattino
+            return clean.split(/\s+/).filter(w => w.length > 2);
+        }
+
+        // ── Trova pagamenti per atleta con matching tipo-specifico ────────────────
+        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase, kitName, itemsList) {
             const target = normName(nomeCompleto);
             if (!target) return [];
 
+            const tipiAttesi   = kitTypeToPaymentTipi(kitName);
+            const isCapoSingolo = tipiAttesi[0] === 'capo_singolo';
+
+            // Per Abbigliamento Singolo: costruisci set di keyword dagli articoli
+            // es. ["calzettoni", "giaccone", "pantaloncino", "t-shirt"]
+            let itemKeywords = [];
+            if (isCapoSingolo && itemsList && itemsList.length > 0) {
+                itemKeywords = itemsList.flatMap(item => {
+                    const name = typeof item === 'string' ? item : (item.name || '');
+                    return extractItemKeywords(name);
+                });
+                // Rimuovi duplicati
+                itemKeywords = [...new Set(itemKeywords)];
+            }
+
             return (paymentsData.payments || []).filter(p => {
-                // ✅ Confronta contro tutti i nomi alternativi (G, B+C, H)
+                // ── Match nome ────────────────────────────────────────────────────
                 const namesToCheck = [
                     normName(p.fullName || `${p.cognome} ${p.nome}`),
                     ...(p.altNames || []).map(n => normName(n))
@@ -8248,34 +8276,28 @@ async function saveQuickIdConfig() {
                 const score = Math.max(...namesToCheck.map(n => nameScore(target, n)));
                 if (score < 0.65) return false;
 
+                // ── Prima Squadra ─────────────────────────────────────────────────
                 if (isPrimaSquadra && isKitBase) {
                     return ['prima_squadra','quota_annuale'].includes(p.tipo);
                 }
-                // ✅ Usa i tipi specifici del kit dell'ordine
-                // es. Kit Dirigente → cerca solo kit_dirigente
-                //     Abbigliamento Singolo → cerca solo capo_singolo
-                //     Mini Kit → cerca solo mini_kit
-                const tipiAttesi = kitTypeToPaymentTipi(kitName);
+
+                // ── Tipo pagamento ────────────────────────────────────────────────
                 if (!tipiAttesi.includes(p.tipo)) return false;
 
-                // ✅ Per capi singoli: verifica anche che la causale CSV
-                // menzioni il nome del capo specifico dell'ordine
-                // es. ordine "Calzettoni" → pagamento causale deve contenere "CALZETT"
-                if (tipiAttesi[0] === 'capo_singolo' && kitName) {
-                    const kitNorm  = normName(kitName).replace(/[()€\d]/g,'').trim();
+                // ── Capi singoli: match per nome articolo nella causale ───────────
+                // Se abbiamo keyword dagli articoli, verifica che la causale
+                // contenga almeno una di esse (es. "calzettoni" in "I. CALZETTONI")
+                if (isCapoSingolo && itemKeywords.length > 0) {
                     const causNorm = normName(p.causale);
-                    // Match fuzzy: almeno 1 parola significativa in comune
-                    const kitWords = kitNorm.split(' ').filter(w => w.length > 3);
-                    if (kitWords.length > 0 && !kitWords.some(w => causNorm.includes(w))) {
-                        return false; // capo diverso
-                    }
+                    if (!itemKeywords.some(kw => causNorm.includes(kw))) return false;
                 }
+
                 return true;
             }).map(p => ({
                 ...p,
                 confidence: Math.max(
-                    nameScore(target, normName(p.fullName||`${p.cognome} ${p.nome}`)),
-                    ...( (p.altNames||[]).map(n => nameScore(target, normName(n))) )
+                    nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`)),
+                    ...((p.altNames || []).map(n => nameScore(target, normName(n))))
                 ) >= 0.85 ? 'alta' : 'bassa'
             }));
         }  // fine trovaPagamentiAtleta
