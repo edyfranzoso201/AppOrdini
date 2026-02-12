@@ -8041,7 +8041,12 @@ async function saveQuickIdConfig() {
             }
 
             const kitName = (order.kitType || '').toLowerCase();
-            const isKitBase = kitName.includes('kit') || (order.itemsList?.length > 1);
+            // ✅ isKitBase = true per qualsiasi ordine con articoli da pagare
+            // Include: kit completo, mini kit, kit dirigente, abbigliamento singolo
+            const isKitBase = kitName.includes('kit') || 
+                              kitName.includes('abbigliamento') || 
+                              kitName.includes('singolo') ||
+                              (order.itemsList?.length > 0);
 
             // ✅ FIX: match flessibile per Prima Squadra (gestisce "1^Squadra", "1^ Squadra", "1^squadra" ecc.)
             const roleNorm = role.replace(/[\s^°]/g, '');  // rimuovi spazi, ^ e °
