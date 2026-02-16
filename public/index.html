@@ -4138,6 +4138,8 @@ function deleteOrder(id) {
                 </td>
                 <td class="px-4 py-3"><button onclick="openItemModal(${o.id})" class="edit-order-btn bg-white border border-gray-200 text-gray-700 text-xs px-3 py-2 rounded shadow-sm w-full text-left flex justify-between"><span>${o.itemsList.length} Capi</span><i class="fas fa-edit"></i></button></td><td class="px-4 py-3 text-center"><input value="${o.mainSize}" onchange="updateSizes(${o.id}, 'main', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold"></td><td class="px-4 py-3 text-center"><input value="${o.sockSize}" onchange="updateSizes(${o.id}, 'sock', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold text-gray-600"></td><td class="px-4 py-3 text-center text-xs font-bold text-blue-800">${bagType}</td><td class="px-4 py-3 text-center"><div class="flex flex-col items-end"><span class="price-display">${finalTotal}€</span><div class="flex items-center gap-1"><span class="text-[9px] text-gray-400">Sconto:</span><input type="number" value="${o.discount||0}" onchange="updateDiscount(${o.id}, this.value)" class="edit-order-btn discount-input"></div></div></td><td class="px-4 py-3 w-40"><div class="flex flex-col gap-1">${statusInfo}${inventoryBadge}</div></td><td class="px-4 py-3 text-center"><button onclick="downloadOrderToGoogleForm(${o.id})" class="download-google-form-btn text-green-600 hover:text-green-800" title="Scarica ordine tramite Google Form"><i class="fas fa-download"></i></button></td><td class="px-4 py-3 text-center"><button onclick="openItemModal(${o.id})" class="edit-order-btn text-blue-600 hover:text-blue-800"><i class="fas fa-cog"></i></button></td><td class="px-4 py-3 text-center"><button onclick="deleteOrder(${o.id})" class="delete-order-btn text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></td>`; tbody.appendChild(tr);
             });
+            // Applica colori pagamento dopo il render
+            setTimeout(() => applyPaymentColorsToOrders(), 0);
         }
 
         function populateIdSelects(sortedOrders) { const minSel = document.getElementById('matrixMinId'); const maxSel = document.getElementById('matrixMaxId');
@@ -8421,12 +8423,21 @@ async function saveQuickIdConfig() {
             orders.forEach(order => {
                 const status = getPaymentStatus(order);
                 const color  = PAY_COLORS[status.stato] || PAY_COLORS.bianco;
+                const isColored = status.stato !== 'bianco';
+
                 // Colora la TD Cliente (ha data-payment-id)
                 const el = document.querySelector(`[data-payment-id="${order.id}"]`);
                 if (el) {
                     el.style.backgroundColor = color.bg;
-                    el.style.borderLeft = `3px solid ${color.border}`;
+                    el.style.borderLeft = `4px solid ${color.border}`;
                     el.title = `${status.label} | Pagato: ${status.pagato}€ | Dovuto: ${status.dovuto}€`;
+                    // Colora anche la TR intera per visibilità massima
+                    const tr = el.closest('tr');
+                    if (tr && isColored) {
+                        tr.style.backgroundColor = color.bg;
+                    } else if (tr) {
+                        tr.style.backgroundColor = '';
+                    }
                 }
                 // Colora anche la TD ID (sticky, ha data-payment-id-col)
                 const elId = document.querySelector(`[data-payment-id-col="${order.id}"]`);
