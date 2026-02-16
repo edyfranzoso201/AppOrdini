@@ -8423,21 +8423,12 @@ async function saveQuickIdConfig() {
             orders.forEach(order => {
                 const status = getPaymentStatus(order);
                 const color  = PAY_COLORS[status.stato] || PAY_COLORS.bianco;
-                const isColored = status.stato !== 'bianco';
-
                 // Colora la TD Cliente (ha data-payment-id)
                 const el = document.querySelector(`[data-payment-id="${order.id}"]`);
                 if (el) {
                     el.style.backgroundColor = color.bg;
                     el.style.borderLeft = `4px solid ${color.border}`;
                     el.title = `${status.label} | Pagato: ${status.pagato}€ | Dovuto: ${status.dovuto}€`;
-                    // Colora anche la TR intera per visibilità massima
-                    const tr = el.closest('tr');
-                    if (tr && isColored) {
-                        tr.style.backgroundColor = color.bg;
-                    } else if (tr) {
-                        tr.style.backgroundColor = '';
-                    }
                 }
                 // Colora anche la TD ID (sticky, ha data-payment-id-col)
                 const elId = document.querySelector(`[data-payment-id-col="${order.id}"]`);
