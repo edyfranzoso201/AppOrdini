@@ -262,6 +262,38 @@
         #tab-tabella-ordini .overflow-auto {
             position: relative;
         }
+
+        /* ── MOBILE: colonne ID e Cliente più strette ── */
+        @media (max-width: 767px) {
+            #tabellaOrdiniStampabile tbody td:first-child,
+            #tabellaOrdiniStampabile .tabella-ordini-sticky-col-1 {
+                min-width: 72px !important;
+                max-width: 72px !important;
+                width: 72px !important;
+                font-size: 9px !important;
+            }
+            #tabellaOrdiniStampabile thead tr:first-child th:first-child,
+            #tabellaOrdiniStampabile .tabella-ordini-sticky-header-1 {
+                min-width: 72px !important;
+                max-width: 72px !important;
+                width: 72px !important;
+            }
+            /* Cliente: parte dopo 72px invece di 140px */
+            #tabellaOrdiniStampabile tbody td:nth-child(2),
+            #tabellaOrdiniStampabile .tabella-ordini-sticky-col-2 {
+                left: 72px !important;
+                max-width: 100px !important;
+                font-size: 9px !important;
+            }
+            #tabellaOrdiniStampabile thead tr:first-child th:nth-child(2),
+            #tabellaOrdiniStampabile .tabella-ordini-sticky-header-2 {
+                left: 72px !important;
+                max-width: 100px !important;
+            }
+            /* Header seconda riga (totali) */
+            #tabellaOrdiniStampabile thead tr:nth-child(2) th:first-child { left: 0 !important; }
+            #tabellaOrdiniStampabile thead tr:nth-child(2) th:nth-child(2) { left: 72px !important; }
+        }
         @media print {
             @page { size: A3 landscape; margin: 2mm !important; }
             .no-print { display: none !important; }
