@@ -24,6 +24,11 @@
             /* Altezza = finestra - header (64px) - padding main (16px top) + footer (30px) */
             height: calc(100vh - 110px);
             height: calc(100dvh - 110px);
+            overflow-y: auto;   /* default: scroll verticale libero */
+            overflow-x: hidden;
+        }
+        /* Solo la tab Gestione ordini ha scroll interno gestito dalla tabella */
+        #tab-ordini.tab-content.active {
             overflow: hidden;
         }
         .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
@@ -498,8 +503,8 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50 sticky-header">
                              <tr>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-48">ID</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-40">Cliente</th>
+                                <th class="px-2 py-3 text-center text-xs font-bold text-gray-500 uppercase" style="position:sticky; left:0; background:#f9fafb; z-index:15; min-width:72px; max-width:90px; border-right:2px solid #e5e7eb;">ID</th>
+                                <th class="px-2 py-3 text-left text-xs font-bold text-gray-500 uppercase" style="position:sticky; left:90px; background:#f9fafb; z-index:14; min-width:110px; max-width:140px; border-right:1px solid #e5e7eb;">Cliente</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-24">Anno/Ruolo</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-40">Tipo Ordine (Kit)</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-32">Note</th>
@@ -2065,7 +2070,7 @@
                 const borsoneZainoHighlightClass = isBorsoneZainoHighlighted ? 'size-cell-highlighted' : '';
                 
                 let html = `
-                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 10px;">${order.displayId}</td>
+                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}</td>
                     <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${order.customer}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanMainSize}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize}</td>
@@ -4122,8 +4127,8 @@ function deleteOrder(id) {
                 const inventoryBadge = o.inventoryScaledAt ? 
                     `<span class="text-[9px] bg-green-100 text-green-800 px-1 py-0.5 rounded font-bold border border-green-300" title="Scalato dal magazzino il ${o.inventoryScaledAt}">📦 SCALATO</span>` : '';
                 
-                tr.innerHTML = `<td class="px-4 py-3 text-xs text-gray-500 font-bold"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-left border rounded px-1 text-xs font-bold uppercase"></td>
-                <td class="px-2 py-1 font-medium text-xs" style="min-width: 120px; max-width: 150px;" data-payment-id="${o.id}"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
+                tr.innerHTML = `<td class="px-2 py-2 text-xs text-gray-700 font-bold" style="position:sticky; left:0; background:#fff; z-index:5; min-width:72px; max-width:90px; border-right:2px solid #e5e7eb;"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-center border rounded px-1 text-[11px] font-bold uppercase" style="min-width:68px;"></td>
+                <td class="px-2 py-1 font-medium text-xs" style="position:sticky; left:90px; background:#fff; z-index:4; min-width:110px; max-width:140px; border-right:1px solid #e5e7eb;" data-payment-id="${o.id}"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
                 <td class="px-4 py-3"><input value="${o.roleOrYear || ''}" onblur="updateOrderField(${o.id}, 'roleOrYear', this.value)" class="w-full border rounded px-1 text-xs text-center" placeholder="Anno/Ruolo"></td>
                 <td class="px-4 py-3 text-sm text-gray-700"><select onchange="updateOrderField(${o.id}, 'kitType', this.value)" class="text-xs border rounded p-1 w-full">${kitOptions}</select></td>
                 <td class="px-4 py-3 text-xs text-gray-500 note-cell" onclick="openNotesPopup(${o.id})" title="Clicca per modificare la nota">
