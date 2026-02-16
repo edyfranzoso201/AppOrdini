@@ -21,7 +21,7 @@
             /* Altezza = finestra - header (64px) - padding main (16px top) */
             height: calc(100vh - 80px);
             /* Su mobile Android 100vh include la barra browser → dvh più stabile */
-            height: calc(100dvh - 80px);
+            height: calc(100dvh - 110px); /* 64px header + 16px padding + 30px footer */
             overflow: hidden;
         }
         .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
@@ -42,7 +42,7 @@
             header h1 { font-size: 1rem !important; }
             
             /* Tab content adattato */
-            .tab-content.active { height: calc(100dvh - 72px); }
+            .tab-content.active { height: calc(100dvh - 110px); }
             
             /* Pannello filtri collassabile */
             #filtersPanel { 
@@ -80,6 +80,14 @@
         
         /* Bottone toggle filtri nascosto su desktop */
         #filterToggleBtn { display: none; }
+        
+        /* Scrollbar sempre visibile nella tabella */
+        .overflow-auto::-webkit-scrollbar { height: 8px; width: 8px; }
+        .overflow-auto::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .overflow-auto::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        .overflow-auto::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        /* Scrollbar orizzontale sempre visibile (non solo al hover) */
+        .overflow-auto { scrollbar-width: thin; scrollbar-color: #94a3b8 #f1f5f9; }
         
         /* ════════════════════════════════════ */
         /* FORZA padding zero su tutte le celle delle tabelle */
@@ -429,7 +437,7 @@
         </div>
     </header>
 
-    <main class="flex-grow relative px-4 pt-4 pb-0 overflow-hidden min-h-0">
+    <main class="flex-grow relative px-4 pt-4 pb-0 overflow-hidden min-h-0" style="padding-bottom: 30px;">
         <div id="tab-ordini" class="tab-content active">
             <div class="bg-white rounded shadow overflow-hidden flex-1 flex flex-col min-h-0">
                 <div class="p-3 border-b bg-gray-50 flex flex-col gap-2">
