@@ -14,8 +14,16 @@
         body { overflow: hidden; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); } 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .tab-content { display: none; height: calc(100vh - 100px); overflow-y: auto; animation: fadeIn 0.3s ease-out; }
-        .tab-content.active { display: block; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-out; }
+        .tab-content.active { 
+            display: flex; 
+            flex-direction: column;
+            /* Altezza = finestra - header (64px) - padding main (16px top) */
+            height: calc(100vh - 80px);
+            /* Su mobile Android 100vh include la barra browser → dvh più stabile */
+            height: calc(100dvh - 80px);
+            overflow: hidden;
+        }
         .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
         .btn-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: all 0.3s ease; }
         .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
@@ -27,6 +35,53 @@
         .total-col { background-color: #1e3a8a; color: white; font-weight: bold; }
         .total-row td { background-color: #e5e7eb; font-weight: 800; border-top: 2px solid #6b7280; color: #111827; }
         
+        /* ═══════ MOBILE RESPONSIVE ═══════ */
+        @media (max-width: 767px) {
+            /* Header più compatto */
+            header { padding-left: 12px !important; padding-right: 12px !important; }
+            header h1 { font-size: 1rem !important; }
+            
+            /* Tab content adattato */
+            .tab-content.active { height: calc(100dvh - 72px); }
+            
+            /* Pannello filtri collassabile */
+            #filtersPanel { 
+                max-height: 0; 
+                overflow: hidden; 
+                transition: max-height 0.3s ease;
+            }
+            #filtersPanel.open { 
+                max-height: 500px; 
+            }
+            
+            /* Bottone toggle filtri - solo mobile */
+            #filterToggleBtn { display: flex !important; }
+            
+            /* Navbar tab: font più piccolo */
+            nav button { font-size: 0.65rem !important; padding: 4px 6px !important; }
+            
+            /* ID range in header: nascondi su mobile */
+            #headerIdRange { display: none !important; }
+            
+            /* Header bottoni: gap ridotto */
+            header .flex.gap-1 { gap: 2px !important; }
+            
+            /* Bottoni header: padding minimo su mobile */
+            header button { padding: 4px 6px !important; font-size: 0.65rem !important; }
+
+            /* Input filtri a larghezza piena su mobile */
+            #filtersContainer input,
+            #filtersContainer select { 
+                min-width: 0 !important;
+                flex: 1 1 calc(50% - 8px) !important;
+            }
+            #searchInput { flex: 1 1 100% !important; }
+        }
+        
+        /* Bottone toggle filtri nascosto su desktop */
+        #filterToggleBtn { display: none; }
+        
+        /* ════════════════════════════════════ */
         /* FORZA padding zero su tutte le celle delle tabelle */
         #grossTable td, #invClothingTable td, #netTable td,
         #invSocksTable td, #netSocksTable td {
@@ -340,7 +395,7 @@
             <span id="userBadge" class="hidden ml-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-[10px] font-bold"></span>
         </div>
 
-        <nav class="flex bg-gray-100 p-1 rounded-lg">
+        <nav class="flex bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-[60vw] md:max-w-none" style="-webkit-overflow-scrolling:touch;">
             <button onclick="showTab('ordini')" id="nav-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow">Gestione</button>
             <button onclick="showTab('matrix')" id="nav-matrix" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Distinta</button>
             <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
@@ -353,8 +408,8 @@
             <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
                 <i class="fas fa-users"></i>
             </button>
-            <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold hidden">
-                <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
+            <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded font-bold hidden">
+                <i class="fas fa-history mr-1"></i><span class="hidden md:inline">Visualizza LOG (</span><span id="logCount">20</span><span class="hidden md:inline"> azioni)</span>
             </button>
             <button onclick="logout()" class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition">
                 <i class="fas fa-sign-out-alt"></i>
@@ -366,7 +421,7 @@
             <div class="flex items-center gap-1" id="importExcelContainer">
                 <input type="file" id="fileInput" class="hidden" accept=".xlsx, .csv">
                 <label for="fileInput" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded text-xs font-bold cursor-pointer shadow transition" title="Importa Excel"><i class="fas fa-file-excel"></i></label>
-                <div class="flex items-center gap-1 bg-gray-100 p-1 rounded border border-gray-300" id="prefixContainer">
+                <div class="flex items-center gap-1 bg-gray-100 p-1 rounded border border-gray-300 hidden md:flex" id="prefixContainer">
                     <label for="startPrefixInput" class="text-[10px] font-medium text-gray-600">ID:</label>
                     <input type="text" id="startPrefixInput" onblur="updatePrefixAndID()" placeholder="2026A_1" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
                 </div>
@@ -374,11 +429,19 @@
         </div>
     </header>
 
-    <main class="flex-grow relative px-4 pt-4 pb-0">
+    <main class="flex-grow relative px-4 pt-4 pb-0 overflow-hidden min-h-0">
         <div id="tab-ordini" class="tab-content active">
-            <div class="bg-white rounded shadow overflow-hidden h-full flex flex-col">
+            <div class="bg-white rounded shadow overflow-hidden flex-1 flex flex-col min-h-0">
                 <div class="p-3 border-b bg-gray-50 flex flex-col gap-2">
-                    <h2 class="font-bold text-blue-900 text-sm">Filtri & Ricerca</h2>
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-bold text-blue-900 text-sm">Filtri & Ricerca</h2>
+                        <button id="filterToggleBtn" onclick="toggleFiltersPanel()" 
+                            class="text-blue-700 text-xs font-bold flex items-center gap-1 px-2 py-1 rounded border border-blue-200 bg-blue-50">
+                            <i id="filterToggleIcon" class="fas fa-sliders-h"></i>
+                            <span id="filterToggleLabel">Filtri</span>
+                        </button>
+                    </div>
+                    <div id="filtersPanel">
                     <div id="filtersContainer" class="flex gap-2 flex-wrap">
                         <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Cerca Cliente..." class="text-sm border rounded px-3 py-1 w-48">
                         <select id="sortOrder" onchange="renderTable()" class="text-sm border rounded px-2 font-bold bg-gray-50 text-blue-900">
@@ -420,7 +483,8 @@
                         </button>
                     </div>
                 </div>
-                <div class="overflow-auto flex-grow">
+                </div> <!-- fine #filtersPanel -->
+                <div class="overflow-auto flex-grow" style="-webkit-overflow-scrolling:touch; touch-action:pan-x pan-y;">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50 sticky-header">
                              <tr>
@@ -3848,7 +3912,30 @@ function deleteOrder(id) {
         }
         // ===== FINE SISTEMA MEMORIZZAZIONE FILTRI =====
         
-        function renderTable() {
+        // ── Toggle filtri su mobile ─────────────────────────────────────
+        function toggleFiltersPanel() {
+            const panel  = document.getElementById('filtersPanel');
+            const icon   = document.getElementById('filterToggleIcon');
+            const label  = document.getElementById('filterToggleLabel');
+            const isOpen = panel.classList.contains('open');
+            panel.classList.toggle('open', !isOpen);
+            icon.className  = isOpen ? 'fas fa-sliders-h' : 'fas fa-times';
+            label.textContent = isOpen ? 'Filtri' : 'Chiudi';
+        }
+
+        // Su mobile: filtri chiusi di default, aperti su desktop
+        function initFiltersPanelState() {
+            const panel = document.getElementById('filtersPanel');
+            if (!panel) return;
+            if (window.innerWidth >= 768) {
+                panel.classList.add('open');   // sempre aperto su desktop
+                panel.style.maxHeight = 'none'; // no limite altezza su desktop
+                panel.style.overflow  = 'visible';
+            }
+            // Su mobile: inizia chiuso (gestito da CSS max-height:0)
+        }
+
+                function renderTable() {
             // Salva stato filtri
             saveFiltersState();
             
@@ -7825,6 +7912,8 @@ async function saveQuickIdConfig() {
         initQuickIdButtons();
         // ✅ Carica dati pagamenti da Redis all'avvio
         loadPaymentsData();
+        initFiltersPanelState();
+        window.addEventListener('resize', initFiltersPanelState);
     
 
         // ╔══════════════════════════════════════════════════════════════════╗
