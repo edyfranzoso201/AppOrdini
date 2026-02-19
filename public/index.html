@@ -1250,6 +1250,112 @@
                     ></textarea>
                     <p class="text-xs text-gray-500 mt-1">Questa nota apparirà sotto il pulsante "Clicca qui per Ordinare" nel catalogo pubblico. Max 300 caratteri.</p>
                 </div>
+
+            <!-- ═══════════════════════════════════════════════════ -->
+            <!-- CONFIGURAZIONE PACCHETTI KIT -->
+            <!-- ═══════════════════════════════════════════════════ -->
+            <div class="bg-white p-4 rounded shadow mb-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800"><i class="fas fa-box-open mr-2"></i>Configurazione Pacchetti Kit</h3>
+                        <p class="text-xs text-gray-500">Seleziona gli articoli per ogni tipologia di kit. Questi pacchetti saranno visibili nella pagina pubblica del catalogo.</p>
+                    </div>
+                    <button onclick="openKitsPublicPage()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold text-sm transition shadow">
+                        <i class="fas fa-external-link-alt mr-2"></i>Anteprima Catalogo Pubblico
+                    </button>
+                </div>
+
+                <!-- Kit Completo Giocatore da Campo -->
+                <div class="border rounded mb-3">
+                    <button onclick="toggleKitSection('kit_completo_campo')" class="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 flex items-center justify-between transition">
+                        <span class="font-bold text-blue-900"><i class="fas fa-running mr-2"></i>1. Kit Completo Giocatore da Campo</span>
+                        <i id="icon-kit_completo_campo" class="fas fa-chevron-down text-blue-900"></i>
+                    </button>
+                    <div id="section-kit_completo_campo" class="p-4 hidden">
+                        <div class="mb-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Descrizione</label>
+                            <textarea id="desc-kit_completo_campo" onchange="updateKitData('kit_completo_campo')" rows="2" class="w-full border rounded px-3 py-2 text-sm" placeholder="Es: Kit completo per giocatori di movimento..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Articoli inclusi</label>
+                            <div id="items-kit_completo_campo" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kit Completo Portiere -->
+                <div class="border rounded mb-3">
+                    <button onclick="toggleKitSection('kit_completo_portiere')" class="w-full px-4 py-3 bg-green-50 hover:bg-green-100 flex items-center justify-between transition">
+                        <span class="font-bold text-green-900"><i class="fas fa-hands mr-2"></i>2. Kit Completo Portiere</span>
+                        <i id="icon-kit_completo_portiere" class="fas fa-chevron-down text-green-900"></i>
+                    </button>
+                    <div id="section-kit_completo_portiere" class="p-4 hidden">
+                        <div class="mb-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Descrizione</label>
+                            <textarea id="desc-kit_completo_portiere" onchange="updateKitData('kit_completo_portiere')" rows="2" class="w-full border rounded px-3 py-2 text-sm" placeholder="Es: Kit completo per portieri..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Articoli inclusi</label>
+                            <div id="items-kit_completo_portiere" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mini Kit Giocatore da Campo -->
+                <div class="border rounded mb-3">
+                    <button onclick="toggleKitSection('mini_kit_campo')" class="w-full px-4 py-3 bg-purple-50 hover:bg-purple-100 flex items-center justify-between transition">
+                        <span class="font-bold text-purple-900"><i class="fas fa-tshirt mr-2"></i>3. Mini Kit Giocatore da Campo</span>
+                        <i id="icon-mini_kit_campo" class="fas fa-chevron-down text-purple-900"></i>
+                    </button>
+                    <div id="section-mini_kit_campo" class="p-4 hidden">
+                        <div class="mb-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Descrizione</label>
+                            <textarea id="desc-mini_kit_campo" onchange="updateKitData('mini_kit_campo')" rows="2" class="w-full border rounded px-3 py-2 text-sm" placeholder="Es: Versione ridotta per giocatori..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Articoli inclusi</label>
+                            <div id="items-mini_kit_campo" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mini Kit Portiere -->
+                <div class="border rounded mb-3">
+                    <button onclick="toggleKitSection('mini_kit_portiere')" class="w-full px-4 py-3 bg-yellow-50 hover:bg-yellow-100 flex items-center justify-between transition">
+                        <span class="font-bold text-yellow-900"><i class="fas fa-save mr-2"></i>4. Mini Kit Portiere</span>
+                        <i id="icon-mini_kit_portiere" class="fas fa-chevron-down text-yellow-900"></i>
+                    </button>
+                    <div id="section-mini_kit_portiere" class="p-4 hidden">
+                        <div class="mb-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Descrizione</label>
+                            <textarea id="desc-mini_kit_portiere" onchange="updateKitData('mini_kit_portiere')" rows="2" class="w-full border rounded px-3 py-2 text-sm" placeholder="Es: Versione ridotta per portieri..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Articoli inclusi</label>
+                            <div id="items-mini_kit_portiere" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kit Generico -->
+                <div class="border rounded mb-3">
+                    <button onclick="toggleKitSection('kit_generico')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition">
+                        <span class="font-bold text-gray-900"><i class="fas fa-box mr-2"></i>5. Kit Generico</span>
+                        <i id="icon-kit_generico" class="fas fa-chevron-down text-gray-900"></i>
+                    </button>
+                    <div id="section-kit_generico" class="p-4 hidden">
+                        <div class="mb-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Descrizione</label>
+                            <textarea id="desc-kit_generico" onchange="updateKitData('kit_generico')" rows="2" class="w-full border rounded px-3 py-2 text-sm" placeholder="Es: Kit personalizzato per offerte speciali..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Articoli inclusi</label>
+                            <div id="items-kit_generico" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Lista Articoli del Catalogo -->
             <div class="bg-white p-4 rounded shadow">
                 <div class="flex items-center justify-between mb-4">
@@ -1654,7 +1760,15 @@
             qrUrl: "",
             fullCatalogUrl: "",
             orderNote: '', // ✅ NUOVO
-            items: []
+            items: [],
+            // ✅ NUOVO: configurazione pacchetti kit
+            kits: {
+                kit_completo_campo: { name: 'Kit Completo Giocatore da Campo', description: '', items: [] },
+                kit_completo_portiere: { name: 'Kit Completo Portiere', description: '', items: [] },
+                mini_kit_campo: { name: 'Mini Kit Giocatore da Campo', description: '', items: [] },
+                mini_kit_portiere: { name: 'Mini Kit Portiere', description: '', items: [] },
+                kit_generico: { name: 'Kit Generico', description: '', items: [] }
+            }
         };
         let currentEditId = null;
         let currentEditingKitKey = null; 
@@ -7277,6 +7391,81 @@ async function saveCatalogConfig() {
         alert('❌ Errore nel salvataggio del catalogo: ' + error.message);
     }
 }
+        
+        // ══════════════════════════════════════════════════════════
+        // GESTIONE PACCHETTI KIT
+        // ══════════════════════════════════════════════════════════
+        
+        function toggleKitSection(kitKey) {
+            const section = document.getElementById(`section-${kitKey}`);
+            const icon = document.getElementById(`icon-${kitKey}`);
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                section.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+        
+        function updateKitData(kitKey) {
+            const desc = document.getElementById(`desc-${kitKey}`).value;
+            catalogData.kits[kitKey].description = desc;
+            
+            // Raccogli gli articoli selezionati
+            const checkboxes = document.querySelectorAll(`#items-${kitKey} input[type="checkbox"]:checked`);
+            const selectedItems = Array.from(checkboxes).map(cb => {
+                const itemData = JSON.parse(cb.dataset.item);
+                return {
+                    name: itemData.name,
+                    image: itemData.image,
+                    price: itemData.price
+                };
+            });
+            catalogData.kits[kitKey].items = selectedItems;
+            console.log(`Kit ${kitKey} aggiornato:`, catalogData.kits[kitKey]);
+        }
+        
+        function renderKitItems() {
+            // Popola le checkbox per ogni kit con gli articoli del catalogo
+            const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
+            
+            kitKeys.forEach(kitKey => {
+                const container = document.getElementById(`items-${kitKey}`);
+                if (!container) return;
+                
+                container.innerHTML = catalogData.items.map((item, idx) => {
+                    const isSelected = catalogData.kits[kitKey].items.some(i => i.name === item.name);
+                    return `
+                        <label class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" 
+                                   ${isSelected ? 'checked' : ''}
+                                   onchange="updateKitData('${kitKey}')"
+                                   data-item='${JSON.stringify(item)}'
+                                   class="w-4 h-4">
+                            ${item.image ? `<img src="${item.image}" class="w-8 h-8 object-cover rounded">` : '<div class="w-8 h-8 bg-gray-200 rounded"></div>'}
+                            <span class="text-sm font-medium">${item.name}</span>
+                            ${item.price ? `<span class="text-xs text-gray-500 ml-auto">${item.price}€</span>` : ''}
+                        </label>
+                    `;
+                }).join('');
+                
+                // Carica descrizione salvata
+                const descEl = document.getElementById(`desc-${kitKey}`);
+                if (descEl && catalogData.kits[kitKey].description) {
+                    descEl.value = catalogData.kits[kitKey].description;
+                }
+            });
+        }
+        
+        function openKitsPublicPage() {
+            // Apri la pagina pubblica dei kit in una nuova tab
+            const url = window.location.origin + '/catalogo-kit.html';
+            window.open(url, '_blank');
+        }
+
         // Renderizza gli articoli del catalogo
         function renderCatalogItems() {
             
@@ -7333,6 +7522,9 @@ async function saveCatalogConfig() {
             });
             
             container.innerHTML = html;
+            
+            // Aggiorna anche le checkbox dei kit
+            renderKitItems();
         }
         
         // Aggiorna un campo di un articolo
