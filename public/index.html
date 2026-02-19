@@ -7404,6 +7404,8 @@ async function saveCatalogConfig() {
                 section.classList.remove('hidden');
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
+                // Popola gli articoli quando si apre la sezione
+                setTimeout(() => renderKitItems(), 50);
             } else {
                 section.classList.add('hidden');
                 icon.classList.remove('fa-chevron-up');
