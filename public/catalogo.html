@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gradient-to-br from-blue-600 to-blue-800 min-h-screen py-8">
-    <div class="container mx-auto px-4 max-w-6xl">
+    <div class="container mx-auto px-2 max-w-full">
         <!-- Header -->
         <div class="bg-blue-900 rounded-xl shadow-2xl p-8 mb-8 text-center border-4 border-white">
             <img id="catalogLogo" src="" alt="Logo" class="h-20 mx-auto mb-4" style="display: none;">
@@ -49,7 +49,7 @@
             <h2 class="text-3xl font-bold text-white text-center mb-6 drop-shadow-lg">
                 <i class="fas fa-box-open mr-2"></i>Pacchetti Kit Disponibili
             </h2>
-            <div id="kitsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div id="kitsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <!-- I kit verranno popolati dinamicamente -->
             </div>
             
@@ -320,10 +320,21 @@
                         <!-- Footer con prezzo e bottone -->
                         <div class="p-6 bg-black bg-opacity-20 border-t-4 ${colors.border}">
                             ${totalPrice > 0 ? `
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-white font-bold text-sm">Prezzo listino:</span>
+                                    <span class="text-xl font-bold text-white line-through opacity-60">€${totalPrice.toFixed(2)}</span>
+                                </div>
+                                ${kit.discountedPrice ? `
+                                <div class="flex items-center justify-between mb-4 bg-white bg-opacity-15 rounded-lg px-3 py-2">
+                                    <span class="text-white font-bold">Prezzo kit:</span>
+                                    <span class="text-3xl font-bold text-yellow-300 drop-shadow">€${parseFloat(kit.discountedPrice).toFixed(2)}</span>
+                                </div>
+                                ` : `
                                 <div class="flex items-center justify-between mb-4">
                                     <span class="text-white font-bold">Prezzo totale:</span>
                                     <span class="text-3xl font-bold text-white">€${totalPrice.toFixed(2)}</span>
                                 </div>
+                                `}
                             ` : ''}
                             <a href="${orderUrl || '#'}" 
                                target="_blank"
