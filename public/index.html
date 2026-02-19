@@ -433,7 +433,7 @@
             <button onclick="showTab('tabella-ordini')" id="nav-tabella-ordini" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Tabella</button>
             <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
             <button onclick="showTab('pagamenti')" id="nav-pagamenti" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-euro-sign mr-1"></i>Pagamenti</button>
-            <button onclick="showTab('catalogo')" id="nav-catalogo" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-book-open mr-1"></i>Catalogo</button>
+            <button onclick="showTab('catalogo'); setTimeout(() => renderKitItems(), 100);" id="nav-catalogo" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-book-open mr-1"></i>Catalogo</button>
         </nav>
 
         <div class="flex gap-1 items-center flex-shrink-0" style="overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:60vw;">
