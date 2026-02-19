@@ -7460,6 +7460,22 @@ async function saveCatalogConfig() {
             // Popola le checkbox per ogni kit con gli articoli del catalogo
             const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
             
+            if (!catalogData.items || catalogData.items.length === 0) {
+                // Nessun articolo nel catalogo
+                kitKeys.forEach(kitKey => {
+                    const container = document.getElementById(`items-${kitKey}`);
+                    if (!container) return;
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-2"></i>
+                            <p class="text-sm">Nessun articolo nel catalogo.</p>
+                            <p class="text-xs">Aggiungi articoli nella sezione "Articoli nel Catalogo" qui sotto.</p>
+                        </div>
+                    `;
+                });
+                return;
+            }
+            
             kitKeys.forEach(kitKey => {
                 const container = document.getElementById(`items-${kitKey}`);
                 if (!container) return;
@@ -7492,8 +7508,8 @@ async function saveCatalogConfig() {
         }
         
         function openKitsPublicPage() {
-            // Apri la pagina pubblica dei kit in una nuova tab
-            const url = window.location.origin + '/catalogo-kit.html';
+            // Apri la pagina pubblica dei kit (catalogo.html già esistente)
+            const url = window.location.origin + window.location.pathname.replace('index.html', 'catalogo.html');
             window.open(url, '_blank');
         }
 
