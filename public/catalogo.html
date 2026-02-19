@@ -311,7 +311,7 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="font-bold text-white text-sm mb-1">${escapeHtml(item.name)}</p>
                                         ${item.description ? `<p class="text-xs ${colors.text} leading-relaxed mb-1">${escapeHtml(item.description)}</p>` : ''}
-                                        ${item.price ? `<p class="text-xs font-semibold text-white bg-black bg-opacity-20 inline-block px-2 py-1 rounded">${item.price}€</p>` : ''}
+                                        <!-- prezzo singolo articolo nascosto nel kit -->
                                     </div>
                                 </div>
                             `).join('')}
