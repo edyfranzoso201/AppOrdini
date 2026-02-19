@@ -2553,8 +2553,37 @@
                     logo: "",
                     qrUrl: "",
                     fullCatalogUrl: "",
-                    items: []
+                    orderNote: '',
+                    items: [],
+                    kits: {
+                        kit_completo_campo: { name: 'Kit Completo Giocatore da Campo', description: '', items: [] },
+                        kit_completo_portiere: { name: 'Kit Completo Portiere', description: '', items: [] },
+                        mini_kit_campo: { name: 'Mini Kit Giocatore da Campo', description: '', items: [] },
+                        mini_kit_portiere: { name: 'Mini Kit Portiere', description: '', items: [] },
+                        kit_generico: { name: 'Kit Generico', description: '', items: [] }
+                    }
                 };
+                
+                // ✅ FIX: Garantisce che kits esista sempre, anche se il dato in Redis è vecchio
+                if (!catalogData.kits) {
+                    catalogData.kits = {
+                        kit_completo_campo: { name: 'Kit Completo Giocatore da Campo', description: '', items: [] },
+                        kit_completo_portiere: { name: 'Kit Completo Portiere', description: '', items: [] },
+                        mini_kit_campo: { name: 'Mini Kit Giocatore da Campo', description: '', items: [] },
+                        mini_kit_portiere: { name: 'Mini Kit Portiere', description: '', items: [] },
+                        kit_generico: { name: 'Kit Generico', description: '', items: [] }
+                    };
+                }
+                // ✅ FIX: Garantisce che ogni kit abbia sempre la proprietà items
+                const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
+                kitKeys.forEach(k => {
+                    if (!catalogData.kits[k]) {
+                        catalogData.kits[k] = { name: k, description: '', items: [] };
+                    }
+                    if (!catalogData.kits[k].items) {
+                        catalogData.kits[k].items = [];
+                    }
+                });
                 
                 console.log('✅ Dati caricati da Redis:');
                 console.log('  - Items catalogo:', catalogData.items?.length || 0);
@@ -7461,6 +7490,19 @@ async function saveCatalogConfig() {
         function renderKitItems() {
             // Popola le checkbox per ogni kit con gli articoli del catalogo
             const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
+            
+            // ✅ FIX: Garantisce che kits esista sempre prima di usarlo
+            if (!catalogData.kits) {
+                catalogData.kits = {};
+            }
+            kitKeys.forEach(k => {
+                if (!catalogData.kits[k]) {
+                    catalogData.kits[k] = { name: k, description: '', items: [] };
+                }
+                if (!catalogData.kits[k].items) {
+                    catalogData.kits[k].items = [];
+                }
+            });
             
             if (!catalogData.items || catalogData.items.length === 0) {
                 // Nessun articolo nel catalogo
