@@ -5,8 +5,10 @@ export default async function handler(req, res) {
   
   try {
     if (req.method === 'GET') {
-      // Get inventory
       const data = await redis.get(KEYS.INVENTORY);
+      
+      const inventoryKeys = data?.inventory ? Object.keys(data.inventory).length : 0;
+      console.log(`📦 GET inventory - chiavi trovate: ${inventoryKeys}, updatedAt: ${data?.updatedAt || 'mai'}`);
       
       return res.status(200).json({
         success: true,
@@ -17,15 +19,29 @@ export default async function handler(req, res) {
       const { action, inventory } = req.body;
       
       if (action === 'save') {
-        // Save inventory
+        const inventoryKeys = inventory ? Object.keys(inventory).length : 0;
+        console.log(`💾 POST inventory - salvataggio ${inventoryKeys} chiavi`);
+        
+        if (inventoryKeys === 0) {
+          // ✅ NON sovrascrivere Redis con un inventario vuoto!
+          // Questo previene la cancellazione accidentale del magazzino
+          console.warn('⚠️ Tentativo di salvare inventario VUOTO ignorato');
+          return res.status(200).json({
+            success: true,
+            message: 'Inventory empty - save skipped to prevent data loss'
+          });
+        }
+        
         await redis.set(KEYS.INVENTORY, {
-          inventory: inventory || {},
+          inventory: inventory,
           updatedAt: new Date().toISOString()
         });
         
+        console.log(`✅ Inventario salvato: ${inventoryKeys} chiavi`);
+        
         return res.status(200).json({
           success: true,
-          message: 'Inventory saved successfully'
+          message: `Inventory saved successfully (${inventoryKeys} keys)`
         });
       }
       
@@ -42,7 +58,7 @@ export default async function handler(req, res) {
     }
     
   } catch (error) {
-    console.error('Inventory API error:', error);
+    console.error('❌ Inventory API error:', error);
     return res.status(500).json({
       success: false,
       error: error.message
