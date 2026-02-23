@@ -578,6 +578,9 @@
                         <button onclick="applyInventoryToOrders()" class="bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Scala il magazzino dagli ordini NUOVI nel range selezionato">
                             <i class="fas fa-box-open mr-1"></i> Scala
                         </button>
+                        <button onclick="forceSaveInventory()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Forza salvataggio immediato del magazzino su Redis">
+                            <i class="fas fa-save mr-1"></i> Salva Mag.
+                        </button>
                         <button onclick="exportMatrix()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-bold transition shadow"><i class="fas fa-file-excel mr-1"></i> Excel</button>
                     </div>
                 </div>
@@ -1272,19 +1275,6 @@
                         <i id="icon-kit_completo_campo" class="fas fa-chevron-down text-blue-900"></i>
                     </button>
                     <div id="section-kit_completo_campo" class="p-4 hidden">
-                        <!-- Prezzo Kit -->
-                        <div class="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded-lg flex items-center gap-3">
-                            <i class="fas fa-tag text-blue-600 text-xl"></i>
-                            <div class="flex-1">
-                                <label class="block text-sm font-bold text-blue-800 mb-1">💰 Prezzo Totale del Kit (€)</label>
-                                <input type="number" step="0.01" min="0" 
-                                       id="discountedPrice-kit_completo_campo"
-                                       placeholder="es. 180.00"
-                                       onchange="updateKitDiscountedPrice('kit_completo_campo', this.value)"
-                                       class="w-40 border-2 border-blue-400 rounded px-3 py-2 text-xl font-bold text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-                                <span class="text-xs text-gray-500 ml-2">— lascia vuoto per non mostrare il prezzo</span>
-                            </div>
-                        </div>
                         <!-- Preview articoli selezionati -->
                         <div id="preview-kit_completo_campo" class="mb-4 p-3 bg-blue-50 rounded border border-blue-200" style="display:none;">
                             <p class="text-xs font-bold text-blue-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
@@ -1294,7 +1284,6 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Seleziona articoli da includere</label>
                             <div id="items-kit_completo_campo" class="space-y-2 max-h-96 overflow-y-auto"></div>
                         </div>
-
                     </div>
                 </div>
 
@@ -1305,19 +1294,6 @@
                         <i id="icon-kit_completo_portiere" class="fas fa-chevron-down text-green-900"></i>
                     </button>
                     <div id="section-kit_completo_portiere" class="p-4 hidden">
-                        <!-- Prezzo Kit -->
-                        <div class="mb-4 p-3 bg-green-50 border-2 border-green-300 rounded-lg flex items-center gap-3">
-                            <i class="fas fa-tag text-green-600 text-xl"></i>
-                            <div class="flex-1">
-                                <label class="block text-sm font-bold text-green-800 mb-1">💰 Prezzo Totale del Kit (€)</label>
-                                <input type="number" step="0.01" min="0" 
-                                       id="discountedPrice-kit_completo_portiere"
-                                       placeholder="es. 180.00"
-                                       onchange="updateKitDiscountedPrice('kit_completo_portiere', this.value)"
-                                       class="w-40 border-2 border-green-400 rounded px-3 py-2 text-xl font-bold text-green-800 focus:outline-none focus:ring-2 focus:ring-green-400 bg-white">
-                                <span class="text-xs text-gray-500 ml-2">— lascia vuoto per non mostrare il prezzo</span>
-                            </div>
-                        </div>
                         <div id="preview-kit_completo_portiere" class="mb-4 p-3 bg-green-50 rounded border border-green-200" style="display:none;">
                             <p class="text-xs font-bold text-green-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-kit_completo_portiere" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -1326,7 +1302,6 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Seleziona articoli da includere</label>
                             <div id="items-kit_completo_portiere" class="space-y-2 max-h-96 overflow-y-auto"></div>
                         </div>
-
                     </div>
                 </div>
 
@@ -1337,19 +1312,6 @@
                         <i id="icon-mini_kit_campo" class="fas fa-chevron-down text-purple-900"></i>
                     </button>
                     <div id="section-mini_kit_campo" class="p-4 hidden">
-                        <!-- Prezzo Kit -->
-                        <div class="mb-4 p-3 bg-purple-50 border-2 border-purple-300 rounded-lg flex items-center gap-3">
-                            <i class="fas fa-tag text-purple-600 text-xl"></i>
-                            <div class="flex-1">
-                                <label class="block text-sm font-bold text-purple-800 mb-1">💰 Prezzo Totale del Kit (€)</label>
-                                <input type="number" step="0.01" min="0" 
-                                       id="discountedPrice-mini_kit_campo"
-                                       placeholder="es. 180.00"
-                                       onchange="updateKitDiscountedPrice('mini_kit_campo', this.value)"
-                                       class="w-40 border-2 border-purple-400 rounded px-3 py-2 text-xl font-bold text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
-                                <span class="text-xs text-gray-500 ml-2">— lascia vuoto per non mostrare il prezzo</span>
-                            </div>
-                        </div>
                         <div id="preview-mini_kit_campo" class="mb-4 p-3 bg-purple-50 rounded border border-purple-200" style="display:none;">
                             <p class="text-xs font-bold text-purple-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-mini_kit_campo" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -1358,7 +1320,6 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Seleziona articoli da includere</label>
                             <div id="items-mini_kit_campo" class="space-y-2 max-h-96 overflow-y-auto"></div>
                         </div>
-
                     </div>
                 </div>
 
@@ -1369,19 +1330,6 @@
                         <i id="icon-mini_kit_portiere" class="fas fa-chevron-down text-yellow-900"></i>
                     </button>
                     <div id="section-mini_kit_portiere" class="p-4 hidden">
-                        <!-- Prezzo Kit -->
-                        <div class="mb-4 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg flex items-center gap-3">
-                            <i class="fas fa-tag text-yellow-600 text-xl"></i>
-                            <div class="flex-1">
-                                <label class="block text-sm font-bold text-yellow-800 mb-1">💰 Prezzo Totale del Kit (€)</label>
-                                <input type="number" step="0.01" min="0" 
-                                       id="discountedPrice-mini_kit_portiere"
-                                       placeholder="es. 180.00"
-                                       onchange="updateKitDiscountedPrice('mini_kit_portiere', this.value)"
-                                       class="w-40 border-2 border-yellow-400 rounded px-3 py-2 text-xl font-bold text-yellow-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white">
-                                <span class="text-xs text-gray-500 ml-2">— lascia vuoto per non mostrare il prezzo</span>
-                            </div>
-                        </div>
                         <div id="preview-mini_kit_portiere" class="mb-4 p-3 bg-yellow-50 rounded border border-yellow-200" style="display:none;">
                             <p class="text-xs font-bold text-yellow-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-mini_kit_portiere" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -1390,7 +1338,6 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Seleziona articoli da includere</label>
                             <div id="items-mini_kit_portiere" class="space-y-2 max-h-96 overflow-y-auto"></div>
                         </div>
-
                     </div>
                 </div>
 
@@ -1401,19 +1348,6 @@
                         <i id="icon-kit_generico" class="fas fa-chevron-down text-gray-900"></i>
                     </button>
                     <div id="section-kit_generico" class="p-4 hidden">
-                        <!-- Prezzo Kit -->
-                        <div class="mb-4 p-3 bg-gray-50 border-2 border-gray-300 rounded-lg flex items-center gap-3">
-                            <i class="fas fa-tag text-gray-600 text-xl"></i>
-                            <div class="flex-1">
-                                <label class="block text-sm font-bold text-gray-800 mb-1">💰 Prezzo Totale del Kit (€)</label>
-                                <input type="number" step="0.01" min="0" 
-                                       id="discountedPrice-kit_generico"
-                                       placeholder="es. 180.00"
-                                       onchange="updateKitDiscountedPrice('kit_generico', this.value)"
-                                       class="w-40 border-2 border-gray-400 rounded px-3 py-2 text-xl font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white">
-                                <span class="text-xs text-gray-500 ml-2">— lascia vuoto per non mostrare il prezzo</span>
-                            </div>
-                        </div>
                         <div id="preview-kit_generico" class="mb-4 p-3 bg-gray-50 rounded border border-gray-200" style="display:none;">
                             <p class="text-xs font-bold text-gray-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-kit_generico" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -1422,7 +1356,6 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Seleziona articoli da includere</label>
                             <div id="items-kit_generico" class="space-y-2 max-h-96 overflow-y-auto"></div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -2605,7 +2538,12 @@
             const invData = await invRes.json();
             if (invData.success && invData.data) {
                 inventory = invData.data.inventory || {};
+                console.log('📦 Inventario caricato da Redis - keys:', Object.keys(inventory).length, Object.keys(inventory).slice(0,3));
+            } else {
+                console.warn('⚠️ Inventario Redis vuoto o risposta non valida', invData);
             }
+        } else {
+            console.error('❌ Errore caricamento inventario HTTP:', invRes.status);
         }
         
         // Load config
@@ -2623,37 +2561,8 @@
                     logo: "",
                     qrUrl: "",
                     fullCatalogUrl: "",
-                    orderNote: '',
-                    items: [],
-                    kits: {
-                        kit_completo_campo: { name: 'Kit Completo Giocatore da Campo', description: '', items: [] },
-                        kit_completo_portiere: { name: 'Kit Completo Portiere', description: '', items: [] },
-                        mini_kit_campo: { name: 'Mini Kit Giocatore da Campo', description: '', items: [] },
-                        mini_kit_portiere: { name: 'Mini Kit Portiere', description: '', items: [] },
-                        kit_generico: { name: 'Kit Generico', description: '', items: [] }
-                    }
+                    items: []
                 };
-                
-                // ✅ FIX: Garantisce che kits esista sempre, anche se il dato in Redis è vecchio
-                if (!catalogData.kits) {
-                    catalogData.kits = {
-                        kit_completo_campo: { name: 'Kit Completo Giocatore da Campo', description: '', items: [] },
-                        kit_completo_portiere: { name: 'Kit Completo Portiere', description: '', items: [] },
-                        mini_kit_campo: { name: 'Mini Kit Giocatore da Campo', description: '', items: [] },
-                        mini_kit_portiere: { name: 'Mini Kit Portiere', description: '', items: [] },
-                        kit_generico: { name: 'Kit Generico', description: '', items: [] }
-                    };
-                }
-                // ✅ FIX: Garantisce che ogni kit abbia sempre la proprietà items
-                const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
-                kitKeys.forEach(k => {
-                    if (!catalogData.kits[k]) {
-                        catalogData.kits[k] = { name: k, description: '', items: [] };
-                    }
-                    if (!catalogData.kits[k].items) {
-                        catalogData.kits[k].items = [];
-                    }
-                });
                 
                 console.log('✅ Dati caricati da Redis:');
                 console.log('  - Items catalogo:', catalogData.items?.length || 0);
@@ -2949,11 +2858,11 @@
     if (!ordersRes.ok) {
       const err = await ordersRes.text();
       console.error('❌ Errore salvataggio ordini:', err);
-      return;
+      // ✅ FIX: NON fare return - continua a salvare inventory e config!
     }
 
-    // Save inventory
-    await fetch('/api/inventory', {
+    // Save inventory (sempre, indipendentemente dagli ordini)
+    const invSaveRes = await fetch('/api/inventory', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2961,8 +2870,13 @@
         inventory
       })
     });
+    if (!invSaveRes.ok) {
+      console.error('❌ Errore salvataggio inventario:', await invSaveRes.text());
+    } else {
+      console.log('✅ Inventario salvato - keys:', Object.keys(inventory).length);
+    }
 
-    // Save config
+    // Save config (sempre)
     await fetch('/api/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2984,6 +2898,27 @@
     isSaving = false; // ✅ Sblocca auto-refresh
   }
 }
+        // ✅ Funzione dedicata per forzare salvataggio inventario
+        async function forceSaveInventory() {
+            try {
+                const res = await fetch('/api/inventory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save', inventory })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const count = Object.keys(inventory).length;
+                    alert('✅ Magazzino salvato! (' + count + ' voci)');
+                    console.log('✅ Inventario salvato forzatamente - keys:', count);
+                } else {
+                    alert('❌ Errore salvataggio magazzino: ' + JSON.stringify(data));
+                }
+            } catch(e) {
+                alert('❌ Errore rete: ' + e.message);
+            }
+        }
+
       // Funzione per registrare un'azione nello storico
       // ✅ Salva su Redis via /api/activity
       async function logActivity(action, description, details = {}) {
@@ -7413,16 +7348,6 @@ function resetFiltersToDefault() {
     }
 
     renderCatalogItems();
-    
-    // ✅ Carica prezzi scontati nei campi input
-    const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
-    kitKeys.forEach(key => {
-        const input = document.getElementById(`discountedPrice-${key}`);
-        if (input && catalogData.kits && catalogData.kits[key]) {
-            const dp = catalogData.kits[key].discountedPrice;
-            input.value = (dp !== null && dp !== undefined) ? dp : '';
-        }
-    });
   } catch (err) {
     console.error('Errore loadCatalogData: ', err);
   }
@@ -7506,35 +7431,6 @@ async function saveCatalogConfig() {
         // GESTIONE PACCHETTI KIT
         // ══════════════════════════════════════════════════════════
         
-        // ✅ Aggiorna il prezzo scontato del kit e salva
-        function updateKitDiscountedPrice(kitKey, value) {
-            if (!catalogData.kits) return;
-            if (!catalogData.kits[kitKey]) return;
-            const parsed = parseFloat(value);
-            catalogData.kits[kitKey].discountedPrice = (value === '' || isNaN(parsed)) ? null : parsed;
-            saveCatalogKitsData();
-        }
-        
-        // ✅ Salva solo i kits su Redis
-        async function saveCatalogKitsData() {
-            try {
-                await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'save',
-                        globalItems: globalItems,
-                        globalKitTypes: globalKitTypes,
-                        quickIdFilters: quickIdFilters,
-                        catalog: catalogData
-                    })
-                });
-                console.log('✅ Prezzi kit salvati');
-            } catch(e) {
-                console.error('❌ Errore salvataggio prezzi kit:', e);
-            }
-        }
-
         function toggleKitSection(kitKey) {
             const section = document.getElementById(`section-${kitKey}`);
             const icon = document.getElementById(`icon-${kitKey}`);
@@ -7600,19 +7496,6 @@ async function saveCatalogConfig() {
             // Popola le checkbox per ogni kit con gli articoli del catalogo
             const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
             
-            // ✅ FIX: Garantisce che kits esista sempre prima di usarlo
-            if (!catalogData.kits) {
-                catalogData.kits = {};
-            }
-            kitKeys.forEach(k => {
-                if (!catalogData.kits[k]) {
-                    catalogData.kits[k] = { name: k, description: '', items: [] };
-                }
-                if (!catalogData.kits[k].items) {
-                    catalogData.kits[k].items = [];
-                }
-            });
-            
             if (!catalogData.items || catalogData.items.length === 0) {
                 // Nessun articolo nel catalogo
                 kitKeys.forEach(kitKey => {
@@ -7661,8 +7544,8 @@ async function saveCatalogConfig() {
         }
         
         function openKitsPublicPage() {
-            // Apri la pagina pubblica del catalogo
-            const url = window.location.origin + '/catalogo.html';
+            // Apri la pagina pubblica dei kit (catalogo.html già esistente)
+            const url = window.location.origin + window.location.pathname.replace('index.html', 'catalogo.html');
             window.open(url, '_blank');
         }
 
