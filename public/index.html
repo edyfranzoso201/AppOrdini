@@ -578,9 +578,7 @@
                         <button onclick="applyInventoryToOrders()" class="bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Scala il magazzino dagli ordini NUOVI nel range selezionato">
                             <i class="fas fa-box-open mr-1"></i> Scala
                         </button>
-                        <button onclick="forceSaveInventory()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs font-bold transition" title="Salva magazzino su Redis">
-                            <i class="fas fa-save mr-1"></i> Salva Mag.
-                        </button>
+                        <button onclick="forceSaveInventory()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs font-bold transition" title="Salva magazzino su Redis"><i class="fas fa-save mr-1"></i> Salva Mag.</button>
                         <button onclick="exportMatrix()" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-bold transition shadow"><i class="fas fa-file-excel mr-1"></i> Excel</button>
                     </div>
                 </div>
@@ -1275,10 +1273,7 @@
                         <i id="icon-kit_completo_campo" class="fas fa-chevron-down text-blue-900"></i>
                     </button>
                     <div id="section-kit_completo_campo" class="p-4 hidden">
-                        <div class="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded-lg flex items-center gap-3">
-                            <i class="fas fa-tag text-blue-600 text-xl"></i>
-                            <div><label class="block text-sm font-bold text-blue-800 mb-1">💰 Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-kit_completo_campo" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('kit_completo_campo', this.value)" class="w-40 border-2 border-blue-400 rounded px-3 py-2 text-xl font-bold text-blue-800 focus:outline-none bg-white"><span class="text-xs text-gray-500 ml-2">lascia vuoto = nessun prezzo</span></div>
-                        </div>
+                        <div class="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-blue-600 mr-2"></i><div><label class="block text-sm font-bold text-blue-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-kit_completo_campo" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('kit_completo_campo',this.value)" class="w-40 border-2 border-blue-400 rounded px-3 py-2 text-xl font-bold text-blue-800 bg-white focus:outline-none"><span class="text-xs text-gray-500 ml-2">vuoto = nessun prezzo</span></div></div>
                         <!-- Preview articoli selezionati -->
                         <div id="preview-kit_completo_campo" class="mb-4 p-3 bg-blue-50 rounded border border-blue-200" style="display:none;">
                             <p class="text-xs font-bold text-blue-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
@@ -1298,7 +1293,7 @@
                         <i id="icon-kit_completo_portiere" class="fas fa-chevron-down text-green-900"></i>
                     </button>
                     <div id="section-kit_completo_portiere" class="p-4 hidden">
-                        <div class="mb-4 p-3 bg-green-50 border-2 border-green-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-green-600 text-xl mr-2"></i><div><label class="block text-sm font-bold text-green-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-kit_completo_portiere" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('kit_completo_portiere', this.value)" class="w-40 border-2 border-green-400 rounded px-3 py-2 text-xl font-bold text-green-800 focus:outline-none bg-white"><span class="text-xs text-gray-500 ml-2">lascia vuoto = nessun prezzo</span></div></div>
+                        <div class="mb-4 p-3 bg-green-50 border-2 border-green-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-green-600 mr-2"></i><div><label class="block text-sm font-bold text-green-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-kit_completo_portiere" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('kit_completo_portiere',this.value)" class="w-40 border-2 border-green-400 rounded px-3 py-2 text-xl font-bold text-green-800 bg-white focus:outline-none"><span class="text-xs text-gray-500 ml-2">vuoto = nessun prezzo</span></div></div>
                         <div id="preview-kit_completo_portiere" class="mb-4 p-3 bg-green-50 rounded border border-green-200" style="display:none;">
                             <p class="text-xs font-bold text-green-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-kit_completo_portiere" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -1317,7 +1312,7 @@
                         <i id="icon-mini_kit_campo" class="fas fa-chevron-down text-purple-900"></i>
                     </button>
                     <div id="section-mini_kit_campo" class="p-4 hidden">
-                        <div class="mb-4 p-3 bg-purple-50 border-2 border-purple-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-purple-600 text-xl mr-2"></i><div><label class="block text-sm font-bold text-purple-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-mini_kit_campo" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('mini_kit_campo', this.value)" class="w-40 border-2 border-purple-400 rounded px-3 py-2 text-xl font-bold text-purple-800 focus:outline-none bg-white"><span class="text-xs text-gray-500 ml-2">lascia vuoto = nessun prezzo</span></div></div>
+                        <div class="mb-4 p-3 bg-purple-50 border-2 border-purple-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-purple-600 mr-2"></i><div><label class="block text-sm font-bold text-purple-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-mini_kit_campo" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('mini_kit_campo',this.value)" class="w-40 border-2 border-purple-400 rounded px-3 py-2 text-xl font-bold text-purple-800 bg-white focus:outline-none"><span class="text-xs text-gray-500 ml-2">vuoto = nessun prezzo</span></div></div>
                         <div id="preview-mini_kit_campo" class="mb-4 p-3 bg-purple-50 rounded border border-purple-200" style="display:none;">
                             <p class="text-xs font-bold text-purple-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-mini_kit_campo" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -1336,7 +1331,7 @@
                         <i id="icon-mini_kit_portiere" class="fas fa-chevron-down text-yellow-900"></i>
                     </button>
                     <div id="section-mini_kit_portiere" class="p-4 hidden">
-                        <div class="mb-4 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-yellow-600 text-xl mr-2"></i><div><label class="block text-sm font-bold text-yellow-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-mini_kit_portiere" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('mini_kit_portiere', this.value)" class="w-40 border-2 border-yellow-400 rounded px-3 py-2 text-xl font-bold text-yellow-800 focus:outline-none bg-white"><span class="text-xs text-gray-500 ml-2">lascia vuoto = nessun prezzo</span></div></div>
+                        <div class="mb-4 p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-yellow-600 mr-2"></i><div><label class="block text-sm font-bold text-yellow-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-mini_kit_portiere" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('mini_kit_portiere',this.value)" class="w-40 border-2 border-yellow-400 rounded px-3 py-2 text-xl font-bold text-yellow-800 bg-white focus:outline-none"><span class="text-xs text-gray-500 ml-2">vuoto = nessun prezzo</span></div></div>
                         <div id="preview-mini_kit_portiere" class="mb-4 p-3 bg-yellow-50 rounded border border-yellow-200" style="display:none;">
                             <p class="text-xs font-bold text-yellow-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-mini_kit_portiere" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -1355,7 +1350,7 @@
                         <i id="icon-kit_generico" class="fas fa-chevron-down text-gray-900"></i>
                     </button>
                     <div id="section-kit_generico" class="p-4 hidden">
-                        <div class="mb-4 p-3 bg-gray-50 border-2 border-gray-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-gray-600 text-xl mr-2"></i><div><label class="block text-sm font-bold text-gray-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-kit_generico" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('kit_generico', this.value)" class="w-40 border-2 border-gray-400 rounded px-3 py-2 text-xl font-bold text-gray-800 focus:outline-none bg-white"><span class="text-xs text-gray-500 ml-2">lascia vuoto = nessun prezzo</span></div></div>
+                        <div class="mb-4 p-3 bg-gray-50 border-2 border-gray-300 rounded-lg flex items-center gap-3"><i class="fas fa-tag text-gray-600 mr-2"></i><div><label class="block text-sm font-bold text-gray-800 mb-1">Prezzo Totale Kit (€)</label><input type="number" step="0.01" min="0" id="discountedPrice-kit_generico" placeholder="es. 180.00" onchange="updateKitDiscountedPrice('kit_generico',this.value)" class="w-40 border-2 border-gray-400 rounded px-3 py-2 text-xl font-bold text-gray-800 bg-white focus:outline-none"><span class="text-xs text-gray-500 ml-2">vuoto = nessun prezzo</span></div></div>
                         <div id="preview-kit_generico" class="mb-4 p-3 bg-gray-50 rounded border border-gray-200" style="display:none;">
                             <p class="text-xs font-bold text-gray-900 mb-2 uppercase">Articoli selezionati per questo kit:</p>
                             <div id="preview-items-kit_generico" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
@@ -2560,13 +2555,11 @@
                 quickIdFilters = configData.data.quickIdFilters || {};
                 
                 catalogData = configData.data.catalog || {
-                    title: "Catalogo Abbigliamento",
-                    logo: "", qrUrl: "", fullCatalogUrl: "", orderNote: '', items: [],
+                    title: "Catalogo Abbigliamento", logo: "", qrUrl: "", fullCatalogUrl: "", orderNote: '', items: [],
                     kits: { kit_completo_campo:{name:'Kit Completo Giocatore da Campo',description:'',items:[]}, kit_completo_portiere:{name:'Kit Completo Portiere',description:'',items:[]}, mini_kit_campo:{name:'Mini Kit Giocatore da Campo',description:'',items:[]}, mini_kit_portiere:{name:'Mini Kit Portiere',description:'',items:[]}, kit_generico:{name:'Kit Generico',description:'',items:[]} }
                 };
                 if (!catalogData.kits) { catalogData.kits = { kit_completo_campo:{name:'Kit Completo Giocatore da Campo',description:'',items:[]}, kit_completo_portiere:{name:'Kit Completo Portiere',description:'',items:[]}, mini_kit_campo:{name:'Mini Kit Giocatore da Campo',description:'',items:[]}, mini_kit_portiere:{name:'Mini Kit Portiere',description:'',items:[]}, kit_generico:{name:'Kit Generico',description:'',items:[]} }; }
                 ['kit_completo_campo','kit_completo_portiere','mini_kit_campo','mini_kit_portiere','kit_generico'].forEach(k=>{if(!catalogData.kits[k])catalogData.kits[k]={name:k,description:'',items:[]};if(!catalogData.kits[k].items)catalogData.kits[k].items=[];});
-                console.log('Catalogo caricato - items:', catalogData.items?.length||0, 'kits OK');
                 
                 console.log('✅ Dati caricati da Redis:');
                 console.log('  - Items catalogo:', catalogData.items?.length || 0);
@@ -2862,7 +2855,7 @@
     if (!ordersRes.ok) {
       const err = await ordersRes.text();
       console.error('❌ Errore salvataggio ordini:', err);
-      // FIX: non return, continua con inventory e config
+      // FIX: no return, continua con inventory e config
     }
 
     // Save inventory
@@ -2897,22 +2890,13 @@
     isSaving = false; // ✅ Sblocca auto-refresh
   }
 }
-      // FIX: forza salvataggio inventario
-        async function forceSaveInventory() {
-            try {
-                const res = await fetch('/api/inventory', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',inventory})});
-                const d = await res.json();
-                alert(d.success ? 'Magazzino salvato! (' + Object.keys(inventory).length + ' voci)' : 'Errore: '+JSON.stringify(d));
-            } catch(e) { alert('Errore rete: '+e.message); }
+      async function forceSaveInventory() {
+            try { const res=await fetch('/api/inventory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',inventory})});const d=await res.json();alert(d.success?'Magazzino salvato! ('+Object.keys(inventory).length+' voci)':'Errore: '+JSON.stringify(d)); } catch(e){alert('Errore: '+e.message);}
         }
-        // FIX: aggiorna prezzo kit e salva
         function updateKitDiscountedPrice(kitKey, value) {
-            if (!catalogData.kits) catalogData.kits = {};
-            if (!catalogData.kits[kitKey]) catalogData.kits[kitKey] = {name:kitKey,description:'',items:[]};
-            const parsed = parseFloat(value);
-            catalogData.kits[kitKey].discountedPrice = (value===''||isNaN(parsed)) ? null : parsed;
-            fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',globalItems,globalKitTypes,quickIdFilters,catalog:catalogData})})
-              .then(r=>r.json()).then(d=>console.log('Kit price saved',d.success)).catch(e=>console.error(e));
+            if(!catalogData.kits)catalogData.kits={};if(!catalogData.kits[kitKey])catalogData.kits[kitKey]={name:kitKey,description:'',items:[]};
+            const p=parseFloat(value);catalogData.kits[kitKey].discountedPrice=(value===''||isNaN(p))?null:p;
+            fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',globalItems,globalKitTypes,quickIdFilters,catalog:catalogData})}).catch(e=>console.error(e));
         }
       // Funzione per registrare un'azione nello storico
       // ✅ Salva su Redis via /api/activity
@@ -2937,9 +2921,10 @@
       }
         function generateNewId(isManual = false) { 
             lastOrderId++; 
-            saveData(); 
+            // ✅ FIX: rimosso saveData() da qui - veniva chiamato PRIMA che l'ordine
+            // fosse aggiunto all'array orders[], quindi Redis salvava l'ordine vecchio
+            // con lastOrderId già incrementato. Il saveData() viene chiamato da updateUI().
             const sequence = lastOrderId.toString().padStart(3, '0');
-            // ✅ FIX: anche gli ordini manuali usano currentPrefix (non MAN-)
             return `${currentPrefix}${sequence}`;
         }
         
@@ -7343,10 +7328,7 @@ function resetFiltersToDefault() {
     }
 
     renderCatalogItems();
-    ['kit_completo_campo','kit_completo_portiere','mini_kit_campo','mini_kit_portiere','kit_generico'].forEach(k=>{
-        const inp=document.getElementById('discountedPrice-'+k);
-        if(inp&&catalogData.kits&&catalogData.kits[k]){const dp=catalogData.kits[k].discountedPrice;inp.value=(dp!=null&&dp!==undefined)?dp:'';}
-    });
+    ['kit_completo_campo','kit_completo_portiere','mini_kit_campo','mini_kit_portiere','kit_generico'].forEach(k=>{const inp=document.getElementById('discountedPrice-'+k);if(inp&&catalogData.kits&&catalogData.kits[k]){const dp=catalogData.kits[k].discountedPrice;inp.value=(dp!=null&&dp!==undefined)?dp:'';}});
   } catch (err) {
     console.error('Errore loadCatalogData: ', err);
   }
@@ -7546,7 +7528,7 @@ async function saveCatalogConfig() {
         
         function openKitsPublicPage() {
             // Apri la pagina pubblica dei kit (catalogo.html già esistente)
-            const url = window.location.origin + '/catalogo.html'; // FIX Vercel
+            const url = window.location.origin + '/catalogo.html';
             window.open(url, '_blank');
         }
 
