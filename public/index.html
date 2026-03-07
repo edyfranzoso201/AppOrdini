@@ -2838,6 +2838,9 @@
         
         async function saveData() {
   isSaving = true; // ✅ Blocca auto-refresh durante salvataggio
+  console.log(`💾 saveData INIZIO - ${orders.length} ordini da salvare`);
+  console.log(`Ordini IDs:`, orders.map(o => o.displayId).join(', '));
+  
   try {
     // Save orders
     const ordersRes = await fetch('/api/orders', {
@@ -2856,6 +2859,8 @@
       console.error('❌ Errore salvataggio ordini:', err);
       return;
     }
+    
+    console.log(`✅ Ordini salvati su Redis: ${orders.length} ordini`);
     
     // ✅ Salva backup locale dopo salvataggio riuscito
     saveOrdersBackup();
@@ -3761,9 +3766,13 @@
 // Funzione per gestire il cambio di stato degli ordini
 function handleStatusChange(id, newStatus) {
     const o = orders.find(x => x.id === id);
-    if (!o) return;
+    if (!o) {
+        console.error(`❌ handleStatusChange: ordine ${id} non trovato!`);
+        return;
+    }
     
     const oldStatus = o.status;
+    console.log(`🔄 handleStatusChange: ${o.displayId} (${o.customer}) - "${oldStatus}" → "${newStatus}"`);
     
     if (newStatus === 'Ordine trasferito ad altro ID') {
         const t = prompt('Inserisci ID Destinazione (es: 2026A_5):');
@@ -3772,6 +3781,7 @@ function handleStatusChange(id, newStatus) {
             o.linkedId = t.trim().toUpperCase();
         } else {
             // Se annulla, mantieni lo stato precedente
+            console.log(`❌ Cambio stato annullato per ${o.displayId}`);
             return;
         }
     } else if (newStatus === 'Consegna Parziale') {
@@ -3787,8 +3797,10 @@ function handleStatusChange(id, newStatus) {
     // Log della modifica
     if (oldStatus !== newStatus) {
         logActivity('CHANGE_STATUS', `Ordine ${o.displayId} (${o.customer}): Stato cambiato da "${oldStatus}" a "${newStatus}"`);
+        console.log(`📝 LOG salvato: CHANGE_STATUS per ${o.displayId}`);
     }
     
+    console.log(`💾 Chiamata updateUI() per salvare cambio stato ${o.displayId}`);
     // updateUI già chiama saveData()
     updateUI();
     renderMatrices();
