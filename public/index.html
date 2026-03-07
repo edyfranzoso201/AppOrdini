@@ -2520,6 +2520,10 @@
         }
         
         async function loadData() {
+    // ✅ Reset isSaving all'avvio (sicurezza contro blocchi)
+    isSaving = false;
+    console.log('🔄 loadData: reset isSaving = false');
+    
     try {
         // Load orders
         const ordersRes = await fetch('/api/orders');
@@ -2857,6 +2861,8 @@
     if (!ordersRes.ok) {
       const err = await ordersRes.text();
       console.error('❌ Errore salvataggio ordini:', err);
+      alert(`⚠️ ERRORE CRITICO!\n\nIl salvataggio degli ordini è FALLITO!\n\n${err}\n\nGli ordini NON sono stati salvati su Redis.\nContatta l'amministratore.`);
+      showQuickNotification('❌ Salvataggio FALLITO!', 'error');
       return;
     }
     
@@ -3756,9 +3762,19 @@
 
     logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
 
-    // ✅ FIX 1: Forza il filtro MAX ad avanzare al nuovo ordine
+    console.log(`🆕 Ordine creato: ${newOrder.displayId}`);
+
+    // ✅ FIX: Ripopola i filtri ID per includere il nuovo ordine
+    populateGestioneOrdiniIdSelects();
+    
+    // Imposta il filtro max al nuovo ordine appena creato
     const filterMaxEl = document.getElementById('filterMaxId');
-    if (filterMaxEl) filterMaxEl.value = '';
+    if (filterMaxEl) {
+        filterMaxEl.value = newOrder.displayId;
+        console.log(`✅ Filtro ID MAX aggiornato a: ${newOrder.displayId}`);
+    } else {
+        console.warn('⚠️ filterMaxId non trovato - ordine potrebbe non essere visibile');
+    }
 
     updateUI();
 }
@@ -5402,6 +5418,20 @@ function deleteOrder(id) {
         }
         
         window.restoreOrdersBackup = restoreOrdersBackup;
+        
+        // ✅ Funzione di emergenza per sbloccare isSaving
+        window.unlockSaving = function() {
+            console.warn('⚠️ EMERGENZA: sblocco forzato di isSaving');
+            isSaving = false;
+            console.log('✅ isSaving = false');
+            alert('isSaving sbloccato. Prova a salvare di nuovo.');
+        };
+        window.checkSaving = function() {
+            console.log('isSaving:', isSaving);
+            console.log('orders.length:', orders.length);
+            console.log('Ordini:', orders.map(o => o.displayId).join(', '));
+            return { isSaving, ordersCount: orders.length };
+        };
 
 function updateUI() { 
             populateGestioneOrdiniIdSelects();
