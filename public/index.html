@@ -2926,10 +2926,11 @@
       }
         function generateNewId(isManual = false) { 
             lastOrderId++; 
-            saveData(); 
             const sequence = lastOrderId.toString().padStart(3, '0');
-            // ✅ FIX: anche gli ordini manuali usano currentPrefix (non MAN-)
-            return `${currentPrefix}${sequence}`;
+            const newId = `${currentPrefix}${sequence}`;
+            console.log(`🆔 ID generato: ${newId} (lastOrderId: ${lastOrderId})`);
+            // ⚠️ NON chiamare saveData() qui - viene chiamato da updateUI() dopo addNewOrder()
+            return newId;
         }
         
         function updatePrefixAndID() { 
@@ -3734,11 +3735,26 @@
         alert('⚠️ Non hai i permessi per creare nuovi ordini.');
         return;
     }
+    
     const kitInfo = globalKitTypes['giocatore_completo'] || Object.values(globalKitTypes)[0];
+    
+    // Genera nuovo ID
+    const newDisplayId = generateNewId(true);
+    
+    // ✅ CHECK: verifica che non esista già un ordine con questo ID
+    const duplicate = orders.find(o => o.displayId === newDisplayId);
+    if (duplicate) {
+        console.error(`❌ ERRORE: ID duplicato ${newDisplayId}!`);
+        console.error('Ordine esistente:', duplicate);
+        alert(`⚠️ ERRORE CRITICO!\n\nL'ID ${newDisplayId} esiste già!\n\nQuesto è un bug di sincronizzazione.\nRicarica la pagina e riprova.`);
+        // Forza ricaricamento per sincronizzare lastOrderId
+        location.reload();
+        return;
+    }
 
     const newOrder = {
         id: Date.now(),
-        displayId: generateNewId(true),
+        displayId: newDisplayId,
         importKey: null,
         // ✅ FIX 3: Aggiungi timestamp alla creazione manuale
         timestamp: new Date().toISOString().replace('T', ' ').substring(0, 23),
@@ -4090,6 +4106,20 @@ function deleteOrder(id) {
                 Object.keys(filtersState).forEach(key => {
                     const element = document.getElementById(key);
                     if (element && filtersState[key]) {
+                        // ✅ FIX: Per filterMaxId, usa il valore salvato solo se più recente dell'ultimo ordine
+                        if (key === 'filterMaxId' && orders.length > 0) {
+                            const sortedOrders = sortOrdersByDisplayId(orders, true);
+                            const lastOrderId = sortedOrders[sortedOrders.length - 1].displayId;
+                            const savedMaxId = filtersState[key];
+                            
+                            // Se il filtro salvato è più vecchio dell'ultimo ordine, usa l'ultimo ordine
+                            if (compareDisplayIds(savedMaxId, lastOrderId) < 0) {
+                                element.value = lastOrderId;
+                                console.log(`✅ filterMaxId aggiornato da ${savedMaxId} a ${lastOrderId}`);
+                                return;
+                            }
+                        }
+                        
                         element.value = filtersState[key];
                     }
                 });
