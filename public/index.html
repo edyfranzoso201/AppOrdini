@@ -2846,6 +2846,42 @@
   console.log(`Ordini IDs:`, orders.map(o => o.displayId).join(', '));
   
   try {
+    // ✅ CONTROLLO CONFLITTI: Verifica se ci sono modifiche più recenti su Redis
+    const checkRes = await fetch('/api/orders');
+    if (checkRes.ok) {
+      const checkData = await checkRes.json();
+      if (checkData.success && checkData.data) {
+        const remoteOrders = checkData.data.orders || [];
+        const remoteHash = getDataHash(remoteOrders, checkData.data.lastOrderId);
+        
+        // Se l'hash è diverso, significa che qualcun altro ha salvato nel frattempo
+        if (lastDataHash !== null && remoteHash !== lastDataHash) {
+          console.warn(`⚠️ CONFLITTO RILEVATO! Altri utenti hanno modificato i dati.`);
+          console.log(`  Ordini locali: ${orders.length}, Ordini remoti: ${remoteOrders.length}`);
+          
+          // ✅ MERGE INTELLIGENTE: Aggiungi solo gli ordini che non esistono su Redis
+          const remoteIds = new Set(remoteOrders.map(o => o.displayId));
+          const newOrders = orders.filter(o => !remoteIds.has(o.displayId));
+          
+          if (newOrders.length > 0) {
+            console.log(`✅ Trovati ${newOrders.length} ordini nuovi da aggiungere:`, newOrders.map(o => o.displayId));
+            // Merge: ordini remoti + ordini nuovi locali
+            const mergedOrders = [...remoteOrders, ...newOrders];
+            orders = mergedOrders;
+            lastOrderId = Math.max(checkData.data.lastOrderId, lastOrderId);
+            console.log(`🔀 MERGE completato: ${mergedOrders.length} ordini totali`);
+          } else {
+            console.log(`❌ Nessun ordine nuovo da aggiungere. Uso dati remoti.`);
+            orders = remoteOrders;
+            lastOrderId = checkData.data.lastOrderId;
+            currentPrefix = checkData.data.currentPrefix || DEFAULT_ID_PREFIX;
+            updateUI();
+            return; // Non salvare se non ci sono modifiche
+          }
+        }
+      }
+    }
+    
     // Save orders
     const ordersRes = await fetch('/api/orders', {
       method: 'POST',
