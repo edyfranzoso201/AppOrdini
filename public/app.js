@@ -6124,6 +6124,13 @@ async function saveCatalogConfig() {
             catalogData.kits[kitKey].discountedPrice = isNaN(price) ? null : price;
             console.log(`Prezzo kit ${kitKey} aggiornato:`, catalogData.kits[kitKey].discountedPrice);
         }
+
+        function updateKitName(kitKey, value) {
+            const trimmed = value.trim();
+            if (!trimmed) return; // evita di salvare un titolo vuoto nel catalogo pubblico
+            catalogData.kits[kitKey].name = trimmed;
+            console.log(`Nome kit ${kitKey} aggiornato:`, catalogData.kits[kitKey].name);
+        }
         
         function renderKitPreview(kitKey, items) {
             const previewContainer = document.getElementById(`preview-${kitKey}`);
@@ -6156,6 +6163,9 @@ async function saveCatalogConfig() {
             if (!catalogData.items || catalogData.items.length === 0) {
                 // Nessun articolo nel catalogo
                 kitKeys.forEach(kitKey => {
+                    const nameInput = document.getElementById(`name-${kitKey}`);
+                    if (nameInput) nameInput.value = catalogData.kits[kitKey].name || '';
+
                     const priceInput = document.getElementById(`price-${kitKey}`);
                     if (priceInput) {
                         const price = catalogData.kits[kitKey].discountedPrice;
@@ -6176,6 +6186,9 @@ async function saveCatalogConfig() {
             }
             
             kitKeys.forEach(kitKey => {
+                const nameInput = document.getElementById(`name-${kitKey}`);
+                if (nameInput) nameInput.value = catalogData.kits[kitKey].name || '';
+
                 const priceInput = document.getElementById(`price-${kitKey}`);
                 if (priceInput) {
                     const price = catalogData.kits[kitKey].discountedPrice;
