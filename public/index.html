@@ -2879,6 +2879,7 @@
             orders = remoteOrders;
             lastOrderId = checkData.data.lastOrderId;
             currentPrefix = checkData.data.currentPrefix || DEFAULT_ID_PREFIX;
+            lastDataHash = remoteHash; // allinea l'hash locale per evitare di rilevare lo stesso "conflitto" ad ogni salvataggio successivo
             updateUI();
             return; // Non salvare se non ci sono modifiche
           }
