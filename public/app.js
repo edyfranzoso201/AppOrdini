@@ -1,0 +1,7990 @@
+        const API_BASE = 'https://appordinigo.vercel.app/api';
+        const SIZE_ORDER = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "6 ANNI", "8 ANNI", "10 ANNI", "12 ANNI", "14 ANNI", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "03 BIMBO", "05 ADULTO", "UNICA"];
+        const SOCKS_BLUE_DEFAULT = "Calzettoni di Allenamento WULGAR Blu Marine 618 (7€)";
+        const SOCKS_RED_DEFAULT = "Calzettoni di Allen. WULGAR COL. 565 RED (7€)";
+        const SOCKS_SPOLF_BLUE = "Calzettone (Senza Piede) SPOLF Blue Marine 193 (8€)";
+        const SOCKS_SPOLF_RED = "Calzettone (Senza Piede) SPOLF RED 565 (8€)";
+        
+        // Funzione helper per identificare se un articolo è una calza
+        function isSockItem(itemName) {
+            return itemName.includes("Calzettoni") || itemName.includes("Calzettone");
+        }
+        const PANT_NAME = "Pantalone Allen. GASTON Blu Marine 193 (20€)";
+        const OLD_JACKET_NAME = "Giaccone Invernale BURAN Blue Marine 901 (55€)";
+        const NEW_JACKET_NAME = "Giaccone Invernale BURAN Blue Marine 901 (35€)";
+        const TUTA_NAME = "Tuta Rapp. DALCITO Blu Marine A02 (35€)";
+        const POLO_NAME = "Polo Rapp. GASTIO Blue Marine 193 (25€)";
+        const POLO_STAFF_NAME = "Polo Staff GASTIO H03 BLU SAPPHIRE (25€)";
+        const GK_SHIRT = "Maglia Allen. Portieri GK FARCO PM8 (15€)";
+        const GK_PANT_LONG = "Pantalone Allen. Portiere GK FESOLO Black 005 (25€)";
+        const GK_PANT_SHORT = "Pantaloncino Portiere GK FAVIO Nero 005 (15€)";
+        const DEFAULT_ITEMS_LIST = [
+            // Accessori
+            "Borsone HARDBASE Blue Marine 901 (25€)",
+            "Zaino BACKPACK Blue Marine 901 (25€)",
+            
+            // Abbigliamento Giocatori
+            "Giaccone Invernale BURAN Blue Marine 901 (35€)",
+            "Felpa Allen. GASSOLO Blu Marine A04 (25€)",
+            "T-Shirt Allen. Giocatori DOVO Blu H03 (12€)",
+            "Pantaloncino Allen. Giocatori BORGO Blu H03 (12€)",
+            PANT_NAME,
+            TUTA_NAME,
+            "Bermuda Rapp. BAJO Blue Marine 193 (15€)",
+            POLO_NAME,
+            "K-Way WISTER Blu Marine 193 (20€)",
+            
+            // Portieri
+            GK_SHIRT,
+            GK_PANT_SHORT,
+            GK_PANT_LONG,
+            
+            // Termici
+            "Maglia Termica VURBAT - col. 005 nero (20€)",
+            "Pantalone Termico VANT - col. 005 nero (18€)",
+            
+            // Felpe Extra
+            "Felpa Estiva GREVOLO Blu Marine A04 (30€)",
+            "Felpa Invernale BANTO Blu Marine 193 (30€)",
+            
+            // Staff/Allenatori
+            "T-Shirt Allen. Staff DOVO COL. 565 RED (12€)",
+            "Pantaloncino Allen. Staff BORGO COL. 565 RED (12€)",
+            "Felpa Allen. Staff GASSOLO COL. A02 RED (25€)",
+            POLO_STAFF_NAME,
+            "K-Way WISTER COL. 565 RED (Staff) (20€)",
+            
+            // Accessori Extra
+            "Scaldacollo NECK (8€)",
+            "Cappellino ZUCOT (10€)",
+            "Guanti Player (12€)",
+            
+            // Calze (sempre in fondo)
+            SOCKS_BLUE_DEFAULT,
+            SOCKS_RED_DEFAULT,
+            SOCKS_SPOLF_BLUE,
+            SOCKS_SPOLF_RED
+        ];
+        
+        const EXCEL_ITEM_MAPPING = { 
+            "t-shirt di allenamento giocatori": "T-Shirt Allen. Giocatori DOVO Blu H03 (12€)", 
+            "pantaloncino di allenamento giocatori": "Pantaloncino Allen. Giocatori BORGO Blu H03 (12€)", 
+            "pantalone di allenamento": PANT_NAME,
+            "pantalone,": PANT_NAME, 
+            "pantalone ": PANT_NAME, 
+            "felpa di allenamento gassolo": "Felpa Allen. GASSOLO Blu Marine A04 (25€)", 
+            "felpa estiva": "Felpa Estiva GREVOLO Blu Marine A04 (30€)",
+            "grevolo": "Felpa Estiva GREVOLO Blu Marine A04 (30€)",
+            "felpa invernale": "Felpa Invernale BANTO Blu Marine 193 (30€)",
+            "banto": "Felpa Invernale BANTO Blu Marine 193 (30€)",
+            "tuta di rappresentanza": TUTA_NAME, 
+            "polo di rappresentanza": POLO_NAME, 
+            "bermuda": "Bermuda Rapp. BAJO Blue Marine 193 (15€)", 
+            "k-way wister blu": "K-Way WISTER Blu Marine 193 (20€)", 
+            "maglia termica": "Maglia Termica VURBAT - col. 005 nero (20€)", 
+            "pantalone termico": "Pantalone Termico VANT - col. 005 nero (18€)", 
+            "calzettoni wulgar": SOCKS_BLUE_DEFAULT, 
+            "calzettoni di allenamento wulgar": SOCKS_BLUE_DEFAULT, 
+            "wulgar": SOCKS_BLUE_DEFAULT,
+            "spolf blue": SOCKS_SPOLF_BLUE,
+            "spolf blu": SOCKS_SPOLF_BLUE,
+            "calzettone spolf blue": SOCKS_SPOLF_BLUE,
+            "calzettone senza piede blu": SOCKS_SPOLF_BLUE,
+            "spolf red": SOCKS_SPOLF_RED,
+            "spolf rosso": SOCKS_SPOLF_RED,
+            "calzettone spolf red": SOCKS_SPOLF_RED,
+            "calzettone senza piede rosso": SOCKS_SPOLF_RED, 
+            "t-shirt di allenamento staff": "T-Shirt Allen. Staff DOVO COL. 565 RED (12€)", 
+            "pantaloncino di allenamento staff": "Pantaloncino Allen. Staff BORGO COL. 565 RED (12€)", 
+            "felpa di allenamento staff": "Felpa Allen. Staff GASSOLO COL. A02 RED (25€)", 
+            "polo di rapp. dirigenti": POLO_STAFF_NAME, 
+            "blu sapphire": POLO_STAFF_NAME, 
+            "k-way wister rosso": "K-Way WISTER COL. 565 RED (Staff) (20€)", 
+            "calzettoni staff": SOCKS_RED_DEFAULT, 
+            "giaccone invernale": NEW_JACKET_NAME, 
+            "borsone hardbase": "Borsone HARDBASE Blue Marine 901 (25€)", 
+            "zaino backpack": "Zaino BACKPACK Blue Marine 901 (25€)", 
+            "cappellino": "Cappellino ZUCOT (10€)", 
+            "scaldacollo": "Scaldacollo NECK (8€)", 
+            "guanti": "Guanti Player (12€)",
+            "farco": GK_SHIRT,
+            "fesolo": GK_PANT_LONG,
+            "favio": GK_PANT_SHORT,
+            "gk fesolo": GK_PANT_LONG,
+            "gk favio": GK_PANT_SHORT,
+            "gk farco": GK_SHIRT
+        };
+
+        const DEFAULT_KIT_DEFINITIONS = { 
+            'giocatore_completo': { display: 'KIT Giocatore da Campo Completo (220€)', items: ["T-Shirt Allen. Giocatori DOVO Blu H03 (12€)", "Pantaloncino Allen. Giocatori BORGO Blu H03 (12€)", PANT_NAME, "Felpa Allen. GASSOLO Blu Marine A04 (25€)", TUTA_NAME, POLO_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER Blu Marine 193 (20€)", NEW_JACKET_NAME, SOCKS_BLUE_DEFAULT, "Borsone HARDBASE Blue Marine 901 (25€)"] }, 
+            'giocatore_mini': { display: 'Mini Kit Giocatore da Campo (135€)', items: ["T-Shirt Allen. Giocatori DOVO Blu H03 (12€)", "Pantaloncino Allen. Giocatori BORGO Blu H03 (12€)", PANT_NAME, TUTA_NAME, POLO_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER Blu Marine 193 (20€)", SOCKS_BLUE_DEFAULT] }, 
+            'staff_dirigente': { display: 'Kit Dirigente (80€)', items: [NEW_JACKET_NAME, TUTA_NAME, POLO_STAFF_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)"] }, 
+            'staff_allenatore_completo': { display: 'Kit Allenatore Completo (245€)', items: ["T-Shirt Allen. Staff DOVO COL. 565 RED (12€)", "Pantaloncino Allen. Staff BORGO COL. 565 RED (12€)", PANT_NAME, "Felpa Allen. Staff GASSOLO COL. A02 RED (25€)", TUTA_NAME, POLO_STAFF_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER COL. 565 RED (Staff) (20€)", NEW_JACKET_NAME, SOCKS_RED_DEFAULT, "Borsone HARDBASE Blue Marine 901 (25€)"] }, 
+            'staff_allenatore_base': { display: 'Kit Allenatore Base (135€)', items: ["T-Shirt Allen. Staff DOVO COL. 565 RED (12€)", "Pantaloncino Allen. Staff BORGO COL. 565 RED (12€)", POLO_STAFF_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER COL. 565 RED (Staff) (20€)", TUTA_NAME, "Felpa Allen. Staff GASSOLO COL. A02 RED (25€)", SOCKS_RED_DEFAULT] }, 
+            'portiere_completo_lungo': { display: 'Kit Portiere Completo - Lungo (220€)', items: [GK_SHIRT, GK_PANT_LONG, "Felpa Allen. GASSOLO Blu Marine A04 (25€)", TUTA_NAME, POLO_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER Blu Marine 193 (20€)", NEW_JACKET_NAME, SOCKS_BLUE_DEFAULT, "Borsone HARDBASE Blue Marine 901 (25€)"] },
+            'portiere_completo_corto': { display: 'Kit Portiere Completo - Corto (210€)', items: [GK_SHIRT, GK_PANT_SHORT, "Felpa Allen. GASSOLO Blu Marine A04 (25€)", TUTA_NAME, POLO_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER Blu Marine 193 (20€)", NEW_JACKET_NAME, SOCKS_BLUE_DEFAULT, "Borsone HARDBASE Blue Marine 901 (25€)"] },
+            'portiere_mini_lungo': { display: 'Mini Kit Portiere - Lungo (135€)', items: [GK_SHIRT, GK_PANT_LONG, TUTA_NAME, POLO_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER Blu Marine 193 (20€)", SOCKS_BLUE_DEFAULT] },
+            'portiere_mini_corto': { display: 'Mini Kit Portiere - Corto (135€)', items: [GK_SHIRT, GK_PANT_SHORT, TUTA_NAME, POLO_NAME, "Bermuda Rapp. BAJO Blue Marine 193 (15€)", "K-Way WISTER Blu Marine 193 (20€)", SOCKS_BLUE_DEFAULT] }
+        };
+
+        const STATUSES = [ 
+            { value: 'Nuovo', label: 'Nuovo', color: 'bg-yellow-100 text-yellow-800' }, 
+            { value: 'In Lavorazione', label: 'In Lavorazione', color: 'bg-blue-100 text-blue-800' }, 
+            { value: 'Pagato', label: 'Pagato', color: 'bg-green-700 text-white' }, 
+            { value: 'Ordine Arrivato', label: 'Arrivato', color: 'bg-orange-100 text-orange-800' },
+            { value: 'Consegna Parziale', label: 'Consegna Parziale', color: 'bg-amber-100 text-amber-800' },
+            { value: 'Consegnato', label: 'Consegnato', color: 'bg-gray-700 text-white' },
+            { value: 'Scomposto', label: 'Scomposto', color: 'bg-teal-100 text-teal-800' },
+            { value: 'Ordine annullato', label: 'Annullato', color: 'bg-red-100 text-red-800' }, 
+            { value: 'Ordine trasferito ad altro ID', label: 'Trasferito', color: 'bg-purple-100 text-purple-800' },
+	    { value: 'Da piazzare', label: 'Da piazzare', color: 'bg-indigo-100 text-indigo-800' }
+        ];
+        
+        // === FUNZIONI GLOBALI PER ORDINAMENTO ID ===
+        // Estrae prefisso (anno) e numero dall'ID
+        // Esempi: "2025_001" -> {prefix: "2025_", num: 1}, "2025A_244" -> {prefix: "2025A_", num: 244}, "2026_001" -> {prefix: "2026_", num: 1}
+        function parseDisplayId(displayId) {
+            if (!displayId) return { prefix: '', num: 0 };
+            const match = displayId.match(/^(.+?)(\d+)$/);
+            if (match) {
+                return { prefix: match[1], num: parseInt(match[2]) };
+            }
+            return { prefix: displayId, num: 0 };
+        }
+        
+        // Confronta due ID considerando prefisso + numero
+        // 2025_001 < 2025_002 < 2025A_001 < 2025A_244 < 2026_001
+        function compareDisplayIds(idA, idB) {
+            const a = parseDisplayId(idA);
+            const b = parseDisplayId(idB);
+            
+            // Prima confronta il prefisso (ordine alfabetico: 2025A_ < 2026_)
+            if (a.prefix !== b.prefix) {
+                return a.prefix.localeCompare(b.prefix);
+            }
+            // Se stesso prefisso, confronta il numero
+            return a.num - b.num;
+        }
+        
+        // Ordina un array di ordini per displayId
+        function sortOrdersByDisplayId(ordersArray, ascending = true) {
+            return [...ordersArray].sort((a, b) => {
+                const comparison = compareDisplayIds(a.displayId, b.displayId);
+                return ascending ? comparison : -comparison;
+            });
+        }
+
+        let globalItems = []; 
+        let orders = [];
+        let ordersBackup = []; // Backup locale degli ordini 
+        let inventory = {}; 
+        let globalKitTypes = {}; 
+        let quickIdFilters = {}; // Filtri Quick ID condivisi su Redis
+        let catalogData = { // ✅ Variabile catalogo dichiarata
+            title: "Catalogo Abbigliamento",
+            logo: "",
+            qrUrl: "",
+            fullCatalogUrl: "",
+            orderNote: '', // ✅ NUOVO
+            items: [],
+            // ✅ NUOVO: configurazione pacchetti kit
+            kits: {
+                kit_completo_campo: { name: 'Kit Completo Giocatore da Campo', description: '', items: [] },
+                kit_completo_portiere: { name: 'Kit Completo Portiere', description: '', items: [] },
+                mini_kit_campo: { name: 'Mini Kit Giocatore da Campo', description: '', items: [] },
+                mini_kit_portiere: { name: 'Mini Kit Portiere', description: '', items: [] },
+                kit_generico: { name: 'Kit Generico', description: '', items: [] }
+            }
+        };
+        let currentEditId = null;
+        let currentEditingKitKey = null; 
+        let chartStatus = null;
+        let chartRevenue = null; let chartItems = null;
+        let chartKitItems = null; // Grafico capi per kit filtrato
+        let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}A_`;
+        let currentPrefix = DEFAULT_ID_PREFIX; 
+        let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
+   
+        function startClock() {
+            const updateClock = () => {
+                const clockEl = document.getElementById('liveClock');
+                if (clockEl) {
+                    const now = new Date();
+                    clockEl.innerText = now.toLocaleString('it-IT');
+                }
+            };
+            
+            // Aggiorna subito
+            updateClock();
+            
+            // Poi ogni secondo
+            setInterval(updateClock, 1000);
+        }
+
+        function showTab(tabName) { 
+            // Verifica permessi per Dashboard
+            if (tabName === 'dashboard' && !checkPermission('viewDashboard')) {
+                alert('⚠️ Non hai i permessi per visualizzare la Dashboard.');
+                return;
+            }
+            
+            // Verifica permessi per Catalogo (solo admin)
+            if (tabName === 'catalogo' && currentUser?.role !== 'admin') {
+                alert('⚠️ Non hai i permessi per visualizzare il Catalogo.');
+                return;
+            }
+
+            // Verifica permessi per Pagamenti (solo admin)
+            if (tabName === 'pagamenti' && currentUser?.role !== 'admin') {
+                alert('⚠️ Non hai i permessi per visualizzare i Pagamenti.');
+                return;
+            }
+            
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            
+            // Reset stili nav buttons MA rispetta i permessi
+            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-pagamenti', 'nav-catalogo'];
+            navButtons.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn && !btn.classList.contains('hidden')) {
+                    btn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200";
+                }
+            });
+            
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.getElementById('nav-' + tabName).className = "px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow";
+            
+            if (tabName === 'matrix') renderMatrices();
+            if (tabName === 'dashboard') { 
+                updateDashboardCounts(); 
+                renderChart(); 
+            }
+            if (tabName === 'catalogo') loadCatalogData();
+            if (tabName === 'pagamenti') renderPaymentsTab();
+            if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
+        }
+        
+        function populateTabellaOrdiniFilters() {
+            const minSelect = document.getElementById('tabellaOrdiniMinId');
+            const maxSelect = document.getElementById('tabellaOrdiniMaxId');
+            if (!minSelect || !maxSelect) return;
+            
+            // Ordina usando la funzione globale
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
+            const allIds = sortedOrders.map(o => o.displayId);
+            
+            minSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
+            maxSelect.innerHTML = allIds.map(id => `<option value="${id}">${id}</option>`).join('');
+            if (allIds.length > 0) {
+                minSelect.value = allIds[0];
+                maxSelect.value = allIds[allIds.length - 1];
+            }
+        }
+        
+        function printTabellaOrdiniPart(part) {
+            const table = document.getElementById('tabellaOrdiniStampabile');
+            if (!table) return;
+            
+            // Semplice: aggiungi una classe alla tabella per indicare quale parte
+            table.classList.remove('print-part-1', 'print-part-2');
+            
+            if (part === 1) {
+                table.classList.add('print-part-1');
+            } else {
+                table.classList.add('print-part-2');
+            }
+            
+            // Stampa
+            setTimeout(() => {
+                window.print();
+                
+                // Ripristina
+                setTimeout(() => {
+                    table.classList.remove('print-part-1', 'print-part-2');
+                }, 200);
+            }, 100);
+        }
+        
+        // Funzione per evidenziare/de-evidenziare celle taglie
+        function toggleSizeCellHighlight(cell, orderId, itemName, size) {
+            const cellKey = `${orderId}_${itemName}_${size}`;
+            
+            // Toggle dello stato
+            if (highlightedSizeCells[cellKey]) {
+                delete highlightedSizeCells[cellKey];
+                cell.classList.remove('size-cell-highlighted');
+            } else {
+                highlightedSizeCells[cellKey] = true;
+                cell.classList.add('size-cell-highlighted');
+            }
+            
+            // Salva lo stato
+            saveData();
+        }
+        
+        // Funzione per scaricare ordine tramite Google Form
+        function downloadOrderToGoogleForm(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) {
+                alert('Ordine non trovato!');
+                return;
+            }
+            
+            // Verifica che ci siano i dati necessari
+            if (!order.email) {
+                alert('⚠️ Email mancante!\n\nInserisci l\'email dell\'ordine prima di scaricare.');
+                return;
+            }
+            
+            if (!order.customer) {
+                alert('⚠️ Nome cliente mancante!');
+                return;
+            }
+            
+            // Separa nome e cognome (assume formato "Nome Cognome")
+            const nameParts = order.customer.trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            
+            if (!lastName) {
+                alert('⚠️ Formato nome non valido!\n\nIl campo Cliente deve contenere Nome e Cognome separati da spazio.\nEsempio: "Mario Rossi"');
+                return;
+            }
+            
+            const role = order.roleOrYear || '';
+            
+            // URL del Google Form: https://forms.gle/RHkk464RUcDEEcG86
+            // Link completo corretto del form
+            const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfd9fUfr2WADHdUzWK6Ek6_Z3AV8_MHc7DzV033zPriUqSNEg/viewform';
+            
+            // Parametri del form con gli ENTRY ID corretti (AGGIORNATO dopo rimozione raccolta email automatica)
+            const params = new URLSearchParams({
+                'usp': 'pp_url',                      // Parametro per link precompilato
+                'entry.743500804': order.email,       // Email (NUOVO ENTRY ID)
+                'entry.933188327': firstName,         // Nome Atleta
+                'entry.562701918': lastName,          // Cognome Atleta
+                'entry.248891173': role               // Annata o Ruolo
+            });
+            
+            const fullUrl = `${formBaseUrl}?${params.toString()}`;
+            
+            // Apri il form in una nuova scheda
+            window.open(fullUrl, '_blank');
+            
+            // Log per debug
+            console.log('📋 Google Form aperto con dati precompilati:', {
+                orderId: order.displayId,
+                email: order.email,
+                nome: firstName,
+                cognome: lastName,
+                ruolo: role,
+                url: fullUrl
+            });
+        }
+        
+        function renderTabellaOrdini() {
+            const headerRow1 = document.getElementById('tabellaOrdiniHeaderRow1');
+            const headerRow2 = document.getElementById('tabellaOrdiniHeaderRow2');
+            const tbody = document.getElementById('tabellaOrdiniBody');
+            if (!headerRow1 || !headerRow2 || !tbody) return;
+            
+            // Popola select ID se vuoti
+            const tabellaMinId = document.getElementById('tabellaOrdiniMinId');
+            const tabellaMaxId = document.getElementById('tabellaOrdiniMaxId');
+            if (tabellaMinId && tabellaMaxId && tabellaMinId.options.length === 0) {
+                const sortedOrders = sortOrdersByDisplayId(orders, true);
+                
+                sortedOrders.forEach(o => {
+                    const optMin = document.createElement('option');
+                    optMin.value = o.displayId;
+                    optMin.text = o.displayId;
+                    tabellaMinId.appendChild(optMin);
+                    
+                    const optMax = document.createElement('option');
+                    optMax.value = o.displayId;
+                    optMax.text = o.displayId;
+                    tabellaMaxId.appendChild(optMax);
+                });
+                
+                // Imposta default: primo e ultimo
+                if (sortedOrders.length > 0) {
+                    tabellaMinId.value = sortedOrders[0].displayId;
+                    tabellaMaxId.value = sortedOrders[sortedOrders.length - 1].displayId;
+                }
+            }
+            
+            // Filtri ID
+            const minId = tabellaMinId?.value;
+            const maxId = tabellaMaxId?.value;
+            
+            // Ordine ESATTO colonne come nell'Excel
+            const columnOrder = [
+                'Borsone HARDBASE',
+                'Zaino BACKPACK',
+                'Giaccone Invernale BURAN',
+                'T-Shirt', // Allen. Giocatori DOVO
+                'Pantaloncino', // Allen. Giocatori BORGO
+                'Felpa di Allen. GASSOLO',
+                'Pantalone di Allen.', // GASTON
+                'Tuta di Rapp. DALCITO',
+                'Bermuda di Rapp. BAJO',
+                'Polo di Rapp. GASTIO Blue Marine',
+                'K-Way WISTER Blu',
+                'Maglia di Allen. Portieri',
+                'Pantaloncino Portiere',
+                'Pantalone di Allen. Portiere',
+                'Maglia Termica VURBAT',
+                'Pantalone Termico VANT',
+                'Felpa Estiva',
+                'Felpa Invernale BANTO',
+                'T-Shirt di Rappresentanza',
+                'Scaldacollo',
+                'Cappellino',
+                'Guanti',
+                'Polo di Rapp. Dirigenti', // GASTIO SAPPHIRE
+                'T-Shirt di Allen. Allenatori', // DOVO RED
+                'Pantaloncino di Allen. Giocatori', // BORGO RED
+                'Felpa di Allen. GASSOLO', // RED
+                'Calzettoni', // WULGAR
+                'K-Way WISTER' // RED
+            ];
+            
+            // Raccolta articoli ordinati
+            const allItemsMap = new Map();
+            orders.forEach(order => {
+                order.itemsList.forEach(item => {
+                    if (!item || !item.name || typeof item.name !== 'string') return;
+                    // Estrai nome senza prezzo - trova l'ultima parentesi con € o €)
+                    const priceMatch = item.name.match(/\s*\(\d+€\)\s*$/);
+                    const itemName = priceMatch ? item.name.substring(0, item.name.lastIndexOf(priceMatch[0])).trim() : item.name;
+                    if (!allItemsMap.has(itemName)) {
+                        allItemsMap.set(itemName, itemName);
+                    }
+                });
+            });
+            
+            const allItems = Array.from(allItemsMap.values()).sort((a, b) => {
+                const findOrder = (name) => {
+                    for (let i = 0; i < columnOrder.length; i++) {
+                        if (name.includes(columnOrder[i])) return i;
+                    }
+                    return 999;
+                };
+                return findOrder(a) - findOrder(b);
+            });
+            
+            // Header riga 1
+            let header1HTML = `
+                <th class="border p-2 bg-gray-200 tabella-ordini-sticky-header-1" rowspan="2" style="min-width: 140px; max-width: 140px; width: 140px; font-size: 11px; font-weight: bold; color: #000; white-space: nowrap;">ID Ordine</th>
+                <th class="border p-2 bg-gray-200 tabella-ordini-sticky-header-2" rowspan="2" style="min-width: 150px; font-size: 11px; font-weight: bold; color: #000;">Cliente</th>
+                <th class="border p-2 bg-gray-200" rowspan="2" style="min-width: 50px; font-size: 11px; font-weight: bold; color: #000;">Taglia</th>
+                <th class="border p-2 bg-gray-200" rowspan="2" style="min-width: 70px; font-size: 11px; font-weight: bold; color: #000;">Taglia Calzettoni</th>
+                <th class="border p-2 bg-gray-200" rowspan="2" style="min-width: 70px; font-size: 11px; font-weight: bold; color: #000;">Taglia Accessori</th>
+                <th class="border p-2 bg-gray-200" rowspan="2" style="min-width: 180px; font-size: 11px; font-weight: bold; color: #000;">Ordine Da Effettuare</th>
+                <th class="border p-2 bg-gray-200" rowspan="2" style="min-width: 100px; font-size: 11px; font-weight: bold; color: #000;">Note</th>
+                <th class="border p-2 bg-gray-200" rowspan="2" style="min-width: 60px; font-size: 11px; font-weight: bold; color: #000; white-space: normal; line-height: 1.2;">Borsone/<br>Zaino</th>
+                <th class="border p-2 bg-gray-200" rowspan="2" style="min-width: 80px; font-size: 11px; font-weight: bold; color: #000;">Google Form</th>
+            `;
+            
+            allItems.forEach((itemName, idx) => {
+                // Colore neutro uniforme
+                const bgColor = '#f5f5f5';
+                const textColor = '#000';
+                
+                // Spezza il nome su 2 righe se lungo
+                let displayName = itemName;
+                if (itemName.length > 25) {
+                    const words = itemName.split(' ');
+                    const midPoint = Math.ceil(words.length / 2);
+                    displayName = words.slice(0, midPoint).join(' ') + '<br>' + words.slice(midPoint).join(' ');
+                }
+                
+                // Determina quale metà: primi 50% sono part-1, secondi 50% sono part-2
+                const halfPoint = Math.ceil(allItems.length / 2);
+                const partClass = idx < halfPoint ? 'print-show-part-1' : 'print-show-part-2';
+                
+                // TESTO ORIZZONTALE LEGGIBILE - NON RUOTATO
+                // Aggiungi data-col-index per identificare le colonne articoli (8 fisse + indice articolo)
+                const colIndex = 8 + idx;
+                header1HTML += `<th class="border p-2 item-col ${partClass}" data-col-index="${colIndex}" style="background-color: ${bgColor}; color: ${textColor}; min-width: 80px; font-size: 10px; padding: 6px 3px; white-space: normal; line-height: 1.2; font-weight: bold; text-align: center;">${displayName}</th>`;
+            });
+            headerRow1.innerHTML = header1HTML;
+            
+            // Salva il numero totale di colonne per la divisione della stampa
+            window.tabellaOrdiniTotalCols = 8 + allItems.length;
+            window.tabellaOrdiniItemCols = allItems.length;
+            
+            // Filtra ordini
+            const filterCliente = document.getElementById('tabellaOrdiniFilterCliente')?.value.toLowerCase().trim() || '';
+            const filterTaglia = document.getElementById('tabellaOrdiniFilterTaglia')?.value || '';
+            
+            let filteredOrders = orders.filter(o => {
+                // Usa confronto completo per il filtro ID
+                if (minId && compareDisplayIds(o.displayId, minId) < 0) return false;
+                if (maxId && compareDisplayIds(o.displayId, maxId) > 0) return false;
+                
+                // Filtro Cliente
+                if (filterCliente && !o.customer.toLowerCase().includes(filterCliente)) return false;
+                
+                // Filtro Taglia
+                if (filterTaglia && o.mainSize !== filterTaglia) return false;
+                
+                return true;
+            });
+            
+            // Ordina usando la nuova funzione globale
+            filteredOrders = sortOrdersByDisplayId(filteredOrders, true);
+            
+            // Header riga 2 - Totali
+            let header2HTML = '';
+            allItems.forEach((itemName, idx) => {
+                const total = filteredOrders.reduce((sum, order) => {
+                    return sum + order.itemsList.filter(i => i.name.split('(')[0].trim() === itemName).length;
+                }, 0);
+                
+                // Stessa logica di divisione
+                const halfPoint = Math.ceil(allItems.length / 2);
+                const partClass = idx < halfPoint ? 'print-show-part-1' : 'print-show-part-2';
+                
+                const colIndex = 8 + idx;
+                header2HTML += `<th class="border p-1 bg-blue-700 item-col ${partClass}" data-col-index="${colIndex}" style="font-size: 10px;">${total}</th>`;
+            });
+            headerRow2.innerHTML = header2HTML;
+            
+            // Popola tbody
+            tbody.innerHTML = '';
+            filteredOrders.forEach(order => {
+                const tr = document.createElement('tr');
+                tr.className = 'border hover:bg-gray-50';
+                
+                const borsoneZaino = order.itemsList.find(i => i.name.includes('Borsone')) ? 'Borsone' : 
+                                    order.itemsList.find(i => i.name.includes('Zaino')) ? 'Zaino' : '-';
+                
+                // Funzione per pulire le note
+                const cleanNotes = (notes) => {
+                    if (!notes) return '-';
+                    
+                    let cleaned = notes;
+                    
+                    // Rimuovi "NON APPLICABILE PER LA TIPOLOGIA DI ORDINE" con tutte le varianti di spazi/newline
+                    cleaned = cleaned.replace(/NON\s*APPLICABILE\s*PER\s*LA\s*TIPOLOGIA\s*DI\s*ORDINE/gi, '');
+                    
+                    // Rimuovi righe vuote multiple
+                    cleaned = cleaned.replace(/\n\s*\n/g, '\n').trim();
+                    
+                    // Se la nota è ora vuota, ritorna '-'
+                    if (!cleaned || cleaned === '') return '-';
+                    
+                    // Se contiene l'emoji 📦 e "Scalato da magazzino"
+                    if (cleaned.includes('📦') && (cleaned.includes('Scalato da magazzino') || cleaned.includes('Inventario scalato'))) {
+                        // Estrai solo la riga con data
+                        const lines = cleaned.split('\n');
+                        const firstLine = lines[0];
+                        
+                        // Cerca la data nel formato gg/mm/yyyy, hh:mm:ss o gg/mm/yyyy
+                        const dateMatch = firstLine.match(/\d{2}\/\d{2}\/\d{4}(?:,?\s+\d{2}:\d{2}(?::\d{2})?)?/);
+                        if (dateMatch) {
+                            const dateStr = dateMatch[0].replace(',', '');
+                            return `Scalato da magazzino il ${dateStr}`;
+                        }
+                        return 'Scalato da magazzino';
+                    }
+                    
+                    // Altrimenti rimuovi solo emoji e righe di articoli scalati
+                    cleaned = cleaned.replace(/📦/g, '').trim();
+                    
+                    // Se contiene "Articoli scalati:" rimuovi tutto da lì in poi
+                    if (cleaned.includes('Articoli scalati:')) {
+                        const beforeArticles = cleaned.split('Articoli scalati:')[0].trim();
+                        // Cerca la data
+                        const dateMatch = beforeArticles.match(/\d{2}\/\d{2}\/\d{4}(?:,?\s+\d{2}:\d{2}(?::\d{2})?)?/);
+                        if (dateMatch && (beforeArticles.includes('Scalato') || beforeArticles.includes('Inventario'))) {
+                            const dateStr = dateMatch[0].replace(',', '');
+                            return `Scalato da magazzino il ${dateStr}`;
+                        }
+                        return beforeArticles || '-';
+                    }
+                    
+                    return cleaned.trim() || '-';
+                };
+                
+                // Pulisci mainSize rimuovendo "NON APPLICABILE"
+                let cleanMainSize = order.mainSize || '-';
+                if (cleanMainSize && cleanMainSize.includes('NON APPLICABILE')) {
+                    cleanMainSize = '-';
+                }
+                
+                // Pulisci sockSize rimuovendo "NON APPLICABILE"
+                let cleanSockSize = order.sockSize || '-';
+                if (cleanSockSize && cleanSockSize.includes('NON APPLICABILE')) {
+                    cleanSockSize = '-';
+                }
+                
+                
+                // Crea chiave per Borsone/Zaino
+                const borsoneZainoCellKey = `${order.id}_BorsoneZaino_${borsoneZaino}`;
+                const isBorsoneZainoHighlighted = highlightedSizeCells[borsoneZainoCellKey] === true;
+                const borsoneZainoHighlightClass = isBorsoneZainoHighlighted ? 'size-cell-highlighted' : '';
+                
+                let html = `
+                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}</td>
+                    <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${order.customer}</td>
+                    <td class="border p-1 text-center" style="font-size: 10px;">${cleanMainSize}</td>
+                    <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize}</td>
+                    <td class="border p-1 text-center" style="font-size: 10px;">UNICA</td>
+                    <td class="border p-1" style="font-size: 9px;">${order.kitType || 'Personalizzato'}</td>
+                    <td class="border p-1" style="font-size: 9px; max-width: 100px; overflow: hidden; text-overflow: ellipsis;">${cleanNotes(order.notes)}</td>
+                    <td class="border p-1 text-center size-cell-clickable ${borsoneZainoHighlightClass}" 
+                        data-order-id="${order.id}" 
+                        data-item-name="BorsoneZaino" 
+                        data-size="${borsoneZaino}"
+                        onclick="toggleSizeCellHighlight(this, '${order.id}', 'BorsoneZaino', '${borsoneZaino}')" 
+                        style="font-size: 10px;">${borsoneZaino}</td>
+                    <td class="border p-1 text-center" style="font-size: 10px;">
+                        <button onclick="downloadOrderToGoogleForm(${order.id})" class="download-google-form-btn text-green-600 hover:text-green-800" title="Scarica tramite Google Form">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </td>
+                `;
+                
+                allItems.forEach((itemName, idx) => {
+                    const item = order.itemsList.find(i => {
+                        if (!i || !i.name || typeof i.name !== 'string') return false;
+                        const priceMatch = i.name.match(/\s*\(\d+€\)\s*$/);
+                        const cleanName = priceMatch ? i.name.substring(0, i.name.lastIndexOf(priceMatch[0])).trim() : i.name;
+                        return cleanName === itemName;
+                    });
+                    const size = item ? item.size : '';
+                    
+                    // Stessa logica di divisione
+                    const halfPoint = Math.ceil(allItems.length / 2);
+                    const partClass = idx < halfPoint ? 'print-show-part-1' : 'print-show-part-2';
+                    
+                    const colIndex = 8 + idx;
+                    
+                    // Crea una chiave univoca per questa cella
+                    const cellKey = `${order.id}_${itemName}_${size}`;
+                    const isHighlighted = highlightedSizeCells[cellKey] === true;
+                    const highlightClass = isHighlighted ? 'size-cell-highlighted' : '';
+                    
+                    html += `<td class="border p-1 text-center item-col size-cell-clickable ${partClass} ${highlightClass}" 
+                                data-col-index="${colIndex}" 
+                                data-order-id="${order.id}" 
+                                data-item-name="${itemName}" 
+                                data-size="${size}"
+                                onclick="toggleSizeCellHighlight(this, '${order.id}', '${itemName.replace(/'/g, "\\'")}', '${size}')" 
+                                style="font-size: 10px;">${size}</td>`;
+                });
+                
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function importFromGoogleSheet() {
+            if (!checkPermission('importGoogle')) {
+                alert('⚠️ Non hai i permessi per importare da Google.');
+                return;
+            }
+            // ID del Google Sheet
+            const SHEET_ID = '19ZKCyVFR_ncL8fn0h7myg3jpBfl_4VfD5TkFvTpI5FI';
+            const GID = '2068656898'; // Foglio "Risposte del modulo 1"
+            
+            // URL per esportare come CSV
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+            
+            // ✅ FIX: Accesso diretto senza proxy (Google Sheet pubblici hanno CORS)
+            const proxyUrl = csvUrl;
+            
+            console.log('🔄 Inizio importazione da Google Sheet...');
+            console.log('📡 URL diretto (no proxy):', proxyUrl);
+            
+            fetch(proxyUrl, {
+                mode: 'cors',
+                headers: {
+                    'Accept': 'text/csv'
+                }
+            })
+                .then(response => {
+                    console.log('📡 Risposta ricevuta:', response.status);
+                    if (!response.ok) {
+                        throw new Error('Impossibile accedere al Google Sheet. Verifica che sia pubblico.');
+                    }
+                    return response.text();
+                })
+                .then(csvText => {
+                    console.log('📄 CSV scaricato, lunghezza:', csvText.length);
+                    
+                    // Converti CSV in array di righe
+                    const rows = [];
+                    const lines = csvText.split('\n');
+                    
+                    lines.forEach(line => {
+                        if (!line.trim()) return; // Salta righe vuote
+                        
+                        const cells = [];
+                        let cell = '';
+                        let inQuotes = false;
+                        
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            
+                            if (char === '"') {
+                                if (inQuotes && line[i + 1] === '"') {
+                                    // Doppia virgoletta = virgoletta letterale
+                                    cell += '"';
+                                    i++; // Salta la prossima virgoletta
+                                } else {
+                                    inQuotes = !inQuotes;
+                                }
+                            } else if (char === ',' && !inQuotes) {
+                                cells.push(cell);
+                                cell = '';
+                            } else {
+                                cell += char;
+                            }
+                        }
+                        cells.push(cell); // Aggiungi l'ultima cella
+                        rows.push(cells);
+                    });
+                    
+                    console.log('📊 Righe processate:', rows.length);
+                    console.log('📋 Prima riga (header):', rows[0]);
+                    
+                    if (rows.length < 2) {
+                        throw new Error('Il foglio è vuoto o non contiene dati validi.');
+                    }
+                    
+                    // Usa la funzione esistente per processare l'import
+                    processImport(rows);
+                    
+                    const importedCount = rows.length - 1;
+                    console.log('✅ Importazione completata:', importedCount, 'ordini');
+                    
+                    alert('✅ Importazione completata!\n\n' + 
+                          `Righe elaborate: ${importedCount}\n` +
+                          'Controlla la tabella per vedere i nuovi ordini.');
+                    
+                    // Aggiorna la visualizzazione
+                    updateUI();
+                    resetFiltersToDefault();
+                })
+                .catch(error => {
+                    console.error('❌ Errore durante l\'importazione:', error);
+                    
+                    alert('❌ Errore durante l\'importazione!\n\n' + 
+                          error.message + '\n\n' +
+                          'Verifica che:\n' +
+                          '1. Il Google Sheet sia pubblico (Condividi → Chiunque con il link)\n' +
+                          '2. La connessione internet sia attiva\n' +
+                          '3. Il foglio contenga dati validi\n\n' +
+                          'Controlla la Console (F12) per dettagli tecnici.');
+                });
+        }
+        
+        function fixOldTimestamps() {
+            if (!confirm('🔧 UNIFORMA FORMATO DATA/ORA\n\nQuesta funzione uniforma tutti i timestamp al formato:\nYYYY-MM-DD HH:mm:00.000\n\nGestisce:\n✅ Numeri seriali Excel\n✅ Formato Google (DD/MM/YYYY)\n✅ Formato database (YYYY-MM-DD)\n✅ Correzione orari sbagliati (+1 ora)\n✅ Arrotondamento al minuto\n\nContinuare?')) {
+                return;
+            }
+            
+            let excelCount = 0;
+            let normalizedCount = 0;
+            let correctedCount = 0;
+            let totalCount = 0;
+            
+            orders.forEach((order, index) => {
+                if (!order.timestamp || !order.importKey) {
+                    return;
+                }
+                
+                const oldTimestamp = order.timestamp;
+                let newTimestamp = '';
+                let needsHourCorrection = false;
+                let year, month, day, hour, minute;
+                
+                // STEP 1: Identifica il formato e converti
+                
+                // Formato A: Numero seriale Excel (es: 45989.3026614476)
+                const excelSerialMatch = oldTimestamp.toString().match(/^(\d+\.?\d*)$/);
+                if (excelSerialMatch) {
+                    const excelSerial = parseFloat(excelSerialMatch[1]);
+                    const excelEpoch = new Date(1899, 11, 30);
+                    const jsDate = new Date(excelEpoch.getTime() + excelSerial * 86400000);
+                    
+                    year = jsDate.getFullYear();
+                    month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+                    day = jsDate.getDate().toString().padStart(2, '0');
+                    hour = jsDate.getHours();
+                    minute = jsDate.getMinutes().toString().padStart(2, '0');
+                    
+                    excelCount++;
+                    needsHourCorrection = false;
+                } 
+                // Formato B: YYYY-MM-DD HH:mm:ss.ms (database)
+                else {
+                    let match = oldTimestamp.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\.(\d{3})$/);
+                    if (match) {
+                        year = match[1];
+                        month = match[2];
+                        day = match[3];
+                        hour = parseInt(match[4]);
+                        minute = match[5];
+                        needsHourCorrection = false; // NON correggere più - gli ordini sono già stati corretti
+                    } 
+                    // Formato C: DD/MM/YYYY HH.mm.ss (Google Sheet con punti)
+                    else {
+                        match = oldTimestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2})\.(\d{2})\.(\d{2})$/);
+                        if (match) {
+                            day = match[1];
+                            month = match[2];
+                            year = match[3];
+                            hour = parseInt(match[4]);
+                            minute = match[5];
+                            normalizedCount++;
+                            needsHourCorrection = false;
+                        } else {
+                            // Formato D: DD/MM/YYYY HH:mm:ss (creati dall'app con due punti)
+                            match = oldTimestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
+                            if (match) {
+                                day = match[1];
+                                month = match[2];
+                                year = match[3];
+                                hour = parseInt(match[4]);
+                                minute = match[5];
+                                normalizedCount++;
+                                needsHourCorrection = false;
+                            } else {
+                                return; // Formato non riconosciuto
+                            }
+                        }
+                    }
+                }
+                
+                // STEP 2: Correggi l'ora se necessario
+                if (needsHourCorrection) {
+                    hour = (hour + 1) % 24;
+                    correctedCount++;
+                }
+                
+                // STEP 3: Crea timestamp uniforme (arrotondato al minuto)
+                const hourStr = hour.toString().padStart(2, '0');
+                newTimestamp = `${year}-${month}-${day} ${hourStr}:${minute}:00.000`;
+                
+                // STEP 4: Aggiorna se diverso
+                if (newTimestamp !== oldTimestamp) {
+                    order.timestamp = newTimestamp;
+                    order.importKey = newTimestamp;
+                    totalCount++;
+                }
+            });
+            
+            // Salva
+            saveData();
+            updateUI();
+            
+            // Messaggio finale
+            let msg = `✅ UNIFORMAZIONE COMPLETATA!\n\n`;
+            msg += `📊 Ordini elaborati: ${orders.length}\n`;
+            msg += `🔄 Timestamp modificati: ${totalCount}\n\n`;
+            if (excelCount > 0) msg += `📊 Excel serials convertiti: ${excelCount}\n`;
+            if (normalizedCount > 0) msg += `📅 Formati Google convertiti: ${normalizedCount}\n`;
+            if (correctedCount > 0) msg += `🕐 Orari corretti (+1h): ${correctedCount}\n`;
+            msg += `\n✅ Tutti i timestamp ora hanno il formato:\nYYYY-MM-DD HH:mm:00.000`;
+            
+            alert(msg);
+        }
+        
+        function subtractOneHour() {
+            if (!confirm('⏪ SOTTRAI 1 ORA\n\nQuesta funzione sottrae 1 ora a TUTTI i timestamp.\n\nUsala se hai cliccato "Correggi Orari" due volte per errore.\n\nContinuare?')) {
+                return;
+            }
+            
+            let correctedCount = 0;
+            
+            orders.forEach((order, index) => {
+                if (!order.timestamp || !order.importKey) {
+                    return;
+                }
+                
+                const oldTimestamp = order.timestamp;
+                
+                // Parse del formato: YYYY-MM-DD HH:mm:ss.ms
+                const match = oldTimestamp.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\.(\d{3})$/);
+                
+                if (match) {
+                    const year = match[1];
+                    const month = match[2];
+                    const day = match[3];
+                    let hour = parseInt(match[4]);
+                    const minute = match[5];
+                    const second = match[6];
+                    const ms = match[7];
+                    
+                    // Sottrai 1 ora
+                    hour = (hour - 1 + 24) % 24; // +24 per gestire ore negative (es: 0 - 1 = 23)
+                    const hourStr = hour.toString().padStart(2, '0');
+                    
+                    const newTimestamp = `${year}-${month}-${day} ${hourStr}:${minute}:${second}.${ms}`;
+                    
+                    // Aggiorna
+                    order.timestamp = newTimestamp;
+                    order.importKey = newTimestamp;
+                    correctedCount++;
+                }
+            });
+            
+            // Salva
+            saveData();
+            updateUI();
+            
+            alert(`✅ Correzione completata!\n\n🕐 Ordini corretti (-1h): ${correctedCount}\n📊 Totale: ${orders.length}`);
+        }
+        
+        async function loadData() {
+    // ✅ Reset isSaving all'avvio (sicurezza contro blocchi)
+    isSaving = false;
+    console.log('🔄 loadData: reset isSaving = false');
+    
+    try {
+        // Load orders
+        const ordersRes = await fetch('/api/orders');
+        if (ordersRes.ok) {
+            const ordersData = await ordersRes.json();
+            if (ordersData.success && ordersData.data) {
+                orders = ordersData.data.orders || [];
+                lastOrderId = ordersData.data.lastOrderId || 0;
+                currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
+                highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+            }
+        }
+        
+        // Load inventory
+        const invRes = await fetch('/api/inventory');
+        if (invRes.ok) {
+            const invData = await invRes.json();
+            if (invData.success && invData.data) {
+                inventory = invData.data.inventory || {};
+            }
+        }
+        
+        // Load config
+        const configRes = await fetch('/api/config');
+        if (configRes.ok) {
+            const configData = await configRes.json();
+            if (configData.success && configData.data) {
+                globalItems = configData.data.globalItems || [...DEFAULT_ITEMS_LIST];
+                globalKitTypes = configData.data.globalKitTypes || JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                
+                quickIdFilters = configData.data.quickIdFilters || {};
+                
+                catalogData = configData.data.catalog || {
+                    title: "Catalogo Abbigliamento",
+                    logo: "",
+                    qrUrl: "",
+                    fullCatalogUrl: "",
+                    items: []
+                };
+                
+                console.log('✅ Dati caricati da Redis:');
+                console.log('  - Items catalogo:', catalogData.items?.length || 0);
+                console.log('  - Quick ID filters:', Object.keys(quickIdFilters).length);
+            }
+        }
+        
+        // Initialize defaults if empty
+        if (globalItems.length === 0) {
+            globalItems = [...DEFAULT_ITEMS_LIST];
+        }
+        if (Object.keys(globalKitTypes).length === 0) {
+            globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+        }
+        
+        // Repair import keys
+        repairAllImportKeys();
+        
+        // ⬅️⬅️⬅️ AGGIUNGI QUESTA RIGA QUI ⬇️⬇️⬇️
+        initQuickIdButtons(); // Inizializza i pulsanti Quick ID dopo aver caricato quickIdFilters
+        
+        updateUI();
+    } catch (error) {
+        console.error('Errore caricamento dati:', error);
+        alert('Errore nel caricamento dei dati. Riprova.');
+    }
+}
+        
+        // ===== SISTEMA NOTIFICHE =====
+        function showQuickNotification(message, type = 'info') {
+            // Crea elemento notifica
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-[10000] px-6 py-3 rounded-lg shadow-lg text-white font-bold flex items-center gap-2 transition-all';
+            
+            // Colore in base al tipo
+            const colors = {
+                'success': 'bg-green-600',
+                'error': 'bg-red-600',
+                'warning': 'bg-yellow-600',
+                'info': 'bg-blue-600'
+            };
+            notification.classList.add(colors[type] || colors.info);
+            
+            // Icona in base al tipo
+            const icons = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            };
+            
+            notification.innerHTML = `
+                <span class="text-xl">${icons[type] || icons.info}</span>
+                <span>${message}</span>
+            `;
+            
+            // Aggiungi al body
+            document.body.appendChild(notification);
+            
+            // Animazione entrata
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // Rimuovi dopo 3 secondi
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // ===== SISTEMA AUTO-REFRESH =====
+        let autoRefreshInterval = null;
+        let lastDataHash = null;
+        let isSaving = false; // ✅ Flag per evitare che autoRefresh sovrascriva durante salvataggio
+        
+        // ✅ FIX: Unica funzione hash - semplice e identica in entrambi i punti
+        function getDataHash(ordersArray, orderIdVal) {
+            const arr = ordersArray || orders;
+            const lid = (orderIdVal !== undefined) ? orderIdVal : lastOrderId;
+            // ✅ Include anche status e note per rilevare modifiche a ordini esistenti
+            const stateStr = arr.map(o => `${o.id}:${o.status || ''}:${o.notes || ''}:${o.partialDeliveryNote || ''}`).sort().join('|');
+            return `count:${arr.length}|lastId:${lid}|${stateStr}`;
+        }
+        
+        // Funzione di auto-refresh silenziosa
+        async function autoRefreshData() {
+            try {
+                const scrollPos = window.scrollY;
+                const ordersRes = await fetch('/api/orders');
+                if (!ordersRes.ok) return;
+                const ordersData = await ordersRes.json();
+                if (!ordersData.success || !ordersData.data) return;
+
+                const remoteOrders = ordersData.data.orders || [];
+                const remoteLastId = ordersData.data.lastOrderId || 0;
+                const newHash = getDataHash(remoteOrders, remoteLastId);
+
+                // ✅ Non aggiornare se stiamo salvando (evita sovrascrittura)
+                if (isSaving) {
+                    lastDataHash = newHash;
+                    return;
+                }
+                
+                if (lastDataHash !== null && newHash !== lastDataHash) {
+                    console.log(`🔄 Dati aggiornati da altro utente (${orders.length} → ${remoteOrders.length} ordini)`);
+                    orders = remoteOrders;
+                    lastOrderId = remoteLastId;
+                    currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
+                    highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                    updateUI();
+                    showQuickNotification('🔄 Dati aggiornati', 'info');
+                    loadPaymentsData(); // ✅ Ricarica anche i pagamenti
+                    setTimeout(() => window.scrollTo(0, scrollPos), 100);
+                }
+                lastDataHash = newHash;
+
+                const invRes = await fetch('/api/inventory');
+                if (invRes.ok) {
+                    const invData = await invRes.json();
+                    if (invData.success && invData.data) {
+                        inventory = invData.data.inventory || {};
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Auto-refresh error:', error);
+            }
+        }
+        
+        // Avvia auto-refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            lastDataHash = getDataHash();
+            autoRefreshInterval = setInterval(autoRefreshData, 30000);
+            console.log('✅ Auto-refresh attivo (ogni 30 secondi)');
+        }
+        
+        // Ferma auto-refresh
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                console.log('⏸️ Auto-refresh fermato');
+            }
+        }
+        
+        // ===== FINE SISTEMA AUTO-REFRESH =====
+        
+        // NUOVA FUNZIONE: Ripara tutti gli importKey per evitare duplicati all'importazione
+        function repairAllImportKeys() {
+            let repairedCount = 0;
+            orders.forEach(o => {
+                if (o.timestamp) {
+                    const oldKey = o.importKey;
+                    // USA TIMESTAMP ESATTO (NON arrotondare)
+                    o.importKey = o.timestamp;
+                    if (oldKey !== o.importKey) {
+                        repairedCount++;
+                    }
+                } else if (o.displayId && !o.importKey) {
+                    // Se non ha timestamp, usa displayId come fallback
+                    o.importKey = o.displayId;
+                }
+            });
+            
+            if (repairedCount > 0) {
+                console.log(`🔧 Riparati automaticamente ${repairedCount} importKey al caricamento`);
+            }
+        }
+        
+        // FUNZIONE HELPER: Normalizza qualsiasi timestamp al formato YYYY-MM-DD HH:mm:00.000
+        function normalizeTimestampToMinute(timestamp) {
+            if (!timestamp || typeof timestamp !== 'string') {
+                return timestamp;
+            }
+            
+            // Formato 1: YYYY-MM-DD HH:mm:ss.ms → YYYY-MM-DD HH:mm:00.000
+            let match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):\d{2}\.\d{3}$/);
+            if (match) {
+                return match[1] + ':00.000';
+            }
+            
+            // Formato 2: YYYY-MM-DD HH:mm:ss (senza millisecondi) → YYYY-MM-DD HH:mm:00.000
+            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):\d{2}$/);
+            if (match) {
+                return match[1] + ':00.000';
+            }
+            
+            // Formato 3: DD/MM/YYYY HH.mm.ss → YYYY-MM-DD HH:mm:00.000
+            match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2})\.(\d{2})\.\d{2}$/);
+            if (match) {
+                const day = match[1];
+                const month = match[2];
+                const year = match[3];
+                const hour = match[4].padStart(2, '0');
+                const minute = match[5];
+                return `${year}-${month}-${day} ${hour}:${minute}:00.000`;
+            }
+            
+            // Formato 4: DD/MM/YYYY HH:mm:ss → YYYY-MM-DD HH:mm:00.000
+            match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2}):\d{2}$/);
+            if (match) {
+                const day = match[1];
+                const month = match[2];
+                const year = match[3];
+                const hour = match[4].padStart(2, '0');
+                const minute = match[5];
+                return `${year}-${month}-${day} ${hour}:${minute}:00.000`;
+            }
+            
+            // Formato 5: Già normalizzato YYYY-MM-DD HH:mm:00.000 → mantieni così
+            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}):00\.000$/);
+            if (match) {
+                return timestamp; // Già corretto
+            }
+            
+            // Formato 6: YYYY-MM-DD HH:mm (senza secondi) → YYYY-MM-DD HH:mm:00.000
+            match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})$/);
+            if (match) {
+                return match[1] + ':00.000';
+            }
+            
+            // Se non matcha nessun pattern, prova a estrarre almeno YYYY-MM-DD HH:mm
+            match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+            if (match) {
+                return `${match[1]}-${match[2]}-${match[3]} ${match[4]}:${match[5]}:00.000`;
+            }
+            
+            // Fallback: restituisci così com'è
+            console.warn(`⚠️ Timestamp non riconosciuto: "${timestamp}"`);
+            return timestamp;
+        }
+        
+        // NUOVA FUNZIONE: Riparazione manuale degli importKey (con messaggio)
+        function manualRepairImportKeys() {
+            if (!confirm('🔧 RIPARA IMPORTKEY\n\nQuesta funzione aggiorna tutti gli importKey per evitare duplicati durante l\'importazione.\n\nUSA IL TIMESTAMP ESATTO (mantiene secondi e millisecondi).\n\nContinuare?')) {
+                return;
+            }
+            
+            let repairedCount = 0;
+            let noTimestampCount = 0;
+            
+            orders.forEach(o => {
+                if (o.timestamp) {
+                    const oldKey = o.importKey;
+                    
+                    // USA TIMESTAMP ESATTO (NON arrotondare)
+                    o.importKey = o.timestamp;
+                    
+                    if (oldKey !== o.importKey) {
+                        repairedCount++;
+                    }
+                } else if (o.displayId && !o.importKey) {
+                    // Se non ha timestamp, usa displayId come fallback
+                    o.importKey = o.displayId;
+                    noTimestampCount++;
+                }
+            });
+            
+            saveData();
+            
+            let msg = `✅ RIPARAZIONE COMPLETATA!\n\n`;
+            msg += `📊 Totale ordini: ${orders.length}\n`;
+            msg += `🔧 ImportKey riparati: ${repairedCount}\n`;
+            if (noTimestampCount > 0) {
+                msg += `⚠️ Ordini senza timestamp (usato displayId): ${noTimestampCount}\n`;
+            }
+            msg += `\n✅ Tutti gli importKey ora usano il timestamp ESATTO.\n`;
+            msg += `(secondi e millisecondi mantenuti)\n`;
+            msg += `Esempio: 2025-09-22 14:12:38.000 rimane così\n\n`;
+            msg += `I prossimi import non dovrebbero creare duplicati.`;
+            
+            alert(msg);
+        }
+        
+        async function saveData() {
+  isSaving = true; // ✅ Blocca auto-refresh durante salvataggio
+  console.log(`💾 saveData INIZIO - ${orders.length} ordini da salvare`);
+  console.log(`Ordini IDs:`, orders.map(o => o.displayId).join(', '));
+  
+  try {
+    // ✅ CONTROLLO CONFLITTI: Verifica se ci sono modifiche più recenti su Redis
+    const checkRes = await fetch('/api/orders');
+    if (checkRes.ok) {
+      const checkData = await checkRes.json();
+      if (checkData.success && checkData.data) {
+        const remoteOrders = checkData.data.orders || [];
+        const remoteHash = getDataHash(remoteOrders, checkData.data.lastOrderId);
+        
+        // Se l'hash è diverso, significa che qualcun altro ha salvato nel frattempo
+        if (lastDataHash !== null && remoteHash !== lastDataHash) {
+          console.warn(`⚠️ CONFLITTO RILEVATO! Altri utenti hanno modificato i dati.`);
+          console.log(`  Ordini locali: ${orders.length}, Ordini remoti: ${remoteOrders.length}`);
+          
+          // ✅ MERGE INTELLIGENTE: Aggiungi solo gli ordini che non esistono su Redis
+          const remoteIds = new Set(remoteOrders.map(o => o.displayId));
+          const newOrders = orders.filter(o => !remoteIds.has(o.displayId));
+          
+          if (newOrders.length > 0) {
+            console.log(`✅ Trovati ${newOrders.length} ordini nuovi da aggiungere:`, newOrders.map(o => o.displayId));
+            // Merge: ordini remoti + ordini nuovi locali
+            const mergedOrders = [...remoteOrders, ...newOrders];
+            orders = mergedOrders;
+            lastOrderId = Math.max(checkData.data.lastOrderId, lastOrderId);
+            console.log(`🔀 MERGE completato: ${mergedOrders.length} ordini totali`);
+          } else {
+            console.log(`❌ Nessun ordine nuovo da aggiungere. Uso dati remoti.`);
+            orders = remoteOrders;
+            lastOrderId = checkData.data.lastOrderId;
+            currentPrefix = checkData.data.currentPrefix || DEFAULT_ID_PREFIX;
+            lastDataHash = remoteHash; // allinea l'hash locale per evitare di rilevare lo stesso "conflitto" ad ogni salvataggio successivo
+            updateUI();
+            return; // Non salvare se non ci sono modifiche
+          }
+        }
+      }
+    }
+    
+    // Save orders
+    const ordersRes = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        orders,
+        lastOrderId,
+        currentPrefix,
+        highlightedSizeCells
+      })
+    });
+    if (!ordersRes.ok) {
+      const err = await ordersRes.text();
+      console.error('❌ Errore salvataggio ordini:', err);
+      alert(`⚠️ ERRORE CRITICO!\n\nIl salvataggio degli ordini è FALLITO!\n\n${err}\n\nGli ordini NON sono stati salvati su Redis.\nContatta l'amministratore.`);
+      showQuickNotification('❌ Salvataggio FALLITO!', 'error');
+      return;
+    }
+    
+    console.log(`✅ Ordini salvati su Redis: ${orders.length} ordini`);
+    
+    // ✅ Salva backup locale dopo salvataggio riuscito
+    saveOrdersBackup();
+
+    // Save inventory
+    await fetch('/api/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        inventory
+      })
+    });
+
+    // Save config
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save',
+        globalItems: globalItems,
+        globalKitTypes: globalKitTypes,
+        quickIdFilters: quickIdFilters,
+        catalog: catalogData
+      })
+    });
+
+    // ✅ Aggiorna hash locale con i dati appena salvati (evita falso "aggiornamento da altro utente")
+    lastDataHash = getDataHash();
+    console.log('Data saved successfully');
+  } catch (error) {
+    console.error('❌ Errore critico saveData:', error);
+  } finally {
+    isSaving = false; // ✅ Sblocca auto-refresh
+  }
+}
+        function generateNewId(isManual = false) {
+            lastOrderId++; 
+            const sequence = lastOrderId.toString().padStart(3, '0');
+            const newId = `${currentPrefix}${sequence}`;
+            console.log(`🆔 ID generato: ${newId} (lastOrderId: ${lastOrderId})`);
+            // ⚠️ NON chiamare saveData() qui - viene chiamato da updateUI() dopo addNewOrder()
+            return newId;
+        }
+        
+        function updatePrefixAndID() { 
+            const inputEl = document.getElementById('startPrefixInput');
+            const input = inputEl.value.trim(); 
+            if(!input) { inputEl.value = ''; return; }
+            const match = input.match(/^(\d{4}[A]?_)((\d+))$/i);
+            if(match){ 
+                const newPrefix=match[1].toUpperCase();
+                const newStartId=parseInt(match[2]); 
+                if(newPrefix!==currentPrefix){ currentPrefix=newPrefix; lastOrderId=newStartId-1; alert(`Nuovo Prefisso: ${currentPrefix} impostato.`); } 
+                else if(newStartId-1>lastOrderId){ lastOrderId=newStartId-1; alert(`ID Sequenza aggiornato.`); } 
+                else { alert(`Nessuna modifica.`); }
+                saveData(); inputEl.value = '';
+            } else { alert('ERRORE: Formato ID non valido.'); }
+        }
+
+        function updateOrderType(id, newType) {
+            const o = orders.find(x => x.id === id);
+            if (!o) return;
+            o.type = newType;
+            updateUI();
+        }
+        
+        function updateContactInfo(field, val) {
+            const o = orders.find(x => x.id === currentEditId);
+            if (!o) return;
+            if (field === 'email') o.email = val.trim();
+            if (field === 'phone') o.phone = val.trim();
+            saveData();
+        }
+
+        function updateOrderField(id, field, value) { 
+            const o = orders.find(x => x.id === id);
+            if (!o) return; 
+            if (field === 'displayId') { 
+                const newValue = value.toUpperCase().trim();
+                if (orders.some(x => x.displayId === newValue && x.id !== id)) { alert(`ID esistente.`); renderTable(); return; } 
+                o.displayId = newValue;
+            } else if (field === 'customer') {
+                // Rimuovi newline e spazi multipli, unisci con uno spazio
+                const cleanValue = value.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                o.customer = cleanValue;
+            }
+            else if (field === 'roleOrYear') o.roleOrYear = value.trim();
+            else if (field === 'kitType') { 
+                o.kitType = value;
+                if (value.toLowerCase().includes('staff') || value.toLowerCase().includes('allenatore') || value.toLowerCase().includes('dirigente')) o.type = 'Staff'; else o.type = 'Giocatore';
+            } else if (field === 'notes') o.notes = value.trim(); 
+            updateUI();
+        }
+
+        function clearAllOrders() { 
+            if (!checkPermission('resetData')) {
+                alert('⚠️ Non hai i permessi per resettare i dati.');
+                return;
+            }
+            if (confirm("Reset completo?")) { 
+                const orderCount = orders.length;
+                orders = []; 
+                inventory={};
+                
+                logActivity('RESET_DATA', `Reset completo sistema - Eliminati ${orderCount} ordini`);
+                
+                updateUI();
+        highlightedSizeCells = {}; lastOrderId = 0; localStorage.clear(); location.reload(); } }
+        function extractKitName(input) { if (!input) return null;
+        const match = input.match(/^(.*?)\s*\(/); return (match && match[1].trim()) ? match[1].trim() : input.trim(); }
+        function updateSizes(id, t, v) { const o = orders.find(x=>x.id===id); if (!o) return; v = v.toUpperCase().trim(); if (t === 'sock') { if (v === 'UNICA') return alert('Taglia non valida'); o.sockSize = v; o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); } if(t==='main') { o.mainSize = v; o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); } updateUI(); }
+        function updateInventory(itemName, size, value) { const key = `${itemName}_${size}`; if(value === "" || value === null) delete inventory[key]; else inventory[key] = parseInt(value); saveData(); renderMatrices(true); }
+        function getPriceFromString(str) { if (!str || typeof str !== 'string') return 0; const match = str.match(/\((\d+)€\)/); return match ? parseInt(match[1]) : 0; }
+        function getBagType(items) { const bag = items.find(i => i.name.includes('Borsone') || i.name.includes('Zaino'));
+        if (!bag) return ''; return bag.name.includes('Zaino') ? 'Zaino' : 'Borsone'; }
+        function updateDiscount(id, val) { const o = orders.find(x => x.id === id);
+        if (!o) return; o.discount = parseInt(val) || 0; updateUI(); }
+        
+        function calculateOrderTotal(o) {
+            if (!o) return 0;
+            
+            let kitPrice = getPriceFromString(o.kitType);
+            
+            if (kitPrice === 0 && o.kitType && typeof o.kitType === 'string') { 
+                for (const key in globalKitTypes) { 
+                    const cleanNameDB = globalKitTypes[key].display.split('(')[0].trim(); 
+                    const cleanNameOrder = o.kitType.split('(')[0].trim(); 
+                    if (cleanNameDB === cleanNameOrder) { 
+                        kitPrice = getPriceFromString(globalKitTypes[key].display); 
+                        o.kitType = globalKitTypes[key].display; 
+                        break; 
+                    } 
+                } 
+            }
+            
+            if (kitPrice === 0 && o.itemsList && Array.isArray(o.itemsList)) { 
+                o.itemsList.forEach(i => {
+                    if (i && i.name) {
+                        kitPrice += getPriceFromString(i.name);
+                    }
+                }); 
+            }
+            
+            const discount = o.discount || 0; 
+            return Math.max(0, kitPrice - discount);
+        }
+
+        function renderKitFilterOptions() {
+            const select = document.getElementById('filterKitType');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="all">Tipo Ordine: Tutti</option>';
+            Object.values(globalKitTypes).forEach(kit => {
+                if (kit && kit.display && typeof kit.display === 'string') {
+                    select.innerHTML += `<option value="${kit.display}">${kit.display.split('(')[0].trim()}</option>`;
+                }
+            });
+            const extras = ['Abbigliamento Singolo', 'Personalizzato'];
+            extras.forEach(e => {
+                select.innerHTML += `<option value="${e}">${e}</option>`;
+            });
+            if(currentVal) select.value = currentVal;
+        }
+
+        function getAvailableKitOptionsHTML(selected) {
+             let html = '';
+             Object.values(globalKitTypes).forEach(kit => {
+                 html += `<option value="${kit.display}" ${selected===kit.display?'selected':''}>${kit.display}</option>`;
+             });
+             ['Abbigliamento Singolo', 'Personalizzato'].forEach(k => {
+                 html += `<option value="${k}" ${selected===k?'selected':''}>${k}</option>`;
+             });
+             return html;
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) { 
+            try { 
+                const file = e.target.files[0]; 
+                const reader = new FileReader(); 
+                reader.onload = function(e) { 
+                    try { 
+                        const data = new Uint8Array(e.target.result); 
+                        const wb = XLSX.read(data, {type: 'array'}); 
+                        
+                        // Leggi primo foglio (ordini)
+                        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}); 
+                        processImport(rows, wb); // Passa anche workbook per leggere magazzino
+                    } catch(err) { 
+                        alert(`ERRORE FILE: ${err.message}`); 
+                    } 
+                }; 
+                reader.readAsArrayBuffer(file); 
+            } catch (err) { 
+                alert(`ERRORE IMPORT: ${err.message}`); 
+            }
+        });
+
+        function processImport(rows, wb) {
+            if (!rows || rows.length < 2) return alert("File vuoto.");
+            const header = rows[0].map(c => c ? c.toString().toLowerCase() : "");
+            let isGestioneOrdini = false; let isGoogleForm = false;
+            let isBackup = false;
+
+            const checkArea = header.slice(0, 20);
+            const hasId = checkArea[0] && checkArea[0].includes("id");
+            const hasClienteOrTimestamp = (checkArea[1] && checkArea[1].includes("cliente")) || (checkArea[1] && checkArea[1].includes("timestamp") && checkArea[2] && checkArea[2].includes("cliente"));
+            const hasRelevantCols = checkArea.some(h => h && (h.includes("email") || h.includes("kit") || h.includes("anno")));
+            if (hasId && hasClienteOrTimestamp && hasRelevantCols) {
+                isBackup = true;
+            }
+            else if (checkArea[0] && (checkArea[0].includes("informazioni") || checkArea[0].includes("timestamp"))) isGoogleForm = true;
+            else if (checkArea.includes("id ordine")) isGestioneOrdini = true;
+            else if (checkArea.includes("nome") && checkArea.includes("cognome")) { isGoogleForm = true; }
+
+            // Funzione per arrotondare timestamp al minuto (rimuove secondi e millisecondi)
+            // Gestisce anche importKey con formato: "Timestamp_Nome_Cognome"
+            function roundToMinute(importKey) {
+                if (!importKey || typeof importKey !== 'string') {
+                    return importKey;
+                }
+                
+                // Se l'importKey contiene "_" (formato: Timestamp_Nome_Cognome)
+                if (importKey.includes('_')) {
+                    const parts = importKey.split('_');
+                    const timestamp = parts[0];
+                    const resto = parts.slice(1).join('_'); // Nome_Cognome
+                    
+                    const roundedTimestamp = roundTimestampOnly(timestamp);
+                    return `${roundedTimestamp}_${resto}`;
+                }
+                
+                // Altrimenti è solo un timestamp
+                return roundTimestampOnly(importKey);
+            }
+            
+            // Funzione helper per convertire timestamp mantenendo i secondi esatti
+            function roundTimestampOnly(timestamp) {
+                if (!timestamp || typeof timestamp !== 'string') {
+                    return timestamp;
+                }
+                
+                // Prova pattern: YYYY-MM-DD HH:mm:ss.ms (GIÀ NEL FORMATO CORRETTO)
+                let match = timestamp.match(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3}$/);
+                if (match) {
+                    return timestamp; // Già nel formato corretto
+                }
+                
+                // Prova pattern senza millisecondi: YYYY-MM-DD HH:mm:ss
+                match = timestamp.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})$/);
+                if (match) {
+                    return match[1] + '.000'; // Aggiungi solo i millisecondi
+                }
+                
+                // Pattern DD/MM/YYYY HH.mm.ss (Google con punti) - MANTIENI SECONDI
+                match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2})\.(\d{2})\.(\d{2})$/);
+                if (match) {
+                    const day = match[1];
+                    const month = match[2];
+                    const year = match[3];
+                    const hour = match[4].padStart(2, '0');
+                    const minute = match[5];
+                    const second = match[6]; // MANTIENI i secondi
+                    return `${year}-${month}-${day} ${hour}:${minute}:${second}.000`;
+                }
+                
+                // Pattern DD/MM/YYYY HH:mm:ss (Google con due punti) - MANTIENI SECONDI
+                match = timestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
+                if (match) {
+                    const day = match[1];
+                    const month = match[2];
+                    const year = match[3];
+                    const hour = match[4].padStart(2, '0');
+                    const minute = match[5];
+                    const second = match[6]; // MANTIENI i secondi
+                    return `${year}-${month}-${day} ${hour}:${minute}:${second}.000`;
+                }
+                
+                // Se non matcha nessun pattern, restituisci così com'è
+                return timestamp;
+            }
+
+            const newOrUpdatedOrders = [];
+            
+            // STEP 1: Trova l'ULTIMO ordine nel database per data/ora
+            let latestOrder = null;
+            let latestTimestampDate = null;
+            if (isGoogleForm && orders.length > 0) {
+                // ✅ FIX: Trova il timestamp MÀS RECENTE tra TUTTI gli ordini con timestamp
+                // NON usare l'ordine con ID più alto (alfabetico) — potrebbe non avere timestamp
+                let latestTimestampMs = 0;
+                orders.forEach(o => {
+                    if (!o.timestamp) return;
+                    try {
+                        const ts = new Date(roundTimestampOnly(o.timestamp));
+                        if (!isNaN(ts.getTime()) && ts.getTime() > latestTimestampMs) {
+                            latestTimestampMs = ts.getTime();
+                            latestOrder = o;
+                        }
+                    } catch(e) {}
+                });
+
+                if (latestOrder && latestTimestampMs > 0) {
+                    latestTimestampDate = new Date(latestTimestampMs);
+                    console.log(`\n🕐 === TIMESTAMP PIÙ RECENTE NEL DATABASE ===`);
+                    console.log(`ID: ${latestOrder.displayId}`);
+                    console.log(`Cliente: ${latestOrder.customer}`);
+                    console.log(`Timestamp: ${latestOrder.timestamp}`);
+                    console.log(`Date: ${latestTimestampDate.toLocaleString('it-IT')}`);
+                    console.log(`\n📋 Importerò SOLO ordini con timestamp successivo a questo`);
+                } else {
+                    console.log(`⚠️ Nessun ordine con timestamp valido nel DB — importo tutti`);
+                }
+            }
+            
+            // STEP 2: Aggiorna TUTTI gli importKey usando timestamp ESATTO
+            console.log(`\n🎯 === AGGIORNAMENTO IMPORTKEY ===`);
+            console.log(`Totale ordini nel sistema: ${orders.length}`);
+            
+            orders.filter(o => o.timestamp).forEach(o => {
+                // ImportKey = timestamp ESATTO (NON arrotondare)
+                o.importKey = o.timestamp;
+            });
+            
+            // STEP 2: Crea mappa con TUTTI gli importKey aggiornati
+            const existingOrdersMap = new Map(
+                orders.filter(o => o.importKey).map(o => [o.importKey, o])
+            );
+            
+            console.log(`ImportKey creati: ${existingOrdersMap.size}`);
+            console.log(`\n📊 === TUTTI I TIMESTAMP NEL DATABASE (primi 30) ===`);
+            let count = 0;
+            for (let [key, order] of existingOrdersMap) {
+                if (count < 30) {
+                    console.log(`  ${order.displayId}: "${key}" (length: ${key.length})`);
+                    // Mostra ogni carattere
+                    const chars = key.split('').map((c, i) => `[${i}]=${c.charCodeAt(0)}`).join(' ');
+                    if (count < 3) console.log(`    Chars: ${chars}`);
+                    count++;
+                }
+            }
+            console.log();
+            
+            const manualOrders = orders.filter(o => !o.importKey); 
+            
+            console.log(`📥 Inizio import: ${rows.length - 1} righe da processare`);
+            console.log(`📊 Ordini esistenti con importKey: ${existingOrdersMap.size}`);
+            console.log(`📊 Ordini manuali: ${manualOrders.length}`);
+            
+            let ordersToProcess = rows.slice(1);
+            let successCount = 0;
+            let duplicateCount = 0;
+            const newOrderIds = []; // Traccia gli ID degli ordini veramente nuovi
+
+            ordersToProcess.forEach((row, i) => {
+                try {
+                    if (row.slice(0, 4).every(c => !c || c.toString().trim() === "")) return;
+
+                    let importKey, customer, mainSize, sockSize, notes, inputs, kitDisplayName, type = 'Giocatore', itemsList = []; 
+                    let linkedIdImport = null; // FIX: Dichiarazione variabile
+                    let rowDisplayId = null; 
+                    let bagChoice = null;
+                    let discountImport = 0;
+                    let statusImport = 'Nuovo';
+                    let emailImport = '', phoneImport = '', roleOrYearImport = '';
+                    let timestamp = null; // Dichiarazione timestamp per tutti i tipi di import
+                    let rawTimestampForLog = null; // Per log debug
+                    let accessorySize = 'UNICA'; // Taglia accessori (Cappellino, Scaldacollo, Guanti)
+                    let noteColorImport = 'default';
+                    let inventoryScaledAtImport = null;
+
+                    if (isBackup) {
+                        rowDisplayId = row[0] ? row[0].toString().trim() : generateNewId(true);
+                        
+                        // Trova indici colonne per nome (più affidabile)
+                        const findColIdx = (names) => {
+                            for (let name of names) {
+                                const idx = header.findIndex(h => h && h.toLowerCase().includes(name.toLowerCase()));
+                                if (idx !== -1) return idx;
+                            }
+                            return -1;
+                        };
+                        
+                        const idxTimestamp = findColIdx(['timestamp']);
+                        const idxCliente = findColIdx(['cliente', 'customer']);
+                        const idxAnnoRuolo = findColIdx(['anno', 'ruolo']);
+                        const idxEmail = findColIdx(['email']);
+                        const idxTelefono = findColIdx(['telefono', 'phone']);
+                        const idxKit = findColIdx(['kit']);
+                        const idxTaglia = findColIdx(['taglia']);
+                        const idxCalze = findColIdx(['calze', 'sock']);
+                        const idxNote = findColIdx(['note']);
+                        const idxColoreNota = findColIdx(['colore nota', 'notecolor']);
+                        const idxScalatoMag = findColIdx(['scalato', 'inventory']);
+                        const idxStato = findColIdx(['stato', 'status']);
+                        const idxSconto = findColIdx(['sconto', 'discount']);
+                        const idxTrasferito = findColIdx(['trasferito', 'linked']);
+                        const idxDettaglio = findColIdx(['dettaglio', 'articoli']);
+                        
+                        // Leggi valori usando gli indici trovati
+                        timestamp = idxTimestamp !== -1 && row[idxTimestamp] ? row[idxTimestamp].toString().trim() : null;
+                        rawTimestampForLog = timestamp; // Salva per log
+                        
+                        // USA IL TIMESTAMP ESATTO COME IMPORTKEY (NON arrotondare)
+                        if (timestamp) {
+                            importKey = timestamp;
+                        } else {
+                            // Fallback: usa l'ID se non c'è timestamp
+                            importKey = rowDisplayId;
+                        }
+                        
+                        customer = idxCliente !== -1 && row[idxCliente] ? row[idxCliente].toString().trim() : "Cliente";
+                        roleOrYearImport = idxAnnoRuolo !== -1 && row[idxAnnoRuolo] ? row[idxAnnoRuolo].toString().trim() : "";
+                        emailImport = idxEmail !== -1 && row[idxEmail] ? row[idxEmail].toString().trim() : "";
+                        phoneImport = idxTelefono !== -1 && row[idxTelefono] ? row[idxTelefono].toString().trim() : "";
+                        kitDisplayName = idxKit !== -1 && row[idxKit] ? row[idxKit].toString().trim() : "Personalizzato";
+                        mainSize = idxTaglia !== -1 && row[idxTaglia] ? row[idxTaglia].toString().trim() : "L";
+                        sockSize = idxCalze !== -1 && row[idxCalze] ? row[idxCalze].toString().trim() : "43/46";
+                        notes = idxNote !== -1 && row[idxNote] ? row[idxNote].toString().trim() : "";
+                        noteColorImport = idxColoreNota !== -1 && row[idxColoreNota] && row[idxColoreNota].toString().trim() ? row[idxColoreNota].toString().trim() : "default";
+                        inventoryScaledAtImport = idxScalatoMag !== -1 && row[idxScalatoMag] && row[idxScalatoMag].toString().trim() ? row[idxScalatoMag].toString().trim() : null;
+                        statusImport = idxStato !== -1 && row[idxStato] && row[idxStato].toString().trim() ? row[idxStato].toString().trim() : "Nuovo";
+                        if (!STATUSES.some(s => s.value === statusImport)) statusImport = "Nuovo";
+                        
+                        // DEBUG: Log status import
+                        console.log(`📋 Ordine ${rowDisplayId}: Colonna Stato idx=${idxStato}, Valore raw="${row[idxStato]}", Status importato="${statusImport}"`);
+                        
+                        // DEBUG: Log ordini trasferiti
+                        if (statusImport && statusImport.includes('trasferito')) {
+                            console.log(`📦 Importando ordine TRASFERITO: ${rowDisplayId}, Cliente: ${customer}, Stato: ${statusImport}`);
+                        }
+                        
+                        discountImport = idxSconto !== -1 && row[idxSconto] ? parseInt(row[idxSconto]) : 0;
+                        linkedIdImport = idxTrasferito !== -1 && row[idxTrasferito] && row[idxTrasferito].toString().trim() ? row[idxTrasferito].toString().trim() : null;
+                        const detailsCol = idxDettaglio !== -1 ? row[idxDettaglio] : null; 
+
+                        if(kitDisplayName.toLowerCase().includes('staff') || kitDisplayName.toLowerCase().includes('allenatore')) type = 'Staff';
+
+                         if (detailsCol) {
+                            const itemsStr = detailsCol.toString();
+                            const rawItems = itemsStr.split('||');
+                            rawItems.forEach(itemRaw => {
+                                const clean = itemRaw.trim();
+                                if(clean) {
+                                    const match = clean.match(/^(.*?) \[(.*?)\]$/);
+                                    if (match) {
+                                        itemsList.push({ name: match[1].trim(), size: match[2].trim() });
+                                    } else {
+                                        let s = mainSize;
+                                        if(clean.includes("Calzettoni")) s = sockSize;
+                                        if(clean.includes("Borsone")||clean.includes("Zaino")) s = "UNICA";
+                                        itemsList.push({name: clean, size: s});
+                                    }
+                                }
+                            });
+                        } else {
+                             for(let k in globalKitTypes) {
+                                 if(kitDisplayName === globalKitTypes[k].display) {
+                                     const kitInfo = globalKitTypes[k];
+                                     itemsList = kitInfo.items.map(n => ({ name: n, size: n.includes("Calzettoni")?sockSize:(n.includes("Borsone")||n.includes("Zaino")?"UNICA":mainSize) }));
+                                 }
+                             }
+                        }
+                    }
+                    else if (isGoogleForm) { 
+                        if (!row[0] && !row[2] && !row[3]) return;
+                        
+                        // DEBUG: Mostra cosa c'è nelle prime colonne
+                        console.log(`\n📋 === RIGA ${i + 2} ===`);
+                        console.log(`Col A (timestamp grezzo):`, row[0], `(tipo: ${typeof row[0]})`);
+                        console.log(`Col B (email):`, row[1]);
+                        console.log(`Col C (nome):`, row[2]);
+                        console.log(`Col D (cognome):`, row[3]);
+                        
+                        // Salta le righe di "Intergrazione" o "Integrazione"
+                        const nomeTemp = row[2] ? row[2].toString().toLowerCase() : '';
+                        const cognomeTemp = row[3] ? row[3].toString().toLowerCase() : '';
+                        if (nomeTemp.includes('intergrazione') || nomeTemp.includes('integrazione') ||
+                            cognomeTemp.includes('intergrazione') || cognomeTemp.includes('integrazione')) {
+                            console.log(`⏭️ Saltata riga di integrazione`);
+                            return;
+                        }
+                        
+                        // CONVERTE IL TIMESTAMP DAL FORMATO GOOGLE AL FORMATO DATABASE
+                        // Google: "04/12/2025 19.44.42"
+                        // Database: "2025-12-04 19:44:00.000" (ARROTONDATO AL MINUTO)
+                        let rawTimestamp = row[0] ? row[0].toString().trim() : '';
+                        
+                        // Parse del formato Google: DD/MM/YYYY HH.mm.ss
+                        const match = rawTimestamp.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2})\.(\d{2})\.(\d{2})$/);
+                        
+                        if (match) {
+                            const day = match[1];
+                            const month = match[2];
+                            const year = match[3];
+                            const hour = match[4].padStart(2, '0');
+                            const minute = match[5];
+                            const second = match[6]; // MANTIENI i secondi
+                            
+                            // Formato database: YYYY-MM-DD HH:mm:ss.000 (con secondi)
+                            timestamp = `${year}-${month}-${day} ${hour}:${minute}:${second}.000`;
+                            console.log(`📅 Timestamp convertito: "${rawTimestamp}" → "${timestamp}"`);
+                            
+                            // NON filtrare per data - importa tutti gli ordini
+                        } else {
+                            // Timestamp non valido - salta questa riga
+                            console.log(`⏭️ Saltata riga con timestamp invalido: "${rawTimestamp}"`);
+                            return;
+                        }
+                        
+                        // Estrai Nome e Cognome dalle colonne corrette
+                        const nome = row[2] ? row[2].toString().trim() : ''; // Colonna C
+                        const cognome = row[3] ? row[3].toString().trim() : ''; // Colonna D
+                        customer = `${nome} ${cognome}`.trim() || `Cliente Senza Nome`;
+                        emailImport = row[1] ? row[1].toString().trim() : ""; 
+                        
+                        // ImportKey = timestamp ESATTO (NON arrotondare)
+                        importKey = timestamp;
+                        
+                        // Salva rawTimestamp per log successivo
+                        const rawTimestampForLog = rawTimestamp;
+                        
+                        console.log(`🔑 ImportKey: "${importKey}"`);
+                        console.log(`👤 Cliente: ${customer}`);
+                        
+                        roleOrYearImport = row[4] ? row[4].toString().trim() : "";
+                        phoneImport = row[5] ? row[5].toString().trim() : "";
+
+                        mainSize = row[16] ? row[16].toString().trim().toUpperCase() : "L"; 
+                        sockSize = row[17] ? row[17].toString().trim().toUpperCase() : "43/46"; 
+                        notes = row[19] ? row[19].toString().trim() : '';
+                        
+                        // Colonna S (18): Taglia accessori (Cappellino, Scaldacollo, Guanti)
+                        if (row[18]) {
+                            const colS = row[18].toString().trim().toUpperCase();
+                            if (colS.includes('TAGLIA 05') || colS.includes('ADULTO') || colS.includes('05')) {
+                                accessorySize = '05 ADULTO';
+                            } else if (colS.includes('TAGLIA 03') || colS.includes('BIMBO') || colS.includes('03')) {
+                                accessorySize = '03 BIMBO';
+                            }
+                        }
+                        
+                        bagChoice = row[12] ? row[12].toString().trim().toLowerCase() : null;
+                        inputs = [row[9], row[10], row[11]].map(x => x ? x.toString().trim().toLowerCase() : '').filter(f => f && !f.includes('non applicabile'));
+                        if (row[14]) {
+                            const col_o_items = row[14].toString().split(',').map(x => x.trim().toLowerCase()).filter(x => x);
+                            inputs.push(...col_o_items);
+                        }
+                        if (row[15]) {
+                            const col_p_items = row[15].toString().split(',').map(x => x.trim().toLowerCase()).filter(x => x);
+                            inputs.push(...col_p_items);
+                        } 
+                    } else { 
+                        if (!row[0] && !row[1] && !row[2]) return;
+                        rowDisplayId = row[0] ? row[0].toString().trim() : generateNewId(true); 
+                        customer = `${(row[1]||'')} ${(row[2]||'')}`.trim() || `Cliente`; 
+                        importKey = rowDisplayId; 
+                        notes = row[7] ? row[7].toString().trim() : ''; 
+                        inputs = [row[8] ? row[8].toString().trim().toLowerCase() : '']; 
+                        mainSize = row[4] ? row[4].toString().trim().toUpperCase() : "L";
+                        sockSize = row[5] ? row[5].toString().trim().toUpperCase() : "43/46"; 
+                    }
+
+                    if (!isBackup && inputs && inputs.length > 0) {
+                        const primary = inputs[0];
+                        let kitKey = null;
+                        
+                        const rawTypeCol = row[7] ? row[7].toString().toLowerCase() : "";
+                        if (rawTypeCol.includes('singolo') || primary.includes('singolo') || primary.includes('abbigliamento singolo')) {
+                             kitKey = null;
+                             kitDisplayName = 'Abbigliamento Singolo';
+                        } 
+                        else if (primary.includes('kit giocatore') && !primary.includes('mini')) kitKey = 'giocatore_completo';
+                        else if (primary.includes('mini kit')) kitKey = 'giocatore_mini'; 
+                        else if (primary.includes('kit allenatore completo')) { kitKey = 'staff_allenatore_completo'; type = 'Staff'; } 
+                        else if (primary.includes('kit allenatore')) { kitKey = 'staff_allenatore_base'; type = 'Staff'; } 
+                        else if (primary.includes('kit dirigente')) { kitKey = 'staff_dirigente'; type = 'Staff'; } 
+                        else if (primary.includes('kit portiere') || primary.includes('portiere')) {
+                             if(primary.includes('mini')) kitKey = 'portiere_mini_lungo';
+                             else kitKey = 'portiere_completo_lungo';
+                        }
+
+                        if (!kitKey && kitDisplayName !== 'Abbigliamento Singolo') {
+                             for(let k in globalKitTypes) {
+                                 if(primary.includes(k) || primary.includes(globalKitTypes[k].display.toLowerCase())) {
+                                     kitKey = k;
+                                     break;
+                                 }
+                             }
+                        }
+
+                        if (kitKey && globalKitTypes[kitKey]) { 
+                            kitDisplayName = globalKitTypes[kitKey].display;
+                            itemsList = globalKitTypes[kitKey].items.map(itemName => { 
+                                let size = mainSize; 
+                                if (itemName.includes("Calzettoni")) size = sockSize; 
+                                if (itemName.includes("Cappellino") || itemName.includes("Scaldacollo") || itemName.includes("Guanti")) { 
+                                    size = accessorySize; 
+                                }
+                                if (itemName.includes("Borsone") || itemName.includes("Zaino")) { 
+                                    size = 'UNICA'; 
+                                    let explicitBagName = null;
+                                    if (bagChoice) {
+                                         if (bagChoice.includes('zaino')) explicitBagName = "Zaino BACKPACK Blue Marine 901 (25€)";
+                                        else if (bagChoice.includes('borsone')) explicitBagName = "Borsone HARDBASE Blue Marine 901 (25€)";
+                                    }
+                                    if (explicitBagName === "Zaino BACKPACK Blue Marine 901 (25€)") return { name: explicitBagName, size: 'UNICA' };
+                                    return { name: "Borsone HARDBASE Blue Marine 901 (25€)", size: 'UNICA' };
+                                } 
+                                return { name: itemName, size: size };
+                            }); 
+                            itemsList = itemsList.filter(item => !item.name.includes("Zaino") || item.name.includes("BACKPACK")); 
+                        } else { 
+                            if (kitDisplayName !== 'Abbigliamento Singolo') kitDisplayName = extractKitName(primary);
+                            if(primary.includes('singolo')) kitDisplayName = 'Abbigliamento Singolo';
+
+                            itemsList = []; 
+                            inputs.forEach(field => { 
+                                if (field.trim() === '0' || field.trim() === '' || field.trim() === 'no') return;
+                                for (const [k, v] of Object.entries(EXCEL_ITEM_MAPPING)) { 
+                                    if (field.includes(k)) { 
+                                        let s = mainSize; 
+                                        if (v.includes("Calzettoni")) s = sockSize; 
+                                        if (v.includes("Cappellino") || v.includes("Scaldacollo") || v.includes("Guanti")) s = accessorySize; 
+                                        if (v.includes("Borsone") || v.includes("Zaino")) s = 'UNICA'; 
+                                        if (!itemsList.find(i => i.name === v)) { 
+                                            itemsList.push({ name: v, size: s }); 
+                                            if (v.includes("Staff") || v.includes("RED") || v.includes("SAPPHIRE")) type = 'Staff'; 
+                                        } 
+                                    } 
+                                } 
+                            });
+                        }
+                    } else if (!isBackup && (notes || customer !== `Cliente Senza Nome`)) {
+                         kitDisplayName = 'Personalizzato';
+                         itemsList = [];
+                    } 
+
+                    if(!itemsList) itemsList = [];
+                    
+                    // CONTROLLO: Per Google Form, importa SOLO ordini più recenti dell'ultimo nel DB
+                    if (isGoogleForm && latestTimestampDate && timestamp && !isBackup) {
+                        try {
+                            // IMPORTANTE: Normalizza timestamp prima di creare Date object
+                            const normalizedCurrentTimestamp = roundTimestampOnly(timestamp);
+                            const currentTimestampDate = new Date(normalizedCurrentTimestamp);
+                            
+                            if (i < 10) {
+                                console.log(`\n🔍 Riga ${i+2}: ${customer}`);
+                                console.log(`   Timestamp Excel originale: ${timestamp}`);
+                                console.log(`   Timestamp normalizzato: ${normalizedCurrentTimestamp}`);
+                                console.log(`   Date: ${currentTimestampDate.toLocaleString('it-IT')}`);
+                                console.log(`   Valid? ${!isNaN(currentTimestampDate.getTime())}`);
+                                console.log(`   Ultimo DB: ${latestTimestampDate.toLocaleString('it-IT')}`);
+                                console.log(`   Confronto: ${currentTimestampDate.getTime()} > ${latestTimestampDate.getTime()} = ${currentTimestampDate > latestTimestampDate}`);
+                            }
+                            
+                            // Verifica validità Date
+                            if (isNaN(currentTimestampDate.getTime())) {
+                                console.warn(`⚠️ Timestamp invalido alla riga ${i+2}: ${timestamp}`);
+                                duplicateCount++;
+                                return;
+                            }
+                            
+                            // Se questo ordine è più vecchio o uguale all'ultimo nel DB → SALTA
+                            if (currentTimestampDate <= latestTimestampDate) {
+                                if (i < 10) console.log(`   ⏭️ SALTATO: ordine più vecchio o uguale`);
+                                duplicateCount++;
+                                return;
+                            } else {
+                                if (i < 10) console.log(`   ✅ IMPORTO: ordine più recente!`);
+                            }
+                        } catch (e) {
+                            console.warn(`Errore confronto timestamp riga ${i+2}: ${e.message}`);
+                            duplicateCount++;
+                            return;
+                        }
+                    }
+                    
+                    // CONTROLLO SECONDARIO: Controlla se esiste già tramite importKey
+                    let existingOrder = existingOrdersMap.get(importKey);
+                    
+                    // LOG DETTAGLIATO per primi 15 ordini
+                    if (i < 15) {
+                        console.log(`\n🔍 RIGA ${i+2}: ${customer}`);
+                        console.log(`   📅 Raw: "${rawTimestampForLog || 'N/A'}"`);
+                        console.log(`   🔑 ImportKey: "${importKey}" (length: ${importKey.length})`);
+                        
+                        // Mostra caratteri per primi 3
+                        if (i < 3) {
+                            const chars = importKey.split('').map((c, idx) => `[${idx}]=${c.charCodeAt(0)}`).join(' ');
+                            console.log(`   📝 Chars: ${chars}`);
+                        }
+                        
+                        console.log(`   ${existingOrder ? '✅ TROVATO: ' + existingOrder.displayId : '❌ NON TROVATO'}`);
+                        
+                        // Se non trovato, cerca timestamp simili
+                        if (!existingOrder && existingOrdersMap.size > 0) {
+                            const prefix = importKey.substring(0, 16); // YYYY-MM-DD HH:mm
+                            console.log(`   🔎 Cerco simili con prefix: "${prefix}"`);
+                            let found = 0;
+                            for (let [key, order] of existingOrdersMap) {
+                                if (key.startsWith(prefix) && found < 2) {
+                                    console.log(`      → ${order.displayId}: "${key}"`);
+                                    console.log(`         Match? ${key === importKey ? '✅ SI' : '❌ NO - Diff: "' + key + '" vs "' + importKey + '"'}`);
+                                    found++;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (existingOrder) {
+                        duplicateCount++;
+                        newOrUpdatedOrders.push(existingOrder); 
+                        existingOrdersMap.delete(importKey); 
+                    } else {
+                        // Ordine non trovato tra i duplicati, procedi con creazione
+                        const newDisplayId = rowDisplayId || generateNewId();
+                        console.log(`✨ Nuovo ordine: ${newDisplayId} - ${customer} (timestamp: ${timestamp || 'N/A'})`);
+                        
+                        newOrderIds.push(newDisplayId); // Traccia questo nuovo ordine
+                        
+                        newOrUpdatedOrders.push({ 
+                            id: Date.now() + i, 
+                            displayId: newDisplayId, 
+                            importKey, 
+                            timestamp: timestamp || null,
+                            excelRowIndex: i, 
+                            customer, 
+                            mainSize, 
+                            sockSize, 
+                            notes, 
+                            itemsList, 
+                            status: isBackup ? statusImport : 'Nuovo', 
+                            type, 
+                            kitType: kitDisplayName, 
+                            linkedId: linkedIdImport || null, // FIX: Assegnazione Nuovo
+                            discount: discountImport,
+                            email: emailImport,
+                            phone: phoneImport,
+                            roleOrYear: roleOrYearImport || "",
+                            noteColor: isBackup ? noteColorImport : 'default',
+                            inventoryScaledAt: isBackup ? inventoryScaledAtImport : null
+                        });
+                    }
+                    successCount++;
+                } catch (err) { console.error(`Errore riga ${i + 2}:`, err); }
+            });
+            const manualOrdersSorted = manualOrders.sort((a, b) => (a.id || 0) - (b.id || 0)); 
+            newOrUpdatedOrders.sort((a, b) => a.excelRowIndex - b.excelRowIndex);
+            orders = [...newOrUpdatedOrders, ...existingOrdersMap.values(), ...manualOrdersSorted];
+            
+            // ✅ FIX 1: Dopo import, resetta filterMax per mostrare nuovi ordini
+            const filterMaxAfterImport = document.getElementById('filterMaxId');
+            if (filterMaxAfterImport) filterMaxAfterImport.value = '';
+            
+            // RICALCOLA lastOrderId basandoti sul massimo ID reale
+            const prefixRegex = new RegExp(`^${currentPrefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
+            const maxId = orders.reduce((max, o) => {
+                if (o.displayId && o.displayId.match(prefixRegex)) {
+                    const n = parseInt(o.displayId.replace(currentPrefix, ''));
+                    return isNaN(n) ? max : Math.max(max, n);
+                }
+                return max;
+            }, 0);
+            lastOrderId = maxId;
+            console.log(`🔢 lastOrderId ricalcolato: ${lastOrderId} (prossimo ID sarà ${currentPrefix}${(lastOrderId + 1).toString().padStart(3, '0')})`);
+            
+            // DEBUG: Conta ordini trasferiti dopo import
+            const transferredCount = orders.filter(o => o.status && o.status.includes('trasferito')).length;
+            const newCount = newOrderIds.length;
+            
+            console.log(`\n✅ Import completato!`);
+            console.log(`   ✨ Nuovi ordini importati: ${newCount}`);
+            if (newCount > 0) {
+                console.log(`   📋 ID nuovi ordini: ${newOrderIds.join(', ')}`);
+            }
+            console.log(`   ⏭️ Ordini già presenti (saltati): ${duplicateCount}`);
+            console.log(`   📦 Ordini trasferiti nel sistema: ${transferredCount}`);
+            console.log(`   🎯 Totale ordini nel sistema: ${orders.length}`);
+            
+            // Importa foglio magazzino se presente
+            let inventoryImported = 0;
+            if (wb && wb.SheetNames.length > 1) {
+                const inventorySheetName = wb.SheetNames.find(name => 
+                    name.toLowerCase().includes('magazzino') || name.toLowerCase().includes('inventory')
+                );
+                
+                if (inventorySheetName) {
+                    const invRows = XLSX.utils.sheet_to_json(wb.Sheets[inventorySheetName], {header: 1});
+                    if (invRows && invRows.length > 1) {
+                        const invHeader = invRows[0].map(c => c ? c.toString().toLowerCase() : "");
+                        
+                        invRows.slice(1).forEach(row => {
+                            if (row.length >= 3 && row[0] && row[1] && row[2]) {
+                                const itemName = row[0].toString().trim();
+                                const size = row[1].toString().trim();
+                                const quantity = parseInt(row[2]);
+                                
+                                if (!isNaN(quantity) && quantity > 0) {
+                                    const key = `${itemName}_${size}`;
+                                    inventory[key] = quantity;
+                                    inventoryImported++;
+                                }
+                            }
+                        });
+                        
+                        console.log(`📦 Magazzino importato: ${inventoryImported} articoli`);
+                    }
+                }
+            }
+            
+            saveData(); initSelect(); updateUI(); 
+            
+            let alertMsg = `✅ IMPORTAZIONE COMPLETATA!\n\n`;
+            alertMsg += `📊 RIEPILOGO:\n`;
+            alertMsg += `• Totale righe processate: ${successCount}\n`;
+            if (isGoogleForm && latestOrder) {
+                alertMsg += `• 🕐 Ultimo ordine nel database: ${latestOrder.displayId}\n`;
+                alertMsg += `• ✨ Nuovi ordini importati (dopo ${latestOrder.displayId}): ${newCount}\n`;
+            } else {
+                alertMsg += `• ✨ Nuovi ordini importati: ${newCount}\n`;
+            }
+            if (newCount > 0 && newCount <= 10) {
+                alertMsg += `  📋 ID: ${newOrderIds.join(', ')}\n`;
+            } else if (newCount > 10) {
+                alertMsg += `  📋 Primi 10 ID: ${newOrderIds.slice(0, 10).join(', ')}...\n`;
+            }
+            alertMsg += `• ⏭️ Ordini già presenti o più vecchi (saltati): ${duplicateCount}\n`;
+            alertMsg += `• 📦 Totale ordini nel sistema: ${orders.length}\n`;
+            if (inventoryImported > 0) {
+                alertMsg += `• 🏭 Magazzino importato: ${inventoryImported} articoli\n`;
+            }
+            if (isGoogleForm) {
+                alertMsg += `\n💡 LOGICA IMPORTAZIONE:\n`;
+                alertMsg += `Da Google Fogli vengono importati SOLO\n`;
+                alertMsg += `gli ordini più recenti dell'ultimo nel database.\n`;
+                alertMsg += `Questo evita duplicati e preserva le modifiche manuali.`;
+            }
+            
+            alert(alertMsg);
+        }
+
+        function addNewOrder() {
+    if (!checkPermission('createOrders')) {
+        alert('⚠️ Non hai i permessi per creare nuovi ordini.');
+        return;
+    }
+    
+    const kitInfo = globalKitTypes['giocatore_completo'] || Object.values(globalKitTypes)[0];
+    
+    // Genera nuovo ID
+    const newDisplayId = generateNewId(true);
+    
+    // ✅ CHECK: verifica che non esista già un ordine con questo ID
+    const duplicate = orders.find(o => o.displayId === newDisplayId);
+    if (duplicate) {
+        console.error(`❌ ERRORE: ID duplicato ${newDisplayId}!`);
+        console.error('Ordine esistente:', duplicate);
+        alert(`⚠️ ERRORE CRITICO!\n\nL'ID ${newDisplayId} esiste già!\n\nQuesto è un bug di sincronizzazione.\nRicarica la pagina e riprova.`);
+        // Forza ricaricamento per sincronizzare lastOrderId
+        location.reload();
+        return;
+    }
+
+    const newOrder = {
+        id: Date.now(),
+        displayId: newDisplayId,
+        importKey: null,
+        // ✅ FIX 3: Aggiungi timestamp alla creazione manuale
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 23),
+        customer: "Nuovo Ordine",
+        mainSize: "L",
+        sockSize: "43/46",
+        notes: "",
+        // ✅ FIX 2: itemsList vuota - l'operatore compila manualmente
+        itemsList: [],
+        status: 'Nuovo',
+        type: 'Giocatore',
+        kitType: '',
+        linkedId: null,
+        discount: 0,
+        email: "",
+        phone: "",
+        roleOrYear: ""
+    };
+
+    orders.push(newOrder);
+
+    logActivity('CREATE_ORDER', `Creato nuovo ordine: ${newOrder.displayId}`);
+
+    console.log(`🆕 Ordine creato: ${newOrder.displayId}`);
+
+    // ✅ FIX: Ripopola i filtri ID per includere il nuovo ordine
+    populateGestioneOrdiniIdSelects();
+    
+    // Imposta il filtro max al nuovo ordine appena creato
+    const filterMaxEl = document.getElementById('filterMaxId');
+    if (filterMaxEl) {
+        filterMaxEl.value = newOrder.displayId;
+        console.log(`✅ Filtro ID MAX aggiornato a: ${newOrder.displayId}`);
+    } else {
+        console.warn('⚠️ filterMaxId non trovato - ordine potrebbe non essere visibile');
+    }
+
+    updateUI();
+}
+
+// Funzione per gestire il cambio di stato degli ordini
+function handleStatusChange(id, newStatus) {
+    const o = orders.find(x => x.id === id);
+    if (!o) {
+        console.error(`❌ handleStatusChange: ordine ${id} non trovato!`);
+        return;
+    }
+    
+    const oldStatus = o.status;
+    console.log(`🔄 handleStatusChange: ${o.displayId} (${o.customer}) - "${oldStatus}" → "${newStatus}"`);
+    
+    if (newStatus === 'Ordine trasferito ad altro ID') {
+        const t = prompt('Inserisci ID Destinazione (es: 2026A_5):');
+        if (t) {
+            o.status = newStatus;
+            o.linkedId = t.trim().toUpperCase();
+        } else {
+            // Se annulla, mantieni lo stato precedente
+            console.log(`❌ Cambio stato annullato per ${o.displayId}`);
+            return;
+        }
+    } else if (newStatus === 'Consegna Parziale') {
+        // Apri popup per inserire cosa manca
+        openPartialDeliveryPopup(id);
+        return; // Il salvataggio verrà fatto dal popup
+    } else {
+        o.status = newStatus;
+        o.linkedId = null;
+        o.partialDeliveryNote = null;
+    }
+    
+    // Log della modifica
+    if (oldStatus !== newStatus) {
+        logActivity('CHANGE_STATUS', `Ordine ${o.displayId} (${o.customer}): Stato cambiato da "${oldStatus}" a "${newStatus}"`);
+        console.log(`📝 LOG salvato: CHANGE_STATUS per ${o.displayId}`);
+    }
+    
+    console.log(`💾 Chiamata updateUI() per salvare cambio stato ${o.displayId}`);
+    // updateUI già chiama saveData()
+    updateUI();
+    renderMatrices();
+}
+
+// Rendi la funzione disponibile globalmente
+window.handleStatusChange = handleStatusChange;
+
+function deleteOrder(id) {
+    const order = orders.find(x => x.id === id);
+    if (!order) {
+        console.error(`❌ Ordine ${id} non trovato!`);
+        alert('Errore: ordine non trovato');
+        return;
+    }
+    
+    const orderId = order.displayId;
+    const confirmMsg = `⚠️ ATTENZIONE!\n\nStai per ELIMINARE DEFINITIVAMENTE l'ordine:\n\n${orderId} - ${order.customer}\n\nQuesta azione NON può essere annullata.\n\nConfermi l'eliminazione?`;
+    
+    if (confirm(confirmMsg)) {
+        console.warn(`🗑️ ELIMINAZIONE ORDINE: ${orderId} (ID: ${id})`);
+        console.log('Ordine eliminato:', order);
+        
+        orders = orders.filter(x => x.id !== id);
+        logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId} - ${order.customer}`);
+        updateUI();
+        
+        showQuickNotification(`🗑️ Ordine ${orderId} eliminato`, 'warning');
+    } else {
+        console.log(`❌ Eliminazione annullata per ordine ${orderId}`);
+    }
+}
+
+        // Rende le funzioni disponibili agli onclick nel DOM
+        window.addNewOrder = addNewOrder;
+        window.deleteOrder = deleteOrder;
+
+                // Popup Consegna Parziale
+                let currentPartialDeliveryOrderId = null;
+        
+        function openPartialDeliveryPopup(orderId) {
+            currentPartialDeliveryOrderId = orderId;
+            const order = orders.find(o => o.id === orderId);
+            
+            if (order) {
+                // Aggiorna stato immediatamente
+                order.status = 'Consegna Parziale';
+                
+                // Mostra nota esistente se presente
+                document.getElementById('partialDeliveryNote').value = order.partialDeliveryNote || '';
+                document.getElementById('partialDeliveryPopup').classList.add('active');
+            }
+        }
+        
+        function closePartialDeliveryPopup() {
+            document.getElementById('partialDeliveryPopup').classList.remove('active');
+            currentPartialDeliveryOrderId = null;
+        }
+        
+        function savePartialDeliveryNote() {
+            if (!currentPartialDeliveryOrderId) return;
+            
+            const note = document.getElementById('partialDeliveryNote').value.trim();
+            const order = orders.find(o => o.id === currentPartialDeliveryOrderId);
+            
+            if (order) {
+                const oldStatus = order.status;
+                order.partialDeliveryNote = note;
+                order.status = 'Consegna Parziale';
+                
+                // Se la nota è vuota, chiedi conferma
+                if (!note) {
+                    const confirm = window.confirm('⚠️ Nessuna nota inserita. Vuoi confermare comunque?');
+                    if (!confirm) return;
+                }
+                
+                // Log della modifica
+                logActivity('CHANGE_STATUS', `Ordine ${order.displayId} (${order.customer}): Stato cambiato a "Consegna Parziale" - Nota: ${note || 'nessuna'}`);
+                
+                // Salva su Redis
+                saveData();
+                
+                showQuickNotification('✅ Nota consegna parziale salvata', 'success');
+                closePartialDeliveryPopup();
+                updateUI();
+            }
+        }
+
+        function updateLinkedId(id, newLinkedId) {
+             const o = orders.find(x => x.id === id);
+             if (!o) return;
+             o.linkedId = newLinkedId.toUpperCase().trim();
+             saveData();
+             updateUI(); 
+             renderMatrices();
+        }
+
+        function openSettingsModal() { document.getElementById('settingsModal').classList.add('active'); renderConfigTable(); }
+        function closeSettingsModal() { document.getElementById('settingsModal').classList.remove('active'); initSelect(); renderMatrices(); saveData(); }
+        
+        function renderConfigTable() { 
+            const tbody = document.getElementById('configItemsBody');
+            tbody.innerHTML = ''; 
+            globalItems.forEach((item, index) => { 
+                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2 text-xs w-full">${item}</td><td class="p-2 text-center flex justify-center gap-2"><button onclick="renameItemInConfig(${index})" class="text-blue-500 hover:text-blue-700 px-1"><i class="fas fa-pen"></i></button><button onclick="removeItemFromConfig(${index})" class="text-red-500 hover:text-red-700 px-1"><i class="fas fa-trash"></i></button></td></tr>`; 
+            });
+        }
+        function renameItemInConfig(index) {
+            const oldName = globalItems[index];
+            const newName = prompt("Modifica nome:", oldName);
+            if (newName && newName !== oldName) {
+                globalItems[index] = newName;
+                orders.forEach(o => { o.itemsList.forEach(i => { if(i.name === oldName) i.name = newName; }); });
+                Object.keys(inventory).forEach(k => { if (k.startsWith(oldName + '_')) { const val = inventory[k]; delete inventory[k]; inventory[`${newName}_${k.split('_')[1]}`] = val; } });
+                Object.values(globalKitTypes).forEach(kit => { kit.items = kit.items.map(i => i === oldName ? newName : i); });
+                saveData(); renderConfigTable(); renderChart(); alert("Articolo rinominato ovunque.");
+            }
+        }
+        
+        function forceUpdatePrices() {
+            if(!confirm("Questo comando analizzerà TUTTI gli ordini.\nSe trova un articolo o un Kit con lo stesso nome ma prezzo diverso rispetto al database attuale, lo aggiornerà.\n\nSei sicuro?")) return;
+            let countItems = 0;
+            let countKits = 0;
+            const stripPrice = (str) => str.split('(')[0].trim();
+            orders.forEach(o => {
+                const oldKitName = o.kitType;
+                const cleanOldKit = stripPrice(oldKitName);
+                for(let key in globalKitTypes) {
+                    const dbKit = globalKitTypes[key];
+                    const cleanDbKit = stripPrice(dbKit.display);
+                    if (cleanOldKit === cleanDbKit && oldKitName !== dbKit.display) {
+                        o.kitType = dbKit.display;
+                        countKits++;
+                        break; 
+                    }
+                }
+                o.itemsList.forEach(item => {
+                    const oldItemName = item.name;
+                    const cleanOldItem = stripPrice(oldItemName);
+                    const foundInDB = globalItems.find(dbItem => stripPrice(dbItem) === cleanOldItem);
+                    if (foundInDB && foundInDB !== oldItemName) {
+                        item.name = foundInDB;
+                        countItems++;
+                    }
+                });
+            });
+            saveData();
+            renderMatrices();
+            renderChart();
+            alert(`Aggiornamento Completato!\n- Kit aggiornati: ${countKits}\n- Articoli aggiornati: ${countItems}`);
+        }
+
+        function addItemToConfig() { const input = document.getElementById('newItemName');
+        const val = input.value.trim(); if (val && !globalItems.includes(val)) { globalItems.push(val); input.value = ''; renderConfigTable(); renderChart(); saveData();
+        } else { alert('Esistente o vuoto!'); } }
+        function removeItemFromConfig(index) { if(confirm("Eliminare?")) { globalItems.splice(index, 1);
+        renderConfigTable(); renderChart(); saveData(); } }
+        function resetConfigDefaults() { if(confirm("Ripristinare default?")) { globalItems = [...DEFAULT_ITEMS_LIST];
+        renderConfigTable(); saveData(); } }
+
+        function openKitConfigModal() { 
+            document.getElementById('kitConfigModal').classList.add('active');
+            renderKitList();
+            const sel = document.getElementById('addKitItemSelect'); sel.innerHTML = '';
+            globalItems.forEach(i => sel.innerHTML += `<option value="${i}">${i}</option>`);
+        }
+        function closeKitConfigModal() { document.getElementById('kitConfigModal').classList.remove('active'); renderKitFilterOptions(); updateUI(); }
+
+        function renderKitList() {
+            const cont = document.getElementById('kitListContainer');
+            cont.innerHTML = '';
+            Object.keys(globalKitTypes).forEach(key => {
+                const kit = globalKitTypes[key];
+                cont.innerHTML += `<button onclick="editKit('${key}')" class="text-left px-3 py-2 border rounded text-xs font-bold hover:bg-blue-50 ${currentEditingKitKey===key?'bg-blue-100 ring-2 ring-blue-500':''}">${kit.display}</button>`;
+            });
+        }
+
+        function addNewKitDefinition() {
+            const name = prompt("Nome del Nuovo Kit (incluso prezzo, es: Kit Base (100€))");
+            if(!name) return;
+            const key = 'custom_kit_' + Date.now();
+            globalKitTypes[key] = { display: name, items: [] };
+            saveData(); renderKitList(); editKit(key);
+        }
+
+        function resetKitDefaults() {
+            if(confirm("Attenzione: Questo cancellerà tutti i Kit personalizzati e ripristinerà quelli di base. Continuare?")) {
+                globalKitTypes = JSON.parse(JSON.stringify(DEFAULT_KIT_DEFINITIONS));
+                saveData(); renderKitList(); document.getElementById('kitDetailContainer').style.display='none'; document.getElementById('kitPlaceholder').style.display='flex';
+            }
+        }
+
+        function editKit(key) {
+            currentEditingKitKey = key;
+            const kit = globalKitTypes[key];
+            document.getElementById('kitPlaceholder').style.display='none';
+            document.getElementById('kitDetailContainer').style.display='flex';
+            document.getElementById('editKitName').value = kit.display;
+            document.getElementById('editKitKey').value = key;
+            renderKitItemsList();
+        }
+
+        function renderKitItemsList() {
+            const list = document.getElementById('editKitItemsList');
+            list.innerHTML = '';
+            const kit = globalKitTypes[currentEditingKitKey];
+            kit.items.forEach((item, idx) => {
+                list.innerHTML += `<li class="flex justify-between items-center bg-white border p-1 rounded text-xs"><span>${item}</span><button onclick="removeItemFromKit(${idx})" class="text-red-500 px-2 font-bold">&times;</button></li>`;
+            });
+        }
+
+        function addItemToKitDefinition() {
+            const val = document.getElementById('addKitItemSelect').value;
+            if(currentEditingKitKey && val) {
+                globalKitTypes[currentEditingKitKey].items.push(val);
+                renderKitItemsList(); saveData();
+            }
+        }
+
+        function removeItemFromKit(idx) {
+            globalKitTypes[currentEditingKitKey].items.splice(idx, 1);
+            renderKitItemsList(); saveData();
+        }
+
+        function saveCurrentKit() {
+            const newName = document.getElementById('editKitName').value;
+            if(newName && currentEditingKitKey) {
+                globalKitTypes[currentEditingKitKey].display = newName;
+                saveData(); renderKitList(); alert("Kit salvato.");
+            }
+        }
+
+        function deleteCurrentKit() {
+            if(confirm("Eliminare definitivamente questo Kit?")) {
+                delete globalKitTypes[currentEditingKitKey];
+                currentEditingKitKey = null;
+                document.getElementById('kitDetailContainer').style.display='none';
+                document.getElementById('kitPlaceholder').style.display='flex';
+                saveData(); renderKitList();
+            }
+        }
+
+        // ===== SISTEMA MEMORIZZAZIONE FILTRI =====
+        function saveFiltersState() {
+            try {
+                const filtersState = {
+                    searchInput: document.getElementById('searchInput')?.value || '',
+                    sortOrder: document.getElementById('sortOrder')?.value || 'asc',
+                    filterStatus: document.getElementById('filterStatus')?.value || 'all',
+                    filterRoleYear: document.getElementById('filterRoleYear')?.value || '',
+                    filterSize: document.getElementById('filterSize')?.value || 'all',
+                    filterKitType: document.getElementById('filterKitType')?.value || 'all',
+                    filterItem: document.getElementById('filterItem')?.value || 'all',
+                    filterMinId: document.getElementById('filterMinId')?.value || '',
+                    filterMaxId: document.getElementById('filterMaxId')?.value || ''
+                };
+                localStorage.setItem('orderflow_filters', JSON.stringify(filtersState));
+            } catch (e) {
+                console.warn('⚠️ Impossibile salvare filtri:', e);
+            }
+        }
+        
+        function restoreFiltersState() {
+            try {
+                const saved = localStorage.getItem('orderflow_filters');
+                if (!saved) return;
+                
+                const filtersState = JSON.parse(saved);
+                
+                // Ripristina ogni filtro
+                Object.keys(filtersState).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element && filtersState[key]) {
+                        // ✅ FIX: Per filterMaxId, usa il valore salvato solo se più recente dell'ultimo ordine
+                        if (key === 'filterMaxId' && orders.length > 0) {
+                            const sortedOrders = sortOrdersByDisplayId(orders, true);
+                            const lastOrderId = sortedOrders[sortedOrders.length - 1].displayId;
+                            const savedMaxId = filtersState[key];
+                            
+                            // Se il filtro salvato è più vecchio dell'ultimo ordine, usa l'ultimo ordine
+                            if (compareDisplayIds(savedMaxId, lastOrderId) < 0) {
+                                element.value = lastOrderId;
+                                console.log(`✅ filterMaxId aggiornato da ${savedMaxId} a ${lastOrderId}`);
+                                return;
+                            }
+                        }
+                        
+                        element.value = filtersState[key];
+                    }
+                });
+                
+                console.log('✅ Filtri ripristinati:', filtersState);
+            } catch (e) {
+                console.warn('⚠️ Impossibile ripristinare filtri:', e);
+            }
+        }
+        
+        function clearFiltersState() {
+            localStorage.removeItem('orderflow_filters');
+            console.log('🗑️ Filtri cancellati');
+        }
+        // ===== FINE SISTEMA MEMORIZZAZIONE FILTRI =====
+        
+        // ── Toggle filtri su mobile ─────────────────────────────────────
+        function toggleFiltersPanel() {
+            const panel  = document.getElementById('filtersPanel');
+            const icon   = document.getElementById('filterToggleIcon');
+            const label  = document.getElementById('filterToggleLabel');
+            const isOpen = panel.classList.contains('open');
+            panel.classList.toggle('open', !isOpen);
+            icon.className  = isOpen ? 'fas fa-sliders-h' : 'fas fa-times';
+            label.textContent = isOpen ? 'Filtri' : 'Chiudi';
+        }
+
+        // Su mobile: filtri chiusi di default, aperti su desktop
+        function initFiltersPanelState() {
+            const panel = document.getElementById('filtersPanel');
+            if (!panel) return;
+            if (window.innerWidth >= 768) {
+                panel.classList.add('open');   // sempre aperto su desktop
+                panel.style.maxHeight = 'none'; // no limite altezza su desktop
+                panel.style.overflow  = 'visible';
+            }
+            // Su mobile: inizia chiuso (gestito da CSS max-height:0)
+        }
+
+                function renderTable() {
+            // Salva stato filtri
+            saveFiltersState();
+            
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            const filterStatus = document.getElementById('filterStatus').value; 
+            const filterKitType = document.getElementById('filterKitType').value; 
+            const filterSize = document.getElementById('filterSize').value;
+            const filterItem = document.getElementById('filterItem').value;
+            const filterRoleYear = document.getElementById('filterRoleYear').value.toLowerCase().trim();
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const sortOrder = document.getElementById('sortOrder').value;
+            
+            // Filtro ID Min/Max
+            const filterMinId = document.getElementById('filterMinId')?.value;
+            const filterMaxId = document.getElementById('filterMaxId')?.value;
+            
+            // Funzione per estrarre anno/prefisso e numero dall'ID
+            // Esempi: "2025_001" -> {prefix: "2025_", num: 1}, "2025A_001" -> {prefix: "2025A_", num: 1}
+            const parseDisplayId = (displayId) => {
+                const match = displayId.match(/^(.+?)(\d+)$/);
+                if (match) {
+                    return { prefix: match[1], num: parseInt(match[2]) };
+                }
+                return { prefix: displayId, num: 0 };
+            };
+            
+            // Funzione per confrontare due ID (considera prefisso + numero)
+            const compareIds = (idA, idB) => {
+                const a = parseDisplayId(idA);
+                const b = parseDisplayId(idB);
+                
+                // Prima confronta il prefisso (2025A_ viene prima di 2026_)
+                if (a.prefix !== b.prefix) {
+                    return a.prefix.localeCompare(b.prefix);
+                }
+                // Se stesso prefisso, confronta il numero
+                return a.num - b.num;
+            };
+            
+            const getNumId = (displayId) => {
+                const match = displayId.match(/(\d+)$/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            
+            // Per i filtri min/max, usa il confronto completo
+            const minNum = filterMinId ? getNumId(filterMinId) : 0;
+            const maxNum = filterMaxId ? getNumId(filterMaxId) : Infinity;
+            const minPrefix = filterMinId ? parseDisplayId(filterMinId).prefix : '';
+            const maxPrefix = filterMaxId ? parseDisplayId(filterMaxId).prefix : '';
+
+            const nameCounts = {};
+            orders.forEach(o => {
+                const c = o.customer.trim().toLowerCase();
+                if(c) nameCounts[c] = (nameCounts[c] || 0) + 1;
+            });
+            let displayedOrders = orders.filter(o => {
+                // FILTRO ID MIN/MAX - considera anche il prefisso
+                if (filterMinId && compareIds(o.displayId, filterMinId) < 0) return false;
+                if (filterMaxId && compareIds(o.displayId, filterMaxId) > 0) return false;
+                
+                if(filterStatus !== 'all' && o.status !== filterStatus) return false;
+                if(filterSize !== 'all' && o.mainSize !== filterSize) return false; 
+                
+                // Filtro Anno/Ruolo
+                if(filterRoleYear && o.roleOrYear) {
+                    if(!o.roleOrYear.toLowerCase().includes(filterRoleYear)) return false;
+                } else if(filterRoleYear && !o.roleOrYear) {
+                    return false; // Se filtro attivo ma ordine senza anno/ruolo, escludi
+                }
+                
+                if(filterKitType && filterKitType !== 'all') {
+                     const filterClean = filterKitType.split('(')[0].trim();
+                     const orderClean = o.kitType.split('(')[0].trim();
+                     if(filterClean !== orderClean && o.kitType !== filterKitType) return false;
+                }
+                
+                // Filtro per singolo capo
+                if(filterItem && filterItem !== 'all') {
+                    const hasItem = o.itemsList.some(item => item.name === filterItem);
+                    if(!hasItem) return false;
+                }
+                
+                if(!o.customer.toLowerCase().includes(search) && !o.displayId.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            // Ordinamento che considera prefisso + numero
+            displayedOrders.sort((a, b) => {
+                const comparison = compareIds(a.displayId, b.displayId);
+                return sortOrder === 'asc' ? comparison : -comparison;
+            });
+
+            displayedOrders.forEach(o => {
+                const tr = document.createElement('tr'); const isStaff = o.type === 'Staff'; tr.className = isStaff ? "bg-red-50 hover:bg-red-100 border-b" : "hover:bg-gray-50 border-b";
+                const kitOptions = getAvailableKitOptionsHTML(o.kitType);
+                
+                let statusInfo;
+                const linkedFrom = orders.find(x => x.linkedId === o.displayId);
+                
+                if (linkedFrom) {
+                    statusInfo = `
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-purple-700 bg-purple-100 border border-purple-300 rounded p-1 mb-1 text-center">
+                             <i class="fas fa-arrow-down"></i> DA ID: ${linkedFrom.displayId}
+                        </span>
+                        <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full font-bold bg-gray-100">
+                            <option value="In Lavorazione" ${o.status==='In Lavorazione'?'selected':''}>In Lavorazione</option>
+                            <option value="Ordine Arrivato" ${o.status==='Ordine Arrivato'?'selected':''}>Arrivato</option>
+                            <option value="Pagato" ${o.status==='Pagato'?'selected':''}>Pagato</option>
+                            <option value="Consegna Parziale" ${o.status==='Consegna Parziale'?'selected':''}>Consegna Parziale</option>
+                            <option value="Consegnato" ${o.status==='Consegnato'?'selected':''}>Consegnato</option>
+                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegna Parziale' && o.status !== 'Consegnato') ?
+                            `<option value="${o.status}" selected disabled>${o.status}</option>` : ''}
+                        </select>
+                    </div>`;
+                } else {
+                    const isTransferred = o.status === 'Ordine trasferito ad altro ID';
+                    if (isTransferred) {
+                        statusInfo = `
+                        <div class="flex flex-col gap-1">
+                            <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full bg-purple-100 text-purple-800 font-bold">
+                                 ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
+                            </select>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[10px] font-bold text-gray-500">A:</span>
+                                <input type="text" value="${o.linkedId || ''}" onchange="updateLinkedId(${o.id}, this.value)" class="text-xs border border-purple-300 rounded p-1 w-full font-bold text-purple-700 bg-white" placeholder="ID Dest...">
+                            </div>
+                        </div>`;
+                    } else {
+                        // Controlla se c'è una nota di consegna parziale
+                        const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
+                        
+                        statusInfo = `
+                        <div class="flex flex-col gap-1">
+                            <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
+                                ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
+                            </select>
+                            ${hasPartialNote ? `
+                            <div class="bg-amber-50 border border-amber-300 rounded p-1.5 cursor-pointer hover:bg-amber-100 transition" onclick="openPartialDeliveryPopup(${o.id})" title="Clicca per modificare">
+                                <div class="text-[10px] font-bold text-amber-800 flex items-center gap-1">
+                                    <i class="fas fa-box-open"></i>
+                                    <span>Manca:</span>
+                                </div>
+                                <div class="text-[10px] text-amber-700 mt-0.5 line-clamp-2">${o.partialDeliveryNote}</div>
+                            </div>` : ''}
+                        </div>`;
+                    }
+                }
+
+                const bagType = getBagType(o.itemsList);
+                const finalTotal = calculateOrderTotal(o);
+                const roleSelector = `<select onchange="updateOrderType(${o.id}, this.value)" class="text-[10px] uppercase font-bold bg-transparent border-none focus:ring-0 cursor-pointer ${isStaff?'text-red-600':'text-blue-600'} outline-none"><option value="Giocatore" ${o.type==='Giocatore'?'selected':''}>GIOCATORE</option><option value="Staff" ${o.type==='Staff'?'selected':''}>STAFF</option></select>`;
+                const isDuplicate = nameCounts[o.customer.trim().toLowerCase()] > 1;
+                const customerClass = isDuplicate ?
+                "w-full border rounded px-1 text-xs font-medium duplicate-highlight leading-tight" : "w-full border rounded px-1 text-xs font-medium leading-tight";
+                
+                // Dividi nome e cognome su due righe
+                const customerParts = o.customer.trim().split(' ');
+                let customerDisplay = o.customer;
+                if (customerParts.length >= 2) {
+                    const firstName = customerParts[0];
+                    const lastName = customerParts.slice(1).join(' ');
+                    customerDisplay = `${firstName}\n${lastName}`;
+                }
+                
+                // Note con colore
+                const noteColor = o.noteColor || 'default';
+                const noteClass = `note-${noteColor}`;
+                const noteText = o.notes || '';
+                const notePreview = noteText.length > 30 ? noteText.substring(0, 30) + '...' : noteText;
+                
+                // Badge scalato magazzino
+                const inventoryBadge = o.inventoryScaledAt ? 
+                    `<span class="text-[9px] bg-green-100 text-green-800 px-1 py-0.5 rounded font-bold border border-green-300" title="Scalato dal magazzino il ${o.inventoryScaledAt}">📦 SCALATO</span>` : '';
+                
+                tr.innerHTML = `<td class="px-2 py-2 text-xs font-bold" data-payment-id-col="${o.id}" style="position:sticky; left:0; z-index:5; min-width:72px; max-width:90px; border-right:2px solid #e5e7eb;"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-center border-0 bg-transparent px-1 text-[11px] font-bold uppercase" style="min-width:68px;"></td>
+                <td class="px-2 py-1 font-medium text-xs" style="min-width:110px; max-width:150px;" data-payment-id="${o.id}"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
+                <td class="px-4 py-3"><input value="${o.roleOrYear || ''}" onblur="updateOrderField(${o.id}, 'roleOrYear', this.value)" class="w-full border rounded px-1 text-xs text-center" placeholder="Anno/Ruolo"></td>
+                <td class="px-4 py-3 text-sm text-gray-700"><select onchange="updateOrderField(${o.id}, 'kitType', this.value)" class="text-xs border rounded p-1 w-full">${kitOptions}</select></td>
+                <td class="px-4 py-3 text-xs text-gray-500 note-cell" onclick="openNotesPopup(${o.id})" title="Clicca per modificare la nota">
+                    <div class="w-full border-2 rounded px-2 py-1 ${noteClass} cursor-pointer hover:shadow-md transition">
+                        ${notePreview || '<span class="text-gray-400 italic">Aggiungi nota...</span>'}
+                    </div>
+                </td>
+                <td class="px-4 py-3"><button onclick="openItemModal(${o.id})" class="edit-order-btn bg-white border border-gray-200 text-gray-700 text-xs px-3 py-2 rounded shadow-sm w-full text-left flex justify-between"><span>${o.itemsList.length} Capi</span><i class="fas fa-edit"></i></button></td><td class="px-4 py-3 text-center"><input value="${o.mainSize}" onchange="updateSizes(${o.id}, 'main', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold"></td><td class="px-4 py-3 text-center"><input value="${o.sockSize}" onchange="updateSizes(${o.id}, 'sock', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold text-gray-600"></td><td class="px-4 py-3 text-center text-xs font-bold text-blue-800">${bagType}</td><td class="px-4 py-3 text-center"><div class="flex flex-col items-end"><span class="price-display">${finalTotal}€</span><div class="flex items-center gap-1"><span class="text-[9px] text-gray-400">Sconto:</span><input type="number" value="${o.discount||0}" onchange="updateDiscount(${o.id}, this.value)" class="edit-order-btn discount-input"></div></div></td><td class="px-4 py-3 w-40"><div class="flex flex-col gap-1">${statusInfo}${inventoryBadge}</div></td><td class="px-4 py-3 text-center"><button onclick="downloadOrderToGoogleForm(${o.id})" class="download-google-form-btn text-green-600 hover:text-green-800" title="Scarica ordine tramite Google Form"><i class="fas fa-download"></i></button></td><td class="px-4 py-3 text-center"><button onclick="openItemModal(${o.id})" class="edit-order-btn text-blue-600 hover:text-blue-800"><i class="fas fa-cog"></i></button></td><td class="px-4 py-3 text-center"><button onclick="deleteOrder(${o.id})" class="delete-order-btn text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></td>`; tbody.appendChild(tr);
+            });
+            // Applica colori pagamento dopo il render
+            setTimeout(() => applyPaymentColorsToOrders(), 0);
+        }
+
+        function populateIdSelects(sortedOrders) { const minSel = document.getElementById('matrixMinId'); const maxSel = document.getElementById('matrixMaxId');
+        minSel.innerHTML = ''; maxSel.innerHTML = ''; if(sortedOrders.length === 0) return;
+        sortedOrders.forEach(o => { const optMin = document.createElement('option'); optMin.value = o.displayId; optMin.text = o.displayId; const optMax = document.createElement('option'); optMax.value = o.displayId; optMax.text = o.displayId; minSel.appendChild(optMin); maxSel.appendChild(optMax); });
+        }
+
+        function renderMatrices(manualUpdate = false) {
+            const minSel = document.getElementById('matrixMinId');
+            const maxSel = document.getElementById('matrixMaxId');
+            
+            const NET_STATUSES = ['Nuovo']; // Solo ordini nuovi per calcolo ordine fornitore
+            
+            // GROSS: Tutti gli ordini nel range (esclusi annullati e trasferiti)
+            let ordersGross = orders.filter(o => 
+                o.status !== 'Ordine trasferito ad altro ID' && 
+                o.status !== 'Ordine annullato'
+            );
+            
+            // NET: Solo ordini "Nuovo" (esclusi annullati e trasferiti) - INCLUDE anche ordini scalati
+            let ordersNet = orders.filter(o => 
+                NET_STATUSES.includes(o.status) && 
+                o.status !== 'Ordine trasferito ad altro ID' &&
+                o.status !== 'Ordine annullato'
+            );
+            
+            // Ordina usando la funzione globale
+            ordersGross = sortOrdersByDisplayId(ordersGross, true);
+            ordersNet = sortOrdersByDisplayId(ordersNet, true);
+            let allSorted = sortOrdersByDisplayId(orders, true);
+            
+            if (!manualUpdate) { 
+                populateIdSelects(allSorted);
+                if (allSorted.length > 0) {
+                     const firstNew = allSorted.find(o => o.status === 'Nuovo');
+                     const lastOrder = allSorted[allSorted.length - 1];
+                     if (firstNew) {
+                         minSel.value = firstNew.displayId;
+                         maxSel.value = lastOrder.displayId;
+                     } else {
+                         minSel.value = allSorted[0].displayId;
+                         maxSel.value = lastOrder.displayId;
+                     }
+                }
+            } 
+
+            let filteredGross = ordersGross;
+            let filteredNet = ordersNet;
+
+            // Applica filtro ID se sono selezionati min e max
+            if (minSel.value && maxSel.value) { 
+                // Usa la funzione globale compareDisplayIds per il filtro
+                filteredGross = ordersGross.filter(o => {
+                    return compareDisplayIds(o.displayId, minSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxSel.value) <= 0;
+                });
+                filteredNet = ordersNet.filter(o => {
+                    return compareDisplayIds(o.displayId, minSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxSel.value) <= 0;
+                });
+                
+                // DEBUG: Log per verificare filtro ordine netto
+                console.log(`📊 ORDINE NETTO - Range: ${minSel.value} → ${maxSel.value}`);
+                console.log(`   📦 Ordini GROSS nel range: ${filteredGross.length}`);
+                console.log(`   ✨ Ordini NET nel range (Nuovo NON scalati): ${filteredNet.length}`);
+                console.log(`   🟢 Ordini scalati esclusi da NET:`, orders.filter(o => {
+                    return o.status === 'Nuovo' && o.inventoryScaledAt && 
+                           compareDisplayIds(o.displayId, minSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxSel.value) <= 0;
+                }).map(o => `${o.displayId} (scalato: ${o.inventoryScaledAt})`));
+            }
+            
+            const rangeTxt = (minSel.value && maxSel.value) ? `${minSel.value} -> ${maxSel.value}` : 'Tutti';
+            const nowTxt = new Date().toLocaleString('it-IT');
+            const infoHtml = `<span class="supplier-info"><i class="fas fa-info-circle mr-1"></i>ID: ${rangeTxt} | ${nowTxt}</span>`;
+            
+            const titleNet = document.getElementById('title-net-clothing'); if (titleNet) titleNet.innerHTML = `<span><i class="fas fa-shopping-cart mr-2"></i> 3. Ordine Fornitore (Netto) ${infoHtml}</span>`;
+            const titleSock = document.getElementById('title-net-socks'); 
+            if (titleSock) {
+                titleSock.innerHTML = `
+                    <span>Calze da Ordinare (Netto) ${infoHtml}</span>
+                    <button onclick="openTableFullscreen('netSocks')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Apri a schermo intero">
+                        <i class="fas fa-expand mr-1"></i> Espandi
+                    </button>
+                `;
+            }
+
+            renderGenericMatrix('grossTable', 'grossHeader', 'grossBody', globalItems, filteredGross, 'GROSS');
+            renderGenericMatrix('invClothingTable', 'invClothingHeader', 'invClothingBody', globalItems, filteredGross, 'INV'); 
+            renderGenericMatrix('netTable', 'netHeader', 'netBody', globalItems, filteredNet, 'NET'); 
+            
+            renderSocksTable(filteredGross, 'INV'); 
+            renderSocksTable(filteredNet, 'NET', true); 
+            
+            // NON chiamare più updateDashboardCounts qui - la Dashboard ha i suoi filtri indipendenti
+            renderChart();
+        }
+
+        function updateDashboardCounts() {
+            // PARTE 1: Totali GENERALI (TUTTI gli ordini attivi, senza filtri)
+            const allValidOrders = orders.filter(o => 
+                o.status !== 'Ordine annullato' && 
+                o.status !== 'Ordine trasferito ad altro ID'
+            );
+            
+            let staffCount = 0; let playerCount = 0; let thermalCount = 0;
+            allValidOrders.forEach(o => { 
+                o.itemsList.forEach(item => { 
+                    if(item.name.includes("Staff") || item.name.includes("RED") || item.name.includes("SAPPHIRE")) { 
+                        staffCount++; 
+                    } else if (item.name.includes("Termica") || item.name.includes("Termico")) { 
+                        thermalCount++; 
+                    } else { 
+                        playerCount++; 
+                    } 
+                }); 
+            });
+            
+            // Card superiori: SEMPRE totali generali
+            document.getElementById('dash-total').innerText = allValidOrders.length; 
+            document.getElementById('dash-total-all').innerText = orders.length;
+            document.getElementById('dash-staff-items').innerText = staffCount; 
+            document.getElementById('dash-thermal-items').innerText = thermalCount; 
+            document.getElementById('dash-player-items').innerText = playerCount;
+            
+            // Totali finanziari GENERALI
+            let totalGross = 0; 
+            let totalDisc = 0;
+            allValidOrders.forEach(o => { 
+                const net = calculateOrderTotal(o); 
+                const disc = o.discount || 0; 
+                totalGross += (net + disc); 
+                totalDisc += disc; 
+            });
+            const totalNet = totalGross - totalDisc;
+            
+            document.getElementById('dash-money-gross').innerText = totalGross + '€';
+            document.getElementById('dash-money-discount').innerText = totalDisc + '€';
+            document.getElementById('dash-money-net').innerText = totalNet + '€';
+        }
+
+        function formatHeaderName(name) {
+            let s = name;
+            
+            // STEP 1: Rimuovi SOLO il prezzo tra parentesi (es: "(25€)" o "(15€)")
+            s = s.replace(/\s*\(\d+€\)\s*/g, '');
+            
+            // STEP 2: Abbreviazioni MINIME solo per parole molto comuni e ridondanti
+            s = s.replace(/Blu Marino/gi, 'Blu');
+            s = s.replace(/Blu Marine/gi, 'Blu');
+            s = s.replace(/Blue Marine/gi, 'Blu');
+            
+            // Lista modelli comuni da riconoscere per lo spezzamento
+            const models = ['DOVO', 'BORGO', 'GASTON', 'GASSOLO', 'DALCITO', 'GASTIO', 'BAJO', 'WISTER', 'BURAN', 'HARDBASE', 'BACKPACK', 'ZUCOT', 'NECK', 'VURBAT', 'VANT', 'WULGAR', 'Player', 'FESOLO', 'FAVIO', 'FARCO', 'GREVOLO', 'BANITO'];
+            
+            // STEP 3: Trova il punto migliore per spezzare su 2 righe
+            let found = false;
+            
+            // Opzione A: Spezza al modello se presente
+            for (let m of models) { 
+                if (s.includes(m) && !s.startsWith(m)) { 
+                    const regex = new RegExp('\\s+' + m, 'i');
+                    s = s.replace(regex, '<br>' + m);
+                    found = true; 
+                    break; 
+                } 
+            }
+            
+            // Opzione B: Se non c'è modello, spezza in modo intelligente
+            if (!found) {
+                // B1: Dopo il tipo di capo (Felpa, Polo, ecc.)
+                if (s.match(/^(Felpa|T-Shirt|Polo|Pantalone|Pantaloncino|Giaccone|Giacca|Maglia|K-Way|Zaino|Borsone|Guanti|Scaldacollo|Cappellino|Ciabattine|Calzettoni)\s/)) {
+                    s = s.replace(/^(Felpa|T-Shirt|Polo|Pantalone|Pantaloncino|Giaccone|Giacca|Maglia|K-Way|Zaino|Borsone|Guanti|Scaldacollo|Cappellino|Ciabattine|Calzettoni)\s/, '$1<br>');
+                    found = true;
+                }
+                // B2: Prima di aggettivi lunghi
+                else if (s.includes(' Allenamento')) {
+                    s = s.replace(' Allenamento', '<br>Allenamento');
+                    found = true;
+                }
+                else if (s.includes(' Invernale')) {
+                    s = s.replace(' Invernale', '<br>Invernale');
+                    found = true;
+                }
+                // B3: Prima dei codici colore
+                else if (s.includes(' col.') || s.includes(' COL.')) {
+                    s = s.replace(/ (col\.|COL\.)/i, '<br>$1');
+                    found = true;
+                }
+                // B4: Prima di "Blu" se è nella seconda metà
+                else if (s.indexOf(' Blu') > s.length / 3) {
+                    s = s.replace(' Blu', '<br>Blu');
+                    found = true;
+                }
+                // B5: Per nomi lunghi (>25 char), spezza circa a metà
+                else if (s.length > 25) {
+                    const midPoint = Math.floor(s.length / 2);
+                    // Cerca lo spazio più vicino al punto medio
+                    let bestSpace = -1;
+                    let minDistance = 999;
+                    for (let i = 0; i < s.length; i++) {
+                        if (s[i] === ' ') {
+                            const distance = Math.abs(i - midPoint);
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                bestSpace = i;
+                            }
+                        }
+                    }
+                    if (bestSpace > 0) {
+                        s = s.substring(0, bestSpace) + '<br>' + s.substring(bestSpace + 1);
+                        found = true;
+                    }
+                }
+            }
+            
+            // STEP 4: Assicurati di avere MASSIMO 1 solo <br>
+            const brCount = (s.match(/<br>/g) || []).length;
+            if (brCount > 1) {
+                const parts = s.split('<br>');
+                s = parts[0] + '<br>' + parts.slice(1).join(' ');
+            }
+            
+            return s;
+        }
+
+        function renderGenericMatrix(tid, hid, bid, columns, filteredOrders, mode) {
+            const thead = document.getElementById(hid); let bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100'); let hHTML = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow w-16 text-center align-middle text-sm font-bold" style="vertical-align: middle;"><div style="writing-mode: horizontal-tb; transform: none; height: auto; display: flex; align-items: center; justify-content: center; padding: 4px;">TAGLIA</div></th>`; 
+            columns.forEach(c => { if(isSockItem(c)) return; let bgClass = c.includes("Staff") ? "bg-red-50 text-red-900" : "bg-gray-50"; hHTML += `<th class="border-l align-bottom pb-2 ${bgClass}"><div class="vertical-header">${formatHeaderName(c)}</div></th>`; }); 
+            thead.innerHTML = `<tr>${hHTML}</tr>`;
+            const tbody = document.getElementById(bid); tbody.innerHTML = ''; 
+            
+            let sizes = new Set(); 
+            // Taglie calzettoni da escludere dalla tabella abbigliamento
+            const SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            
+            if (mode === 'INV') {
+                 SIZE_ORDER.forEach(s => {
+                     if (!SOCK_SIZES.includes(s)) sizes.add(s);
+                 });
+            } else {
+                // Aggiungi solo le taglie abbigliamento (escluse calze)
+                SIZE_ORDER.forEach(s => {
+                    if (!SOCK_SIZES.includes(s)) sizes.add(s);
+                });
+                
+                // Poi aggiungi le taglie effettivamente presenti negli ordini (escluse calze)
+                filteredOrders.forEach(o => o.itemsList.forEach(i => { 
+                    if(!isSockItem(i.name) && !SOCK_SIZES.includes(i.size)) sizes.add(i.size) 
+                }));
+                Object.keys(inventory).forEach(k => { 
+                    const [item, size] = k.split('_'); 
+                    if(columns.includes(item) && !isSockItem(item) && !SOCK_SIZES.includes(size)) sizes.add(size); 
+                });
+            }
+            
+            let sortedSizes = Array.from(sizes).filter(s=>s && s!=='UNICA');
+            sortedSizes.sort((a, b) => {
+                let idxA = SIZE_ORDER.indexOf(a.toUpperCase());
+                let idxB = SIZE_ORDER.indexOf(b.toUpperCase());
+                if (idxA === -1) idxA = 999; 
+                if (idxB === -1) idxB = 999;
+                return idxA - idxB;
+            });
+            if(sizes.has('UNICA')) sortedSizes.push('UNICA');
+
+            const colTotals = {}; columns.forEach(c => colTotals[c] = 0);
+            sortedSizes.forEach(size => { 
+                const tr = document.createElement('tr'); 
+                let bgCol = mode === 'INV' ? 'bg-yellow-50' : 'bg-white'; 
+                const isSectionRow = size.includes('TAGLIA');
+                const sizeClass = isSectionRow ? 'size-section-row' : '';
+                let rHTML = `<td class="px-4 py-0 font-bold ${bgCol} sticky-col border-r shadow border-b ${sizeClass}">${size}</td>`;
+                columns.forEach(col => { 
+                    if(isSockItem(col)) return;
+                    
+                    // Conta TUTTI gli ordini filtrati (inclusi quelli con badge)
+                    let countNeeded = 0; 
+                    filteredOrders.forEach(o => { 
+                        o.itemsList.forEach(i => { 
+                            if(i.name===col && i.size===size) countNeeded++ 
+                        }); 
+                    }); 
+                    
+                    const stockKey = `${col}_${size}`; 
+                    const stockVal = inventory[stockKey] !== undefined ? inventory[stockKey] : ''; 
+                    const stockInt = parseInt(stockVal) || 0;
+                    let valForTotal = 0;
+                    
+                    if (mode === 'GROSS') { 
+                        rHTML += `<td class="text-center border-b border-l py-0 ${sizeClass} ${countNeeded>0?'bg-blue-50 font-bold':''}">${countNeeded || '-'}</td>`; 
+                        valForTotal = countNeeded; 
+                    } 
+                    else if (mode === 'INV') { 
+                        rHTML += `<td class="text-center border-b border-l bg-white py-0 ${sizeClass}"><input type="number" value="${stockVal}" onchange="updateInventory('${col}', '${size}', this.value)" class="inv-input" placeholder="-"></td>`;
+                        valForTotal = stockInt; 
+                    } 
+                    else if (mode === 'NET') { 
+                        // Conta quanti di questi articoli sono già stati scalati dal magazzino
+                        let alreadyScaledCount = 0;
+                        filteredOrders.forEach(o => {
+                            if (o.inventoryScaledAt && o.scaledItems) {
+                                const scaledKey = `${col}_${size}`;
+                                if (o.scaledItems[scaledKey]) {
+                                    alreadyScaledCount += o.scaledItems[scaledKey];
+                                }
+                            }
+                        });
+                        
+                        // NET = Richiesta totale - Articoli già scalati
+                        // Il magazzino NON viene sottratto qui, viene "consumato" quando clicchi Scala
+                        const toBuy = Math.max(0, countNeeded - alreadyScaledCount);
+                        
+                        // DEBUG: Log dettagliato per ogni cella
+                        if (countNeeded > 0 || alreadyScaledCount > 0) {
+                            console.log(`📊 ${col} [${size}]: Richiesta=${countNeeded}, Scalati=${alreadyScaledCount}, NET=${toBuy}, Mag=${stockInt}`);
+                        }
+                        
+                        const displayClass = toBuy > 0 ? 'buy-alert' : 'buy-ok'; 
+                        const displayVal = toBuy > 0 ? toBuy : '-';
+                        rHTML += `<td class="text-center border-b border-l bg-white py-0 ${sizeClass}"><span class="net-val ${displayClass}">${displayVal}</span></td>`; 
+                        valForTotal = toBuy;
+                    }
+                    colTotals[col] += valForTotal;
+                }); 
+                tr.innerHTML = rHTML; tbody.appendChild(tr);
+            });
+            const trTotal = document.createElement('tr'); trTotal.className = 'total-row';
+            let htmlTotal = `<td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>`;
+            columns.forEach(col => { if(col.includes("Calzettoni")) return; htmlTotal += `<td class="text-center border-l p-2">${colTotals[col]}</td>`; }); trTotal.innerHTML = htmlTotal; tbody.appendChild(trTotal);
+        }
+        
+        function renderSocksTable(filteredOrders, mode) { 
+            const targetBody = mode === 'INV' ? 'invSocksBody' : 'netSocksBody'; 
+            const tbody = document.getElementById(targetBody); 
+            tbody.innerHTML = ''; 
+            
+            // Imposta gli header
+            document.getElementById(mode === 'INV' ? 'headerSockBlue' : 'headerSockNetBlue').innerHTML = formatHeaderName(SOCKS_BLUE_DEFAULT);
+            document.getElementById(mode === 'INV' ? 'headerSockRed' : 'headerSockNetRed').innerHTML = formatHeaderName(SOCKS_RED_DEFAULT);
+            document.getElementById(mode === 'INV' ? 'headerSockSpolfBlue' : 'headerSockNetSpolfBlue').innerHTML = formatHeaderName(SOCKS_SPOLF_BLUE);
+            document.getElementById(mode === 'INV' ? 'headerSockSpolfRed' : 'headerSockNetSpolfRed').innerHTML = formatHeaderName(SOCKS_SPOLF_RED);
+            
+            let sizes = new Set(); 
+            filteredOrders.forEach(o => o.itemsList.forEach(i => { if(isSockItem(i.name)) sizes.add(i.size) }));
+            Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isSockItem(item)) sizes.add(size); });
+            
+            // Aggiungi tutte le 6 taglie standard per calze
+            sizes.add("23/26");
+            sizes.add("27/30");
+            sizes.add("31/34");
+            sizes.add("35/38");
+            sizes.add("39/42");
+            sizes.add("43/46");
+
+            let sorted = Array.from(sizes).filter(s=>s);
+            sorted.sort((a, b) => {
+                let idxA = SIZE_ORDER.indexOf(a.toUpperCase());
+                let idxB = SIZE_ORDER.indexOf(b.toUpperCase());
+                if (idxA === -1) idxA = 999;
+                if (idxB === -1) idxB = 999;
+                return idxA - idxB;
+            });
+            
+            let totalBlue = 0, totalRed = 0, totalSpolfBlue = 0, totalSpolfRed = 0;
+            
+            sorted.forEach(s => { 
+                // Conta richieste per ogni tipo di calza
+                let blueNeeded = 0, redNeeded = 0, spolfBlueNeeded = 0, spolfRedNeeded = 0;
+                filteredOrders.forEach(o => { 
+                    o.itemsList.forEach(i => { 
+                        if(i.name === SOCKS_BLUE_DEFAULT && i.size===s) blueNeeded++; 
+                        if(i.name === SOCKS_RED_DEFAULT && i.size===s) redNeeded++;
+                        if(i.name === SOCKS_SPOLF_BLUE && i.size===s) spolfBlueNeeded++;
+                        if(i.name === SOCKS_SPOLF_RED && i.size===s) spolfRedNeeded++;
+                    }); 
+                });
+                
+                // Chiavi inventario
+                const blueKey = `${SOCKS_BLUE_DEFAULT}_${s}`;
+                const redKey = `${SOCKS_RED_DEFAULT}_${s}`;
+                const spolfBlueKey = `${SOCKS_SPOLF_BLUE}_${s}`;
+                const spolfRedKey = `${SOCKS_SPOLF_RED}_${s}`;
+                
+                // Valori inventario
+                const blueStockVal = inventory[blueKey] !== undefined ? inventory[blueKey] : '';
+                const blueStockInt = parseInt(blueStockVal) || 0;
+                const redStockVal = inventory[redKey] !== undefined ? inventory[redKey] : '';
+                const redStockInt = parseInt(redStockVal) || 0;
+                const spolfBlueStockVal = inventory[spolfBlueKey] !== undefined ? inventory[spolfBlueKey] : '';
+                const spolfBlueStockInt = parseInt(spolfBlueStockVal) || 0;
+                const spolfRedStockVal = inventory[spolfRedKey] !== undefined ? inventory[spolfRedKey] : '';
+                const spolfRedStockInt = parseInt(spolfRedStockVal) || 0;
+                
+                // Conta calze già scalate
+                let blueScaled = 0, redScaled = 0, spolfBlueScaled = 0, spolfRedScaled = 0;
+                filteredOrders.forEach(o => {
+                    if (o.inventoryScaledAt && o.scaledItems) {
+                        if (o.scaledItems[blueKey]) blueScaled += o.scaledItems[blueKey];
+                        if (o.scaledItems[redKey]) redScaled += o.scaledItems[redKey];
+                        if (o.scaledItems[spolfBlueKey]) spolfBlueScaled += o.scaledItems[spolfBlueKey];
+                        if (o.scaledItems[spolfRedKey]) spolfRedScaled += o.scaledItems[spolfRedKey];
+                    }
+                });
+                
+                let valBlue = 0, valRed = 0, valSpolfBlue = 0, valSpolfRed = 0;
+                const tr = document.createElement('tr'); 
+                tr.className = "border-b"; 
+                let html = `<td class="px-4 py-0 font-bold text-center ${mode==='INV'?'bg-yellow-50':'bg-gray-50'}">${s}</td>`;
+                
+                const renderCell = (needed, stockVal, stockInt, scaledCount, itemName) => { 
+                    if(mode === 'INV') { 
+                        return `<td class="text-center border-l bg-white py-0"><input type="number" value="${stockVal}" onchange="updateInventory('${itemName}', '${s}', this.value)" class="inv-input" placeholder="-"></td>`;
+                    } else { 
+                        const toBuy = Math.max(0, needed - scaledCount); 
+                        const cls = toBuy > 0 ? 'buy-alert' : 'buy-ok'; 
+                        const val = toBuy > 0 ? toBuy : '-';
+                        return `<td class="text-center border-l bg-white py-0"><span class="net-val ${cls}">${val}</span></td>`; 
+                    } 
+                };
+                
+                html += renderCell(blueNeeded, blueStockVal, blueStockInt, blueScaled, SOCKS_BLUE_DEFAULT);
+                html += renderCell(redNeeded, redStockVal, redStockInt, redScaled, SOCKS_RED_DEFAULT);
+                html += renderCell(spolfBlueNeeded, spolfBlueStockVal, spolfBlueStockInt, spolfBlueScaled, SOCKS_SPOLF_BLUE);
+                html += renderCell(spolfRedNeeded, spolfRedStockVal, spolfRedStockInt, spolfRedScaled, SOCKS_SPOLF_RED);
+                
+                if(mode === 'INV') {
+                    totalBlue += blueStockInt;
+                    totalRed += redStockInt;
+                    totalSpolfBlue += spolfBlueStockInt;
+                    totalSpolfRed += spolfRedStockInt;
+                } else {
+                    totalBlue += Math.max(0, blueNeeded - blueScaled);
+                    totalRed += Math.max(0, redNeeded - redScaled);
+                    totalSpolfBlue += Math.max(0, spolfBlueNeeded - spolfBlueScaled);
+                    totalSpolfRed += Math.max(0, spolfRedNeeded - spolfRedScaled);
+                }
+                
+                tr.innerHTML = html; 
+                tbody.appendChild(tr);
+            });
+            
+            const trTotal = document.createElement('tr'); 
+            trTotal.className = 'total-row'; 
+            trTotal.innerHTML = `<td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td><td class="text-center border-l p-2">${totalBlue}</td><td class="text-center border-l p-2">${totalRed}</td><td class="text-center border-l p-2">${totalSpolfBlue}</td><td class="text-center border-l p-2">${totalSpolfRed}</td>`;
+            tbody.appendChild(trTotal);
+        }
+
+        function renderChart() { 
+            const validOrders = orders.filter(o => o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID');
+            const ctx = document.getElementById('chartStatus').getContext('2d'); if(chartStatus) chartStatus.destroy(); chartStatus = new Chart(ctx, { type: 'doughnut', data: { labels: ['Nuovo', 'In Lav.', 'Pagato', 'Finito'], datasets: [{ data: [validOrders.filter(o=>o.status==='Nuovo').length, validOrders.filter(o=>o.status==='In Lavorazione').length, validOrders.filter(o=>o.status==='Pagato').length, validOrders.filter(o=>o.status==='Consegnato').length], backgroundColor: ['#fbbf24', '#3b82f6', '#15803d', '#374151'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+            
+            // Calcola totali GENERALI per il grafico (tutti gli ordini attivi)
+            let totalGross = 0; 
+            let totalDisc = 0;
+            validOrders.forEach(o => { 
+                const net = calculateOrderTotal(o); 
+                const disc = o.discount || 0; 
+                totalGross += (net + disc); 
+                totalDisc += disc; 
+            });
+            const totalNet = totalGross - totalDisc;
+            
+            // Popola filtri Dashboard se non ancora fatto
+            populateDashboardIdFilters();
+            
+            // PARTE FILTRATA: Totali filtrati da range ID (FILTRI PROPRI DELLA DASHBOARD)
+            const minIdSel = document.getElementById('dashboardMinId');
+            const maxIdSel = document.getElementById('dashboardMaxId');
+            
+            if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
+                const filteredOrders = validOrders.filter(o => {
+                    return compareDisplayIds(o.displayId, minIdSel.value) >= 0 && 
+                           compareDisplayIds(o.displayId, maxIdSel.value) <= 0;
+                });
+                
+                let filteredGross = 0;
+                let filteredDisc = 0;
+                filteredOrders.forEach(o => {
+                    const net = calculateOrderTotal(o);
+                    const disc = o.discount || 0;
+                    filteredGross += (net + disc);
+                    filteredDisc += disc;
+                });
+                const filteredNet = filteredGross - filteredDisc;
+                
+                document.getElementById('dash-filtered-range').innerText = `${minIdSel.value} → ${maxIdSel.value}`;
+                document.getElementById('dash-filtered-count').innerText = filteredOrders.length;
+                document.getElementById('dash-filtered-gross').innerText = filteredGross + '€';
+                document.getElementById('dash-filtered-net').innerText = filteredNet + '€';
+                
+                // Breakdown per tipo KIT
+                const kitBreakdown = {};
+                filteredOrders.forEach(o => {
+                    const kitType = (o.kitType || 'Non specificato').split('(')[0].trim();
+                    if (!kitBreakdown[kitType]) {
+                        kitBreakdown[kitType] = 0;
+                    }
+                    kitBreakdown[kitType]++;
+                });
+                
+                // Ordina per quantità decrescente
+                const sortedKits = Object.entries(kitBreakdown).sort((a, b) => b[1] - a[1]);
+                
+                let breakdownHtml = '';
+                sortedKits.forEach(([kitName, count]) => {
+                    const cleanName = kitName.split('(')[0].trim();
+                    const isStaff = kitName.includes('Allenatore') || kitName.includes('Dirigente') || kitName.includes('Staff');
+                    const isSingolo = kitName.includes('Singolo') || kitName.includes('Personalizzato');
+                    
+                    let bgColor = 'bg-blue-100';
+                    let textColor = 'text-blue-900';
+                    let icon = 'fa-tshirt';
+                    
+                    if (isStaff) {
+                        bgColor = 'bg-red-100';
+                        textColor = 'text-red-900';
+                        icon = 'fa-user-tie';
+                    } else if (isSingolo) {
+                        bgColor = 'bg-orange-100';
+                        textColor = 'text-orange-900';
+                        icon = 'fa-shopping-bag';
+                    } else if (kitName.includes('Portiere')) {
+                        bgColor = 'bg-yellow-100';
+                        textColor = 'text-yellow-900';
+                        icon = 'fa-hand-paper';
+                    }
+                    
+                    breakdownHtml += `
+                        <div class="${bgColor} p-3 rounded border-l-4 border-${bgColor.replace('100', '500')}">
+                            <div class="flex items-center justify-between">
+                                <i class="fas ${icon} ${textColor} opacity-50"></i>
+                                <span class="text-2xl font-bold ${textColor}">${count}</span>
+                            </div>
+                            <div class="text-xs ${textColor} mt-1 font-medium leading-tight">${cleanName}</div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('dash-filtered-breakdown').innerHTML = breakdownHtml || '<div class="text-gray-400 italic col-span-full text-center">Nessun ordine nel range</div>';
+            } else {
+                document.getElementById('dash-filtered-range').innerText = 'Nessun filtro';
+                document.getElementById('dash-filtered-count').innerText = '0';
+                document.getElementById('dash-filtered-gross').innerText = '0€';
+                document.getElementById('dash-filtered-net').innerText = '0€';
+                document.getElementById('dash-filtered-breakdown').innerHTML = '<div class="text-gray-400 italic col-span-full text-center">Seleziona un range ID per vedere il breakdown</div>';
+            }
+            
+            const ctxRev = document.getElementById('chartRevenue').getContext('2d'); if(chartRevenue) chartRevenue.destroy();
+            chartRevenue = new Chart(ctxRev, { type: 'bar', data: { labels: ['Totale Listino', 'Sconti', 'Totale Netto'], datasets: [{ label: 'Valore in €', data: [totalGross, totalDisc, totalNet], backgroundColor: ['#4338ca', '#ef4444', '#15803d'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            const itemCounts = {}; 
+            validOrders.forEach(o => { 
+                o.itemsList.forEach(item => { 
+                    // Rimuovi SOLO il prezzo finale (es: "(25€)"), non tutte le parentesi
+                    let cleanName = item.name.replace(/\s*\(\d+€\)\s*$/, '').trim();
+                    if (!itemCounts[cleanName]) itemCounts[cleanName] = 0; 
+                    itemCounts[cleanName]++; 
+                }); 
+            });
+            const sortedItems = Object.entries(itemCounts).sort((a,b) => b[1] - a[1]); const labels = sortedItems.map(x => x[0]); const data = sortedItems.map(x => x[1]);
+            const ctxItems = document.getElementById('chartItems').getContext('2d'); if(chartItems) chartItems.destroy(); chartItems = new Chart(ctxItems, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Quantità Venduta', data: data, backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true } }, plugins: { legend: { display: false } } } });
+            
+            // Inizializza anche l'analisi per kit
+            populateKitFilterOptions();
+            renderKitAnalysis();
+        }
+        
+        // Popola il select con i tipi di kit disponibili
+        function populateKitFilterOptions() {
+            const select = document.getElementById('dashboardKitFilter');
+            if (!select) return;
+            
+            // Raccogli tutti i tipi di kit dagli ordini (nome pulito, senza prezzo)
+            const kitTypes = new Set();
+            orders.forEach(o => {
+                if (o.kitType && o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID') {
+                    kitTypes.add(o.kitType.split('(')[0].trim());
+                }
+            });
+
+            // Ordina alfabeticamente
+            const sortedKits = Array.from(kitTypes).sort();
+
+            // Mantieni la selezione corrente
+            const currentValue = select.value;
+
+            // Ricostruisci le opzioni
+            select.innerHTML = '<option value="all">📊 Tutti i Kit</option>';
+            sortedKits.forEach(cleanName => {
+                const opt = document.createElement('option');
+                opt.value = cleanName;
+                opt.textContent = cleanName;
+                select.appendChild(opt);
+            });
+            
+            // Ripristina selezione se ancora valida
+            if (currentValue && (currentValue === 'all' || sortedKits.includes(currentValue))) {
+                select.value = currentValue;
+            }
+        }
+        
+        // Analisi dettagliata per tipo kit
+        function renderKitAnalysis() {
+            const filterValue = document.getElementById('dashboardKitFilter')?.value || 'all';
+            
+            // Filtri ID della Dashboard
+            const minIdSel = document.getElementById('dashboardMinId');
+            const maxIdSel = document.getElementById('dashboardMaxId');
+            
+            // Filtra ordini validi E nel range ID della Dashboard
+            let filteredOrders = orders.filter(o => {
+                if (o.status === 'Ordine annullato' || o.status === 'Ordine trasferito ad altro ID') {
+                    return false;
+                }
+                // Applica filtro ID se presente
+                if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
+                    if (compareDisplayIds(o.displayId, minIdSel.value) < 0 || 
+                        compareDisplayIds(o.displayId, maxIdSel.value) > 0) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            
+            // Applica filtro kit se non è "all"
+            if (filterValue !== 'all') {
+                filteredOrders = filteredOrders.filter(o => (o.kitType || '').split('(')[0].trim() === filterValue);
+            }
+            
+            // Calcola totali
+            let totalGross = 0;
+            let totalDiscount = 0;
+            filteredOrders.forEach(o => {
+                const net = calculateOrderTotal(o);
+                const disc = o.discount || 0;
+                totalGross += (net + disc);
+                totalDiscount += disc;
+            });
+            const totalNet = totalGross - totalDiscount;
+            
+            // Aggiorna card riepilogo
+            document.getElementById('dash-kit-count').innerText = filteredOrders.length;
+            document.getElementById('dash-kit-gross').innerText = totalGross + '€';
+            document.getElementById('dash-kit-discount').innerText = totalDiscount + '€';
+            document.getElementById('dash-kit-net').innerText = totalNet + '€';
+            
+            // Breakdown per tipo kit (mostra kit nel range filtrato)
+            const kitBreakdown = {};
+            const kitTotals = {};
+            
+            // Usa gli ordini già filtrati per range ID
+            const ordersForBreakdown = orders.filter(o => {
+                if (o.status === 'Ordine annullato' || o.status === 'Ordine trasferito ad altro ID') {
+                    return false;
+                }
+                if (minIdSel && maxIdSel && minIdSel.value && maxIdSel.value) {
+                    if (compareDisplayIds(o.displayId, minIdSel.value) < 0 || 
+                        compareDisplayIds(o.displayId, maxIdSel.value) > 0) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            
+            ordersForBreakdown.forEach(o => {
+                const kitType = (o.kitType || 'Non specificato').split('(')[0].trim();
+                if (!kitBreakdown[kitType]) {
+                    kitBreakdown[kitType] = 0;
+                    kitTotals[kitType] = 0;
+                }
+                kitBreakdown[kitType]++;
+                kitTotals[kitType] += calculateOrderTotal(o);
+            });
+
+            // Ordina per quantità decrescente
+            const sortedKits = Object.entries(kitBreakdown).sort((a, b) => b[1] - a[1]);
+
+            let breakdownHtml = '';
+            sortedKits.forEach(([kitName, count]) => {
+                const cleanName = kitName;
+                const kitTotal = kitTotals[kitName];
+                const isSelected = filterValue === kitName;
+                const isStaff = kitName.includes('Allenatore') || kitName.includes('Dirigente') || kitName.includes('Staff');
+                const isPortiere = kitName.includes('Portiere');
+                const isMini = kitName.includes('Mini');
+                
+                let bgColor = isSelected ? 'bg-blue-200 border-blue-500' : 'bg-blue-50 border-blue-200';
+                let textColor = 'text-blue-900';
+                let icon = 'fa-tshirt';
+                
+                if (isStaff) {
+                    bgColor = isSelected ? 'bg-red-200 border-red-500' : 'bg-red-50 border-red-200';
+                    textColor = 'text-red-900';
+                    icon = 'fa-user-tie';
+                } else if (isPortiere) {
+                    bgColor = isSelected ? 'bg-yellow-200 border-yellow-500' : 'bg-yellow-50 border-yellow-200';
+                    textColor = 'text-yellow-900';
+                    icon = 'fa-hand-paper';
+                } else if (isMini) {
+                    bgColor = isSelected ? 'bg-green-200 border-green-500' : 'bg-green-50 border-green-200';
+                    textColor = 'text-green-900';
+                    icon = 'fa-child';
+                }
+                
+                breakdownHtml += `
+                    <div class="${bgColor} p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition" 
+                         onclick="document.getElementById('dashboardKitFilter').value='${kitName.replace(/'/g, "\\'")}'; renderKitAnalysis();">
+                        <div class="flex items-center justify-between mb-1">
+                            <i class="fas ${icon} ${textColor} opacity-60"></i>
+                            <span class="text-2xl font-bold ${textColor}">${count}</span>
+                        </div>
+                        <div class="text-xs ${textColor} font-medium leading-tight">${cleanName}</div>
+                        <div class="text-xs ${textColor} opacity-70 mt-1">${kitTotal}€</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('dash-kit-breakdown').innerHTML = breakdownHtml || 
+                '<div class="text-gray-400 italic col-span-full text-center">Nessun kit trovato</div>';
+            
+            // === NUOVA SEZIONE: Distribuzione Taglie Kit ===
+            const sizeOrder = ['4XS', '3XS', '2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '4 ANNI', '6 ANNI', '8 ANNI', '10 ANNI', '12 ANNI', '14 ANNI', '16 ANNI'];
+            const kitSizes = {};
+            
+            filteredOrders.forEach(o => {
+                const size = o.mainSize || 'N/D';
+                if (!kitSizes[size]) kitSizes[size] = 0;
+                kitSizes[size]++;
+            });
+            
+            // Ordina per ordine taglie standard
+            const sortedSizes = Object.entries(kitSizes).sort((a, b) => {
+                const idxA = sizeOrder.indexOf(a[0]);
+                const idxB = sizeOrder.indexOf(b[0]);
+                if (idxA === -1 && idxB === -1) return a[0].localeCompare(b[0]);
+                if (idxA === -1) return 1;
+                if (idxB === -1) return -1;
+                return idxA - idxB;
+            });
+            
+            let sizesHtml = '';
+            sortedSizes.forEach(([size, count]) => {
+                const isKids = size.includes('ANNI');
+                const bgColor = isKids ? 'bg-green-100 border-green-400' : 'bg-purple-100 border-purple-400';
+                const textColor = isKids ? 'text-green-800' : 'text-purple-800';
+                
+                sizesHtml += `
+                    <div class="${bgColor} border-2 rounded-lg px-4 py-2 text-center min-w-[70px]">
+                        <div class="text-2xl font-bold ${textColor}">${count}</div>
+                        <div class="text-xs font-medium ${textColor}">${size}</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('dash-kit-sizes').innerHTML = sizesHtml || 
+                '<div class="text-gray-400 italic">Nessuna taglia trovata</div>';
+            
+            // === NUOVA SEZIONE: Tabella Capi per Taglia ===
+            const itemsBySize = {}; // { itemName: { S: 2, M: 3, L: 1, ... } }
+            const allSizesSet = new Set();
+            
+            filteredOrders.forEach(o => {
+                o.itemsList.forEach(item => {
+                    const cleanName = item.name.replace(/\s*\(\d+€\)\s*$/, '').trim();
+                    const size = item.size || 'N/D';
+                    
+                    allSizesSet.add(size);
+                    
+                    if (!itemsBySize[cleanName]) {
+                        itemsBySize[cleanName] = {};
+                    }
+                    if (!itemsBySize[cleanName][size]) {
+                        itemsBySize[cleanName][size] = 0;
+                    }
+                    itemsBySize[cleanName][size]++;
+                });
+            });
+            
+            // Ordina le taglie
+            const allSizes = Array.from(allSizesSet).sort((a, b) => {
+                const idxA = sizeOrder.indexOf(a);
+                const idxB = sizeOrder.indexOf(b);
+                if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+                if (idxA === -1) return 1;
+                if (idxB === -1) return -1;
+                return idxA - idxB;
+            });
+            
+            // Costruisci header tabella
+            const tableHeader = document.querySelector('#dash-items-by-size-table thead tr');
+            if (tableHeader) {
+                let headerHtml = '<th class="px-3 py-2 text-left font-bold text-gray-700 sticky left-0 bg-gray-100">Capo</th>';
+                allSizes.forEach(size => {
+                    const isKids = size.includes('ANNI');
+                    const bgColor = isKids ? 'bg-green-50' : 'bg-purple-50';
+                    headerHtml += `<th class="px-2 py-2 text-center font-bold text-gray-700 ${bgColor} min-w-[50px]">${size}</th>`;
+                });
+                headerHtml += '<th class="px-3 py-2 text-center font-bold text-gray-700 bg-blue-100">TOT</th>';
+                tableHeader.innerHTML = headerHtml;
+            }
+            
+            // Costruisci body tabella
+            const tableBody = document.getElementById('dash-items-by-size-body');
+            if (tableBody) {
+                // Ordina per quantità totale decrescente
+                const sortedItemsBySize = Object.entries(itemsBySize).sort((a, b) => {
+                    const totalA = Object.values(a[1]).reduce((sum, v) => sum + v, 0);
+                    const totalB = Object.values(b[1]).reduce((sum, v) => sum + v, 0);
+                    return totalB - totalA;
+                });
+                
+                let bodyHtml = '';
+                sortedItemsBySize.forEach(([itemName, sizes]) => {
+                    const total = Object.values(sizes).reduce((sum, v) => sum + v, 0);
+                    
+                    bodyHtml += `<tr class="border-b hover:bg-gray-50">`;
+                    bodyHtml += `<td class="px-3 py-2 font-medium text-gray-800 sticky left-0 bg-white text-xs">${itemName}</td>`;
+                    
+                    allSizes.forEach(size => {
+                        const count = sizes[size] || 0;
+                        const cellClass = count > 0 ? 'font-bold text-blue-700' : 'text-gray-300';
+                        bodyHtml += `<td class="px-2 py-2 text-center ${cellClass}">${count || '-'}</td>`;
+                    });
+                    
+                    bodyHtml += `<td class="px-3 py-2 text-center font-bold text-white bg-blue-600">${total}</td>`;
+                    bodyHtml += `</tr>`;
+                });
+                
+                // Riga totali
+                if (sortedItemsBySize.length > 0) {
+                    bodyHtml += `<tr class="bg-gray-200 font-bold">`;
+                    bodyHtml += `<td class="px-3 py-2 sticky left-0 bg-gray-200">TOTALE</td>`;
+                    
+                    let grandTotal = 0;
+                    allSizes.forEach(size => {
+                        let sizeTotal = 0;
+                        Object.values(itemsBySize).forEach(sizes => {
+                            sizeTotal += sizes[size] || 0;
+                        });
+                        grandTotal += sizeTotal;
+                        bodyHtml += `<td class="px-2 py-2 text-center">${sizeTotal}</td>`;
+                    });
+                    
+                    bodyHtml += `<td class="px-3 py-2 text-center text-white bg-blue-800">${grandTotal}</td>`;
+                    bodyHtml += `</tr>`;
+                }
+                
+                tableBody.innerHTML = bodyHtml || '<tr><td colspan="100" class="text-center text-gray-400 py-4">Nessun dato disponibile</td></tr>';
+            }
+            
+            // Grafico capi per kit filtrato
+            const itemCounts = {};
+            filteredOrders.forEach(o => {
+                o.itemsList.forEach(item => {
+                    let cleanName = item.name.replace(/\s*\(\d+€\)\s*$/, '').trim();
+                    if (!itemCounts[cleanName]) itemCounts[cleanName] = 0;
+                    itemCounts[cleanName]++;
+                });
+            });
+            
+            const sortedItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]);
+            const labelsKit = sortedItems.map(x => x[0]);
+            const dataKit = sortedItems.map(x => x[1]);
+            
+            const ctxKitItems = document.getElementById('chartKitItems');
+            if (ctxKitItems) {
+                if (chartKitItems) chartKitItems.destroy();
+                chartKitItems = new Chart(ctxKitItems.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labelsKit,
+                        datasets: [{
+                            label: 'Quantità',
+                            data: dataKit,
+                            backgroundColor: filterValue === 'all' ? '#3b82f6' : '#8b5cf6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { x: { beginAtZero: true } },
+                        plugins: { 
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: filterValue === 'all' ? 'Tutti i Kit' : filterValue.split('(')[0].trim(),
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Popola i filtri ID della Dashboard
+        function populateDashboardIdFilters() {
+            const minSelect = document.getElementById('dashboardMinId');
+            const maxSelect = document.getElementById('dashboardMaxId');
+            if (!minSelect || !maxSelect) return;
+            if (orders.length === 0) return;
+            
+            // Se già popolato e con lo stesso numero di ordini, non ripopolare
+            const currentOptionsCount = minSelect.options.length;
+            if (currentOptionsCount === orders.length && minSelect.value && maxSelect.value) {
+                return; // Già popolato correttamente
+            }
+            
+            // Salva selezione corrente
+            const currentMin = minSelect.value;
+            const currentMax = maxSelect.value;
+            
+            // Ordina usando la funzione globale
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
+            
+            minSelect.innerHTML = '';
+            maxSelect.innerHTML = '';
+            
+            sortedOrders.forEach(o => {
+                const optMin = document.createElement('option');
+                optMin.value = o.displayId;
+                optMin.text = o.displayId;
+                minSelect.appendChild(optMin);
+                
+                const optMax = document.createElement('option');
+                optMax.value = o.displayId;
+                optMax.text = o.displayId;
+                maxSelect.appendChild(optMax);
+            });
+            
+            // Ripristina selezione o imposta default
+            if (currentMin && sortedOrders.some(o => o.displayId === currentMin)) {
+                minSelect.value = currentMin;
+            } else if (sortedOrders.length > 0) {
+                minSelect.value = sortedOrders[0].displayId;
+            }
+            
+            if (currentMax && sortedOrders.some(o => o.displayId === currentMax)) {
+                maxSelect.value = currentMax;
+            } else if (sortedOrders.length > 0) {
+                maxSelect.value = sortedOrders[sortedOrders.length - 1].displayId;
+            }
+        }
+        
+        // Reset filtri Dashboard
+        function resetDashboardFilters() {
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
+            const minSelect = document.getElementById('dashboardMinId');
+            const maxSelect = document.getElementById('dashboardMaxId');
+            
+            if (minSelect && sortedOrders.length > 0) {
+                minSelect.value = sortedOrders[0].displayId;
+            }
+            if (maxSelect && sortedOrders.length > 0) {
+                maxSelect.value = sortedOrders[sortedOrders.length - 1].displayId;
+            }
+            
+            // Reset anche il filtro kit
+            const kitFilter = document.getElementById('dashboardKitFilter');
+            if (kitFilter) kitFilter.value = 'all';
+            
+            // I totali generali non cambiano, aggiorna solo la parte filtrata
+            renderChart();
+            renderKitAnalysis();
+        }
+        
+        // Applica Quick ID filter anche alla Dashboard
+        function applyQuickIdFilterToDashboard(num) {
+            const filter = quickIdFilters[num];
+            if (!filter || !filter.min || !filter.max) return;
+            
+            const minSelect = document.getElementById('dashboardMinId');
+            const maxSelect = document.getElementById('dashboardMaxId');
+            
+            if (minSelect && maxSelect) {
+                // Trova ID corrispondenti
+                const sortedOrders = sortOrdersByDisplayId(orders, true);
+                
+                const findMatchingId = (inputValue) => {
+                    if (inputValue.includes('_') || inputValue.includes('A_')) {
+                        return inputValue;
+                    }
+                    const targetNum = parseInt(inputValue);
+                    for (let o of sortedOrders) {
+                        const parsed = parseDisplayId(o.displayId);
+                        if (parsed.num === targetNum) {
+                            return o.displayId;
+                        }
+                    }
+                    return inputValue;
+                };
+                
+                const matchedMin = findMatchingId(filter.min);
+                const matchedMax = findMatchingId(filter.max);
+                
+                minSelect.value = matchedMin;
+                maxSelect.value = matchedMax;
+                
+                renderChart();
+                renderKitAnalysis();
+            }
+        }
+
+        function initSelect() { 
+            const sel = document.getElementById('addItemSelect');
+            if (!sel) return; // Protezione
+            sel.innerHTML = ''; 
+            [...globalItems].filter(i => i && typeof i === 'string').forEach(i => { 
+                const opt = document.createElement('option');
+                opt.value = i; 
+                // Estrai nome senza prezzo - trova l'ultima parentesi con € o €)
+                const priceMatch = i.match(/\s*\(\d+€\)\s*$/);
+                opt.text = priceMatch ? i.substring(0, i.lastIndexOf(priceMatch[0])).trim() : i;
+                sel.appendChild(opt); 
+            }); 
+            const sizeSel = document.getElementById('filterSize');
+            if (sizeSel) {
+                SIZE_ORDER.forEach(s => sizeSel.innerHTML += `<option value="${s}">${s}</option>`);
+            }
+            
+            // Popola filtro articoli
+            const itemSel = document.getElementById('filterItem');
+            if (!itemSel) return; // Protezione
+            const currentItemFilter = itemSel.value; // Preserva selezione corrente
+            itemSel.innerHTML = '<option value="all">🔍 Cerca Capo...</option>';
+            [...globalItems].filter(item => item && typeof item === 'string').sort().forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                // Estrai nome senza prezzo
+                const priceMatch = item.match(/\s*\(\d+€\)\s*$/);
+                opt.text = priceMatch ? item.substring(0, item.lastIndexOf(priceMatch[0])).trim() : item;
+                itemSel.appendChild(opt);
+            });
+            if (currentItemFilter && currentItemFilter !== 'all') {
+                itemSel.value = currentItemFilter; // Ripristina selezione
+            }
+        }
+        
+        function openItemModal(id) { 
+            currentEditId = id;
+            const o = orders.find(x => x.id === id); const tb = document.getElementById('modalItemsBody'); tb.innerHTML = '';
+            document.getElementById('modalEmail').value = o.email || '';
+            document.getElementById('modalPhone').value = o.phone || '';
+            document.getElementById('modalTimestamp').value = o.timestamp || 'Non disponibile';
+            if (o.statusUpdatedAt) {
+            const formatted = new Date(o.statusUpdatedAt).toLocaleString('it-IT');
+            document.getElementById('modalTimestamp').value += ` | Stato: ${formatted}`;
+       }
+            o.itemsList.forEach((item, idx) => { tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2 text-xs" style="max-width: 300px; word-wrap: break-word; white-space: normal;">${item.name}</td><td class="p-2 text-center"><input type="text" value="${item.size}" onchange="updateItemSize(${idx}, this.value)" class="border rounded w-20 text-center font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-300 outline-none"></td><td class="p-2 text-center"><button onclick="delItem(${idx})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button></td></tr>`; });
+            document.getElementById('itemModal').classList.add('active'); 
+        }
+        function updateItemSize(idx, val) { const o = orders.find(x => x.id === currentEditId);
+        if(o && o.itemsList[idx]) { o.itemsList[idx].size = val.toUpperCase().trim(); saveData(); renderMatrices(); } }
+        function delItem(idx) { orders.find(x=>x.id===currentEditId).itemsList.splice(idx,1);
+        openItemModal(currentEditId); }
+        function addItemToOrder() { const val = document.getElementById('addItemSelect').value; const o = orders.find(x=>x.id===currentEditId);
+        let s = o.mainSize; if(val.includes("Calzettoni") || val.includes("Calzettone")) s = o.sockSize; if(val.includes("Borsone") || val.includes("Zaino") || val.includes("Cappellino") || val.includes("Scaldacollo") || val.includes("Guanti")) s = 'UNICA';
+        o.itemsList.push({name: val, size: s}); openItemModal(currentEditId); }
+        function closeModal() { document.getElementById('itemModal').classList.remove('active'); updateUI(); }
+        
+        // ═══════════════════════════════════════════════════════════
+        // BACKUP AUTOMATICO ORDINI
+        // ═══════════════════════════════════════════════════════════
+        function saveOrdersBackup() {
+            try {
+                ordersBackup = JSON.parse(JSON.stringify(orders));
+                localStorage.setItem('ordersBackup', JSON.stringify({
+                    timestamp: new Date().toISOString(),
+                    count: orders.length,
+                    orders: ordersBackup
+                }));
+                console.log(`💾 Backup salvato: ${orders.length} ordini`);
+            } catch (e) {
+                console.error('❌ Errore backup:', e);
+            }
+        }
+        
+        function restoreOrdersBackup() {
+            try {
+                const backup = localStorage.getItem('ordersBackup');
+                if (!backup) {
+                    alert('Nessun backup disponibile');
+                    return;
+                }
+                const data = JSON.parse(backup);
+                if (confirm(`Ripristinare backup del ${new Date(data.timestamp).toLocaleString('it-IT')}?\n${data.count} ordini salvati`)) {
+                    orders = data.orders;
+                    updateUI();
+                    showQuickNotification('✅ Backup ripristinato', 'success');
+                }
+            } catch (e) {
+                console.error('❌ Errore ripristino:', e);
+                alert('Errore nel ripristino del backup');
+            }
+        }
+        
+        window.restoreOrdersBackup = restoreOrdersBackup;
+        
+        // ✅ Funzione di emergenza per sbloccare isSaving
+        window.unlockSaving = function() {
+            console.warn('⚠️ EMERGENZA: sblocco forzato di isSaving');
+            isSaving = false;
+            console.log('✅ isSaving = false');
+            alert('isSaving sbloccato. Prova a salvare di nuovo.');
+        };
+        window.checkSaving = function() {
+            console.log('isSaving:', isSaving);
+            console.log('orders.length:', orders.length);
+            console.log('Ordini:', orders.map(o => o.displayId).join(', '));
+            return { isSaving, ordersCount: orders.length };
+        };
+
+function updateUI() { 
+            populateGestioneOrdiniIdSelects();
+            populateDashboardIdFilters(); // Inizializza filtri Dashboard
+            restoreFiltersState(); // Ripristina filtri salvati
+            renderTable(); 
+            updateDashboardCounts(); // Aggiorna conteggi Dashboard
+            renderChart(); 
+            saveData(); 
+        }
+        
+        // Popola i select ID in Gestione Ordini
+        function populateGestioneOrdiniIdSelects() {
+            const filterMinId = document.getElementById('filterMinId');
+            const filterMaxId = document.getElementById('filterMaxId');
+            
+            if (!filterMinId || !filterMaxId) return;
+            
+            // Salva selezioni correnti
+            const currentMin = filterMinId.value;
+            const currentMax = filterMaxId.value;
+            
+            // Ordina ordini per ID usando la funzione globale
+            const sortedOrders = sortOrdersByDisplayId(orders, true);
+            
+            // Popola select
+            filterMinId.innerHTML = '';
+            filterMaxId.innerHTML = '';
+            
+            sortedOrders.forEach(o => {
+                const optMin = document.createElement('option');
+                optMin.value = o.displayId;
+                optMin.text = o.displayId;
+                filterMinId.appendChild(optMin);
+                
+                const optMax = document.createElement('option');
+                optMax.value = o.displayId;
+                optMax.text = o.displayId;
+                filterMaxId.appendChild(optMax);
+            });
+            
+            // ✅ FIX: Ripristina selezioni solo se ancora esistono nella lista
+            if (sortedOrders.length > 0) {
+                const allIds = sortedOrders.map(o => o.displayId);
+                
+                // Ripristina Min se esiste ancora, altrimenti usa il primo
+                if (currentMin && allIds.includes(currentMin)) {
+                    filterMinId.value = currentMin;
+                } else {
+                    filterMinId.value = sortedOrders[0].displayId;
+                }
+                
+                // Ripristina Max se esiste ancora, altrimenti usa l'ULTIMO (include nuovi ordini)
+                if (currentMax && allIds.includes(currentMax)) {
+                    filterMaxId.value = currentMax;
+                } else {
+                    filterMaxId.value = sortedOrders[sortedOrders.length - 1].displayId;
+                }
+            }
+        }
+        
+        // Gestione popup note
+        let currentNoteOrderId = null;
+        let currentNoteColor = 'default';
+        
+        function openNotesPopup(orderId) {
+            currentNoteOrderId = orderId;
+            const order = orders.find(o => o.id === orderId);
+            
+            if (order) {
+                document.getElementById('noteTextarea').value = order.notes || '';
+                currentNoteColor = order.noteColor || 'default';
+                
+                // Evidenzia il colore selezionato
+                document.querySelectorAll('.note-color-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                    if (btn.dataset.color === currentNoteColor) {
+                        btn.classList.add('selected');
+                    }
+                });
+                
+                document.getElementById('notesPopup').classList.add('active');
+            }
+        }
+        
+        function closeNotesPopup() {
+            document.getElementById('notesPopup').classList.remove('active');
+            currentNoteOrderId = null;
+            currentNoteColor = 'default';
+        }
+        
+        function selectNoteColor(color) {
+            currentNoteColor = color;
+            document.querySelectorAll('.note-color-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (btn.dataset.color === color) {
+                    btn.classList.add('selected');
+                }
+            });
+        }
+        
+        function saveNoteFromPopup() {
+            if (currentNoteOrderId) {
+                const order = orders.find(o => o.id === currentNoteOrderId);
+                if (order) {
+                    order.notes = document.getElementById('noteTextarea').value;
+                    order.noteColor = currentNoteColor;
+                    saveData();
+                    renderTable();
+                    closeNotesPopup();
+                }
+            }
+        }
+        
+        // Funzione per aprire tabelle a schermo intero in nuova finestra
+        function openTableFullscreen(tableType) {
+            const minSel = document.getElementById('matrixMinId');
+            const maxSel = document.getElementById('matrixMaxId');
+            const range = (minSel && maxSel && minSel.value && maxSel.value) 
+                ? `${minSel.value} → ${maxSel.value}` 
+                : 'Tutti';
+            
+            let title, tableId, titleColor, borderColor;
+            
+            switch(tableType) {
+                case 'gross':
+                    title = '1. Riepilogo Richieste Totali (Lordo)';
+                    tableId = 'grossTable';
+                    titleColor = '#1e3a8a';
+                    borderColor = '#3b82f6';
+                    break;
+                case 'inv':
+                    title = '2. Magazzino (Giacenze)';
+                    tableId = 'invClothingTable';
+                    titleColor = '#92400e';
+                    borderColor = '#fbbf24';
+                    break;
+                case 'net':
+                    title = '3. Ordine Fornitore (Netto)';
+                    tableId = 'netTable';
+                    titleColor = '#991b1b';
+                    borderColor = '#dc2626';
+                    break;
+                case 'invSocks':
+                    title = 'Inventario Calze';
+                    tableId = 'invSocksTable';
+                    titleColor = '#92400e';
+                    borderColor = '#fbbf24';
+                    break;
+                case 'netSocks':
+                    title = 'Calze da Ordinare (Netto)';
+                    tableId = 'netSocksTable';
+                    titleColor = '#991b1b';
+                    borderColor = '#dc2626';
+                    break;
+            }
+            
+            const table = document.getElementById(tableId);
+            if (!table) {
+                alert('Tabella non trovata!');
+                return;
+            }
+            
+            // Clona la tabella
+            const clonedTable = table.cloneNode(true);
+            
+            // Crea HTML per la nuova finestra - FINESTRA MASSIMA
+            const newWindow = window.open('', '_blank', 'width=1800,height=950');
+            newWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>${title} - OrderFlow Pro</title>
+                    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        body {
+                            font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            padding: 1px;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            margin: 0;
+                            overflow: hidden;
+                            height: 100vh;
+                            width: 100vw;
+                        }
+                        .container {
+                            background: white;
+                            border-radius: 2px;
+                            padding: 3px;
+                            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                            width: calc(100vw - 2px);
+                            height: calc(100vh - 2px);
+                            display: flex;
+                            flex-direction: column;
+                            overflow: hidden;
+                        }
+                        .header {
+                            border-bottom: 1px solid ${borderColor};
+                            padding-bottom: 1px;
+                            margin-bottom: 1px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            flex-shrink: 0;
+                            height: 30px;
+                            max-height: 30px;
+                        }
+                        .header h1 {
+                            color: ${titleColor};
+                            font-size: 14px;
+                            font-weight: bold;
+                            margin: 0;
+                            line-height: 1;
+                        }
+                        .header .info {
+                            color: #666;
+                            font-size: 10px;
+                            font-weight: 500;
+                            line-height: 1;
+                        }
+                        .table-wrapper {
+                            overflow: auto;
+                            flex-grow: 1;
+                            width: 100%;
+                            height: 100%;
+                        }
+                        table {
+                            width: 100% !important;
+                            min-width: 100% !important;
+                            max-width: 100% !important;
+                            border-collapse: collapse;
+                            margin: 0;
+                            table-layout: fixed !important;
+                            height: 100%;
+                        }
+                        th {
+                            background: #f3f4f6 !important;
+                            padding: 0px !important;
+                            text-align: center !important;
+                            font-weight: bold !important;
+                            border: 1px solid #d1d5db !important;
+                            font-size: 8px !important;
+                            width: auto !important;
+                            overflow: hidden !important;
+                            vertical-align: middle !important;
+                        }
+                        td {
+                            padding: 0px !important;
+                            text-align: center !important;
+                            border: 1px solid #e5e7eb !important;
+                            font-size: 17px !important;
+                            font-weight: 600 !important;
+                            width: auto !important;
+                            overflow: hidden !important;
+                            line-height: 0.9 !important;
+                            height: auto !important;
+                            max-height: none !important;
+                        }
+                        td.sticky-col {
+                            padding: 0px !important;
+                            height: auto !important;
+                            max-height: none !important;
+                            line-height: 0.9 !important;
+                        }
+                        .sticky-col {
+                            background: #f9fafb !important;
+                            font-weight: bold !important;
+                            text-align: center !important;
+                            position: sticky !important;
+                            left: 0 !important;
+                            z-index: 10 !important;
+                            width: 55px !important;
+                            min-width: 55px !important;
+                            max-width: 55px !important;
+                            box-shadow: 2px 0 5px rgba(0,0,0,0.1) !important;
+                            padding: 0px !important;
+                            font-size: 13px !important;
+                            vertical-align: middle !important;
+                            display: table-cell !important;
+                            line-height: 0.9 !important;
+                            height: auto !important;
+                        }
+                        tbody .sticky-col {
+                            padding: 0px !important;
+                            line-height: 0.9 !important;
+                        }
+                        .size-section-row {
+                            padding: 0px !important;
+                            line-height: 0.9 !important;
+                            font-size: 13px !important;
+                            height: auto !important;
+                        }
+                        tbody .size-section-row {
+                            padding: 0px !important;
+                            line-height: 0.9 !important;
+                            height: auto !important;
+                        }
+                        .total-row {
+                            background: #f3f4f6 !important;
+                            font-weight: bold !important;
+                            border-top: 2px solid #9ca3af !important;
+                        }
+                        .vertical-header {
+                            writing-mode: vertical-rl !important;
+                            transform: rotate(180deg) !important;
+                            white-space: pre-wrap !important;
+                            padding: 0px !important;
+                            font-size: 13px !important;
+                            line-height: 1.1 !important;
+                            height: 110px !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            text-align: center !important;
+                            font-weight: 700 !important;
+                            max-height: 110px !important;
+                            overflow: hidden !important;
+                        }
+                        .buy-alert {
+                            background: #fee2e2 !important;
+                            color: #991b1b !important;
+                            padding: 2px 4px !important;
+                            border-radius: 3px !important;
+                            font-weight: bold !important;
+                            font-size: 17px !important;
+                        }
+                        .buy-ok {
+                            color: #9ca3af !important;
+                        }
+                        .size-section-row {
+                            padding: 1px 0 !important;
+                            line-height: 0.9 !important;
+                            font-size: 11px !important;
+                        }
+                        .inv-input {
+                            width: 50px !important;
+                            text-align: center !important;
+                            border: 1px solid #d1d5db !important;
+                            border-radius: 3px !important;
+                            padding: 2px !important;
+                            font-size: 17px !important;
+                            font-weight: 600 !important;
+                        }
+                        .no-print {
+                            margin-top: 2px;
+                            padding: 3px;
+                            text-align: center;
+                            flex-shrink: 0;
+                            background: #f9fafb;
+                            border-top: 1px solid #e5e7eb;
+                        }
+                        .no-print button {
+                            background: #3b82f6;
+                            color: white;
+                            padding: 4px 12px;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-weight: bold;
+                            margin: 0 2px;
+                            font-size: 10px;
+                        }
+                        .no-print button:hover {
+                            background: #2563eb;
+                        }
+                        @media print {
+                            * {
+                                margin: 0 !important;
+                                padding: 0 !important;
+                            }
+                            body {
+                                background: white;
+                                margin: 0;
+                                padding: 0;
+                            }
+                            .no-print {
+                                display: none;
+                            }
+                            .container {
+                                box-shadow: none;
+                                padding: 0mm !important;
+                                overflow: visible;
+                                border-radius: 0;
+                                width: 100%;
+                                height: 100%;
+                            }
+                            .table-wrapper {
+                                overflow: visible;
+                                width: 100%;
+                                height: 100%;
+                            }
+                            @page {
+                                size: A4 landscape;
+                                margin: 1mm;
+                            }
+                            table {
+                                font-size: 7px !important;
+                                width: 100% !important;
+                                max-width: 100% !important;
+                                min-width: 100% !important;
+                                table-layout: fixed !important;
+                                border-collapse: collapse !important;
+                                height: auto !important;
+                            }
+                            th {
+                                padding: 1px 0.5px !important;
+                                width: auto !important;
+                                font-size: 6px !important;
+                                word-wrap: break-word;
+                                overflow: hidden;
+                                line-height: 0.9;
+                                border: 0.5px solid #d1d5db !important;
+                                height: auto !important;
+                            }
+                            td {
+                                padding: 0.5px 0.5px !important;
+                                width: auto !important;
+                                font-size: 7px !important;
+                                word-wrap: break-word;
+                                overflow: hidden;
+                                line-height: 0.85;
+                                border: 0.5px solid #e5e7eb !important;
+                                font-weight: 600 !important;
+                                height: auto !important;
+                            }
+                            .sticky-col {
+                                position: relative !important;
+                                box-shadow: none !important;
+                                width: 22px !important;
+                                min-width: 22px !important;
+                                max-width: 22px !important;
+                                padding: 0.5px 0.5px !important;
+                                font-size: 6px !important;
+                            }
+                            .size-section-row {
+                                padding: 0.5px 0.5px !important;
+                                line-height: 0.85 !important;
+                                font-size: 6px !important;
+                                height: auto !important;
+                            }
+                            .vertical-header {
+                                font-size: 5px !important;
+                                padding: 1px 0 !important;
+                                height: 60px !important;
+                                line-height: 0.95 !important;
+                                font-weight: 700 !important;
+                            }
+                            .header {
+                                padding-bottom: 0.5mm !important;
+                                margin-bottom: 0.5mm !important;
+                                border-bottom-width: 0.5px !important;
+                                height: 15px !important;
+                                max-height: 15px !important;
+                            }
+                            .header h1 {
+                                font-size: 7px !important;
+                                line-height: 1 !important;
+                            }
+                            .header .info {
+                                font-size: 5px !important;
+                                line-height: 1 !important;
+                            }
+                            .header img {
+                                display: none !important;
+                            }
+                            .container {
+                                page-break-inside: avoid;
+                            }
+                            .buy-alert {
+                                padding: 1px !important;
+                                font-size: 6.5px !important;
+                            }
+                            .size-section-row {
+                                padding: 0.5px 0 !important;
+                                line-height: 0.8 !important;
+                                font-size: 5px !important;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <div>
+                                <h1><i class="fas fa-table mr-2"></i>${title}</h1>
+                                <div class="info">
+                                    <i class="fas fa-calendar-alt mr-1"></i> ${new Date().toLocaleDateString('it-IT')} 
+                                    <i class="fas fa-clock ml-3 mr-1"></i> ${new Date().toLocaleTimeString('it-IT')}
+                                    <span class="ml-3"><i class="fas fa-filter mr-1"></i> Range: ${range}</span>
+                                </div>
+                            </div>
+                            <img src="https://via.placeholder.com/100x50/667eea/ffffff?text=Logo" alt="Logo" style="height: 50px;">
+                        </div>
+                        <div class="table-wrapper">
+                            ${clonedTable.outerHTML}
+                        </div>
+                        <div class="no-print">
+                            <button onclick="window.print()"><i class="fas fa-print mr-2"></i>Stampa</button>
+                            <button onclick="window.close()"><i class="fas fa-times mr-2"></i>Chiudi</button>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            newWindow.document.close();
+        }
+        
+        // Funzione per scalare magazzino dagli ordini
+        function applyInventoryToOrders() {
+            const minIdSel = document.getElementById('matrixMinId');
+            const maxIdSel = document.getElementById('matrixMaxId');
+            
+            if (!minIdSel || !maxIdSel || !minIdSel.value || !maxIdSel.value) {
+                alert('⚠️ Seleziona prima un range ID da filtrare!');
+                return;
+            }
+            
+            const confirmMsg = `🔄 SCALA MAGAZZINO\n\n` +
+                `Questa operazione:\n` +
+                `1. Scala il magazzino per gli ordini "Nuovo" nel range ${minIdSel.value} → ${maxIdSel.value}\n` +
+                `2. Aggiunge una nota automatica con timestamp agli ordini scalati\n` +
+                `3. Mantiene lo stato "Nuovo" (lo cambierai manualmente quando inviato)\n\n` +
+                `⚠️ ATTENZIONE: Il magazzino verrà decrementato!\n\n` +
+                `Continuare?`;
+            
+            if (!confirm(confirmMsg)) return;
+            
+            // Filtra solo ordini "Nuovo" NON ANCORA SCALATI nel range
+            const NET_STATUSES = ['Nuovo'];
+            const ordersToProcess = orders.filter(o => {
+                return NET_STATUSES.includes(o.status) && 
+                       o.status !== 'Ordine trasferito ad altro ID' &&
+                       !o.inventoryScaledAt && // IMPORTANTE: Non scalare ordini già scalati!
+                       compareDisplayIds(o.displayId, minIdSel.value) >= 0 &&
+                       compareDisplayIds(o.displayId, maxIdSel.value) <= 0;
+            });
+            
+            if (ordersToProcess.length === 0) {
+                alert('❌ Nessun ordine "Nuovo" non ancora scalato trovato nel range selezionato!\n\nGli ordini con badge 📦 SCALATO sono già stati processati.');
+                return;
+            }
+            
+            console.log(`🔄 Ordini da scalare: ${ordersToProcess.length}`);
+            console.log(`   IDs:`, ordersToProcess.map(o => o.displayId));
+            console.log(`   Totale ordini Nuovo nel range:`, orders.filter(o => {
+                return o.status === 'Nuovo' && 
+                       compareDisplayIds(o.displayId, minIdSel.value) >= 0 &&
+                       compareDisplayIds(o.displayId, maxIdSel.value) <= 0;
+            }).length);
+            console.log(`   Di cui già scalati:`, orders.filter(o => {
+                return o.status === 'Nuovo' && 
+                       compareDisplayIds(o.displayId, minIdSel.value) >= 0 &&
+                       compareDisplayIds(o.displayId, maxIdSel.value) <= 0 && 
+                       o.inventoryScaledAt;
+            }).length);
+            
+            let scaledOrders = 0;
+            let totalItemsScaled = 0;
+            const timestamp = new Date().toLocaleString('it-IT');
+            const inventoryLog = {};
+            
+            // Per ogni ordine, scala il magazzino
+            ordersToProcess.forEach(order => {
+                let itemsScaledThisOrder = [];
+                
+                // Inizializza scaledItems se non esiste
+                if (!order.scaledItems) {
+                    order.scaledItems = {};
+                }
+                
+                console.log(`\n🔄 Scalamento ordine ${order.displayId}:`);
+                
+                order.itemsList.forEach(item => {
+                    const key = `${item.name}_${item.size}`;
+                    const stockVal = inventory[key];
+                    const stockInt = parseInt(stockVal) || 0;
+                    
+                    console.log(`   📦 ${item.name} [${item.size}]: Magazzino prima=${stockInt}`);
+                    
+                    if (stockVal && stockInt > 0) {
+                        // C'è stock disponibile, scala
+                        inventory[key] = stockInt - 1;
+                        itemsScaledThisOrder.push(`${item.name.split('(')[0].trim()} [${item.size}]`);
+                        totalItemsScaled++;
+                        
+                        // Traccia quanti articoli di questo tipo sono stati scalati per questo ordine
+                        if (!order.scaledItems[key]) {
+                            order.scaledItems[key] = 0;
+                        }
+                        order.scaledItems[key] += 1;
+                        
+                        console.log(`   ✅ Scalato! Magazzino dopo=${stockInt - 1}, scaledItems[${key}]=${order.scaledItems[key]}`);
+                        
+                        // Log per riepilogo
+                        if (!inventoryLog[key]) {
+                            inventoryLog[key] = { name: item.name, size: item.size, count: 0 };
+                        }
+                        inventoryLog[key].count++;
+                    } else {
+                        console.log(`   ⚠️ Magazzino=0, non scalato`);
+                    }
+                });
+                
+                if (itemsScaledThisOrder.length > 0) {
+                    // Aggiungi nota automatica
+                    const noteText = `📦 Scalato da magazzino il ${timestamp}\n${itemsScaledThisOrder.join(', ')}`;
+                    order.notes = order.notes ? `${order.notes}\n\n${noteText}` : noteText;
+                    order.noteColor = 'green'; // Verde = Scalato
+                    order.inventoryScaledAt = timestamp;
+                    scaledOrders++;
+                }
+            });
+            
+            saveData();
+            renderMatrices(true);
+            renderTable();
+            
+            // Mostra riepilogo
+            let summary = `✅ MAGAZZINO SCALATO CON SUCCESSO!\n\n`;
+            summary += `📊 Ordini processati: ${scaledOrders}\n`;
+            summary += `📦 Articoli totali scalati: ${totalItemsScaled}\n\n`;
+            summary += `🔍 Dettaglio:\n`;
+            
+            Object.values(inventoryLog).forEach(item => {
+                summary += `• ${item.name.split('(')[0].trim()} [${item.size}]: -${item.count}\n`;
+            });
+            
+            alert(summary);
+        }
+        
+        function exportMatrix() { 
+            const wb = XLSX.utils.book_new();
+            const now = new Date().toLocaleString('it-IT');
+            const minId = document.getElementById('matrixMinId').value; 
+            const maxId = document.getElementById('matrixMaxId').value; 
+            const rangeTxt = (minId && maxId) ? `Intervallo ID: ${minId} - ${maxId}` : 'Intervallo ID: Tutti';
+            
+            // DB completo (tutti gli ordini) - con info trasferimenti
+            const rawData = orders.map(o => {
+                const linkedFrom = orders.find(x => x.linkedId === o.displayId);
+                return {
+                    'Data Export': now, 
+                    ID: o.displayId, 
+                    Cliente: o.customer, 
+                    Kit: o.kitType, 
+                    Taglia: o.mainSize, 
+                    Calze: o.sockSize, 
+                    Totale: calculateOrderTotal(o), 
+                    Sconto: o.discount, 
+                    Stato: o.status, 
+                    'Trasferito A': o.linkedId || '',
+                    'Ricevuto Da': linkedFrom ? linkedFrom.displayId : '',
+                    Note: o.notes
+                };
+            });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rawData), "DB_Ordini_Completo");
+            
+            // Filtra ordini nel range ID selezionato (TUTTI gli stati)
+            let activeOrders = orders;
+            if (minId && maxId) {
+                activeOrders = orders.filter(o => {
+                    return compareDisplayIds(o.displayId, minId) >= 0 && 
+                           compareDisplayIds(o.displayId, maxId) <= 0;
+                });
+            }
+            
+            // Riassunto Griglia (tutti gli ordini nel range) - con info trasferimenti
+            const gridRows = activeOrders.map(o => { 
+                const linkedFrom = orders.find(x => x.linkedId === o.displayId);
+                const row = {};
+                row["ID Ordine"] = o.displayId; 
+                row["Cliente"] = o.customer;
+                row["Stato"] = o.status;
+                row["Trasferito A"] = o.linkedId || '';
+                row["Ricevuto Da"] = linkedFrom ? linkedFrom.displayId : '';
+                row["Note"] = o.notes || ""; 
+                globalItems.forEach(item => { 
+                    const found = o.itemsList.find(i => i.name === item); 
+                    row[item] = found ? found.size : ""; 
+                }); 
+                return row; 
+            });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gridRows), "Riassunto_Griglia");
+            
+            // Dettaglio Fabbisogni (tutti gli ordini nel range)
+            const detectiveData = []; globalItems.forEach(itemName => { let sizesSet = new Set(); activeOrders.forEach(o => { o.itemsList.forEach(i => { if (i.name === itemName) sizesSet.add(i.size); }); }); Array.from(sizesSet).sort().forEach(size => { let requestingIDs = []; let count = 0; activeOrders.forEach(o => { o.itemsList.forEach(i => { if (i.name === itemName && i.size === size) { requestingIDs.push(o.displayId); count++; } }); }); if (count > 0) { detectiveData.push({ 'Articolo': itemName, 'Taglia': size, 'Quantità': count, 'ID Ordini': requestingIDs.join(', ') }); } }); });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detectiveData), "Dettaglio_Fabbisogni");
+            
+            function addSheetWithInfo(tableId, sheetName) { const table = document.getElementById(tableId);
+            const aoa = [["Riepilogo Ordine Fornitore"], ["Generato il: " + now], [rangeTxt], [""]]; const finalSheet = XLSX.utils.aoa_to_sheet(aoa);
+            XLSX.utils.sheet_add_dom(finalSheet, table, {origin: "A5"}); XLSX.utils.book_append_sheet(wb, finalSheet, sheetName); }
+            
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById('grossTable')), "Riepilogo_Lordo");
+            
+            // Crea manualmente la tabella Magazzino con i valori degli input
+            const SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            const inventorySizes = SIZE_ORDER.filter(s => !SOCK_SIZES.includes(s));
+            inventorySizes.push('UNICA');
+            
+            const inventoryData = [];
+            const itemsWithoutSocks = globalItems.filter(item => !item.includes("Calzettoni"));
+            
+            inventorySizes.forEach(size => {
+                const row = { 'TAGLIA': size };
+                let rowTotal = 0;
+                itemsWithoutSocks.forEach(item => {
+                    const key = `${item}_${size}`;
+                    const value = inventory[key] !== undefined ? inventory[key] : '';
+                    row[item] = value;
+                    if (value !== '') rowTotal += parseInt(value) || 0;
+                });
+                inventoryData.push(row);
+            });
+            
+            // Aggiungi riga TOTALE
+            const totalRow = { 'TAGLIA': 'TOTALE' };
+            itemsWithoutSocks.forEach(item => {
+                let total = 0;
+                inventorySizes.forEach(size => {
+                    const key = `${item}_${size}`;
+                    const value = inventory[key];
+                    if (value !== undefined && value !== '') {
+                        total += parseInt(value) || 0;
+                    }
+                });
+                totalRow[item] = total;
+            });
+            inventoryData.push(totalRow);
+            
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inventoryData), "Magazzino");
+            
+            // Crea manualmente la tabella Calze Inventario
+            const sockSizes = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            const socksInventoryData = [];
+            
+            sockSizes.forEach(size => {
+                const blueKey = `${SOCKS_BLUE_DEFAULT}_${size}`;
+                const redKey = `${SOCKS_RED_DEFAULT}_${size}`;
+                const blueVal = inventory[blueKey] !== undefined ? inventory[blueKey] : '';
+                const redVal = inventory[redKey] !== undefined ? inventory[redKey] : '';
+                
+                socksInventoryData.push({
+                    'TAGLIA': size,
+                    [SOCKS_BLUE_DEFAULT]: blueVal,
+                    [SOCKS_RED_DEFAULT]: redVal
+                });
+            });
+            
+            // Aggiungi riga TOTALE calze
+            let blueTot = 0, redTot = 0;
+            sockSizes.forEach(size => {
+                const blueKey = `${SOCKS_BLUE_DEFAULT}_${size}`;
+                const redKey = `${SOCKS_RED_DEFAULT}_${size}`;
+                if (inventory[blueKey]) blueTot += parseInt(inventory[blueKey]) || 0;
+                if (inventory[redKey]) redTot += parseInt(inventory[redKey]) || 0;
+            });
+            socksInventoryData.push({
+                'TAGLIA': 'TOTALE',
+                [SOCKS_BLUE_DEFAULT]: blueTot,
+                [SOCKS_RED_DEFAULT]: redTot
+            });
+            
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(socksInventoryData), "Inv_Calze");
+            
+            addSheetWithInfo('netTable', "Ordine_Netto"); 
+            addSheetWithInfo('netSocksTable', "Netto_Calze");
+            
+            XLSX.writeFile(wb, "OrderFlow_Export_" + now.replace(/[: ]/g, '_') + ".xlsx");
+        }
+
+        function exportTabellaOrdiniToExcel() {
+            const wb = XLSX.utils.book_new();
+            const now = new Date().toLocaleString('it-IT');
+            
+            // Prendi i filtri applicati
+            const minId = document.getElementById('tabellaOrdiniMinId')?.value;
+            const maxId = document.getElementById('tabellaOrdiniMaxId')?.value;
+            const filterCliente = document.getElementById('tabellaOrdiniFilterCliente')?.value.toLowerCase().trim() || '';
+            const filterTaglia = document.getElementById('tabellaOrdiniFilterTaglia')?.value || '';
+            
+            const getNum = (id) => { const m = id.match(/(\d+)$/); return m ? parseInt(m[1]) : 0; };
+            const minNum = getNum(minId);
+            const maxNum = getNum(maxId);
+            
+            // Filtra ordini come nella tabella visualizzata
+            let filteredOrders = orders.filter(o => {
+                // Usa confronto completo per il filtro
+                if (minId && compareDisplayIds(o.displayId, minId) < 0) return false;
+                if (maxId && compareDisplayIds(o.displayId, maxId) > 0) return false;
+                if (filterCliente && !o.customer.toLowerCase().includes(filterCliente)) return false;
+                if (filterTaglia && o.mainSize !== filterTaglia) return false;
+                return true;
+            });
+            
+            // Ordina usando la funzione globale
+            filteredOrders = sortOrdersByDisplayId(filteredOrders, true);
+            
+            // Raccogli tutti gli articoli presenti negli ordini filtrati
+            const allItemsMap = new Map();
+            filteredOrders.forEach(order => {
+                order.itemsList.forEach(item => {
+                    if (!item || !item.name || typeof item.name !== 'string') return;
+                    const priceMatch = item.name.match(/\s*\(\d+€\)\s*$/);
+                    const itemName = priceMatch ? item.name.substring(0, item.name.lastIndexOf(priceMatch[0])).trim() : item.name;
+                    if (!allItemsMap.has(itemName)) {
+                        allItemsMap.set(itemName, itemName);
+                    }
+                });
+            });
+            
+            const allItems = Array.from(allItemsMap.values());
+            
+            // Crea i dati per Excel
+            const excelData = [];
+            
+            filteredOrders.forEach(order => {
+                const row = {
+                    'ID Ordine': order.displayId,
+                    'Cliente': order.customer,
+                    'Taglia': order.mainSize,
+                    'Taglia Calzettoni': order.sockSize || '-',
+                    'Taglia Accessori': order.accessorySize || 'UNICA',
+                    'Ordine Da Effettuare': order.kitType || '-',
+                    'Note': order.notes || '-'
+                };
+                
+                // Borsone/Zaino
+                const borsoneZaino = order.itemsList.find(i => i.name.includes('Borsone')) ? 'Borsone' : 
+                                    order.itemsList.find(i => i.name.includes('Zaino')) ? 'Zaino' : '-';
+                row['Borsone/Zaino'] = borsoneZaino;
+                
+                // Aggiungi colonna per ogni articolo
+                allItems.forEach(itemName => {
+                    const found = order.itemsList.find(i => {
+                        const priceMatch = i.name.match(/\s*\(\d+€\)\s*$/);
+                        const cleanName = priceMatch ? i.name.substring(0, i.name.lastIndexOf(priceMatch[0])).trim() : i.name;
+                        return cleanName === itemName;
+                    });
+                    row[itemName] = found ? found.size : '';
+                });
+                
+                excelData.push(row);
+            });
+            
+            // Aggiungi riga TOTALE
+            const totalRow = {
+                'ID Ordine': 'TOTALE',
+                'Cliente': '',
+                'Taglia': '',
+                'Taglia Calzettoni': '',
+                'Taglia Accessori': '',
+                'Ordine Da Effettuare': '',
+                'Note': '',
+                'Borsone/Zaino': ''
+            };
+            
+            allItems.forEach(itemName => {
+                const total = filteredOrders.reduce((sum, order) => {
+                    const found = order.itemsList.find(i => {
+                        const priceMatch = i.name.match(/\s*\(\d+€\)\s*$/);
+                        const cleanName = priceMatch ? i.name.substring(0, i.name.lastIndexOf(priceMatch[0])).trim() : i.name;
+                        return cleanName === itemName;
+                    });
+                    return sum + (found ? 1 : 0);
+                }, 0);
+                totalRow[itemName] = total;
+            });
+            
+            excelData.push(totalRow);
+            
+            // Crea foglio Excel
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(wb, ws, "Tabella_Ordini");
+            
+            // Salva file
+            const fileName = `Tabella_Ordini_${minId || 'Tutti'}_${maxId || 'Tutti'}_${now.replace(/[: ]/g, '_')}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            alert(`✅ Excel esportato!\n\n📊 Ordini esportati: ${filteredOrders.length}\n📁 File: ${fileName}`);
+        }
+
+        function exportBackup() {
+            const wb = XLSX.utils.book_new();
+            
+            // Foglio 1: Ordini
+            const data = orders.map(o => {
+                const row = {
+                    "ID": o.displayId,
+                    "Timestamp Ordine": o.timestamp || "",
+                    "Cliente": o.customer,
+                    "Anno/Ruolo": o.roleOrYear || "",
+                    "Email": o.email || "",
+                    "Telefono": o.phone || "",
+                    "Kit": o.kitType,
+                    "Taglia": o.mainSize,
+                    "Calze": o.sockSize,
+                    "Note": o.notes,
+                    "Colore Nota": o.noteColor || "default",
+                    "Scalato Magazzino": o.inventoryScaledAt || "",
+                    "Stato": o.status, 
+                    "Sconto": o.discount || 0,
+                    "ID Trasferito A": o.linkedId || "",
+                    "Dettaglio Articoli (Nome [Taglia])": o.itemsList.map(i => `${i.name} [${i.size}]`).join(' || ')
+                };
+                return row;
+            });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), "Backup_Ordini");
+            
+            // Foglio 2: Magazzino
+            const inventoryData = [];
+            Object.keys(inventory).forEach(key => {
+                const [itemName, size] = key.split('_');
+                const quantity = inventory[key];
+                inventoryData.push({
+                    "Articolo": itemName,
+                    "Taglia": size,
+                    "Quantità": quantity
+                });
+            });
+            
+            if (inventoryData.length > 0) {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inventoryData), "Backup_Magazzino");
+            }
+            
+            XLSX.writeFile(wb, "OrderFlow_BACKUP_" + new Date().toISOString().slice(0,10) + ".xlsx");
+        }
+
+        // ===== INIZIALIZZAZIONE =====
+
+        // Dichiarazione variabili globali
+        let currentUser = null;
+
+        // ===== SESSIONE: token allegato automaticamente a tutte le fetch verso /api/ =====
+        function getSessionToken() {
+            return sessionStorage.getItem('orderFlowSessionToken');
+        }
+
+        function setSessionToken(token) {
+            if (token) sessionStorage.setItem('orderFlowSessionToken', token);
+        }
+
+        function clearSession() {
+            sessionStorage.removeItem('orderFlowSessionToken');
+            localStorage.removeItem('orderFlowCurrentUser');
+            currentUser = null;
+        }
+
+        function forceLogoutToLogin(message) {
+            clearSession();
+            const loginScreen = document.getElementById('loginScreen');
+            const appContainer = document.getElementById('appContainer');
+            if (appContainer) appContainer.style.display = 'none';
+            if (loginScreen) loginScreen.style.display = 'flex';
+            if (message) alert(message);
+        }
+
+        const _originalFetch = window.fetch.bind(window);
+        window.fetch = function(input, init) {
+            const url = typeof input === 'string' ? input : (input && input.url) || '';
+            if (url.startsWith('/api/')) {
+                init = init || {};
+                const isLoginOrOptions = init.method === 'OPTIONS' ||
+                    (typeof init.body === 'string' && init.body.includes('"action":"login"'));
+                const token = getSessionToken();
+                if (token && !isLoginOrOptions) {
+                    init.headers = { ...(init.headers || {}), 'Authorization': `Bearer ${token}` };
+                }
+                return _originalFetch(input, init).then(response => {
+                    if (response.status === 401 && !isLoginOrOptions) {
+                        forceLogoutToLogin('Sessione scaduta, effettua di nuovo il login.');
+                    }
+                    return response;
+                });
+            }
+            return _originalFetch(input, init);
+        };
+
+        // IMPORTANTE: Check login first, then load data - DOPO che il DOM è pronto
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inizializza utenti di default
+            initializeDefaultUsers();
+            
+            // Setup event listeners per login
+            const loginButton = document.getElementById('loginButton');
+            const loginPassword = document.getElementById('loginPassword');
+            
+            if (loginButton) {
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>Accedi';
+                loginButton.addEventListener('click', performLogin);
+            }
+            
+            if (loginPassword) {
+                loginPassword.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') performLogin();
+                });
+            }
+            
+            // Auto-login se sessione attiva (richiede sia l'utente salvato che un token ancora valido)
+            const savedUser = localStorage.getItem('orderFlowCurrentUser');
+            if (savedUser && getSessionToken()) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    const loginScreen = document.getElementById('loginScreen');
+                    const appContainer = document.getElementById('appContainer');
+                    
+                    if (loginScreen) loginScreen.style.display = 'none';
+                    if (appContainer) appContainer.style.display = 'block';
+                    
+                    // Load data then initialize UI
+                    loadData().then(() => {
+                        initSelect();
+                        resetFiltersToDefault();
+                        updateUI();
+                        applyUserPermissions();
+                        startClock();
+                        startAutoRefresh(); // Avvia auto-refresh anche per auto-login
+                    });
+                } catch (error) {
+                    console.error('Error loading user:', error);
+                    localStorage.removeItem('orderFlowCurrentUser');
+                    const loginScreen = document.getElementById('loginScreen');
+                    if (loginScreen) loginScreen.style.display = 'flex';
+                }
+            } else {
+                if (savedUser && !getSessionToken()) localStorage.removeItem('orderFlowCurrentUser');
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) loginScreen.style.display = 'flex';
+                startClock();
+            }
+        });
+        
+        // ===== SISTEMA GESTIONE UTENTI E PERMESSI =====
+        
+        // Definizione ruoli
+        const USER_ROLES = {
+            ADMIN: {
+                id: 'admin',
+                name: 'Amministratore',
+                permissions: {
+                    viewAll: true,
+                    viewDashboard: true,
+                    createOrders: true,
+                    editOrders: true,
+                    deleteOrders: true,
+                    importGoogle: true,
+                    importExcel: true,
+                    exportBackup: true,
+                    resetData: true,
+                    manageUsers: true,
+                    viewDistinta: true,
+                    viewTabella: true,
+                    useQuickIdFilters: true,
+                    downloadGoogleForm: true
+                }
+            },
+            VIEWER: {
+                id: 'viewer',
+                name: 'Visualizzazione (senza Dashboard)',
+                permissions: {
+                    viewAll: true,
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: false,
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: true,
+                    viewTabella: true
+                }
+            },
+            VIEWER_FULL: {
+                id: 'viewer_full',
+                name: 'Visualizzazione (con Dashboard)',
+                permissions: {
+                    viewAll: true,
+                    viewDashboard: true,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: false,
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: true,
+                    viewTabella: true
+                }
+            },
+            CONTRIBUTOR: {
+                id: 'contributor',
+                name: 'Contributore (solo Google Form)',
+                permissions: {
+                    viewAll: true,
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: false,
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: true,
+                    viewTabella: true,
+                    downloadGoogleForm: true,
+                    editStatus: false
+                }
+            },
+            CONTRIBUTOR_ADVANCED: {
+                id: 'contributor_advanced',
+                name: 'Contributore Avanzato (Google Form + Stato)',
+                permissions: {
+                    viewAll: true,
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: false,
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: true,
+                    viewTabella: true,
+                    downloadGoogleForm: true,
+                    editStatus: true // Può modificare SOLO lo stato
+                }
+            },
+            TABLE_EDITOR: {
+                id: 'table_editor',
+                name: 'Editor Tabella (solo Tabella Ordini)',
+                permissions: {
+                    viewAll: false, // Non vede Gestione Ordini
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: true, // Può esportare Excel dalla tabella
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: false, // Non vede Distinta
+                    viewTabella: true, // SOLO Tabella
+                    editTabella: true, // Permesso speciale per modificare celle tabella
+                    useQuickIdFilters: true // Può usare Quick ID filters
+                }
+            },
+            TABELLA_FULL: {
+                id: 'tabella_full',
+                name: 'Tabella Completa',
+                permissions: {
+                    viewAll: false, // Non vede Gestione Ordini
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: true, // Può esportare Excel
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: false, // Non vede Distinta
+                    viewTabella: true, // Vede Tabella Ordini
+                    editTabella: true, // Può modificare celle
+                    highlightCells: true, // Può evidenziare celle
+                    downloadGoogleForm: true, // Può scaricare Google Form
+                    useQuickIdFilters: true // Può usare Quick ID filters
+                }
+            },
+            TABELLA_READONLY: {
+                id: 'tabella_readonly',
+                name: 'Tabella Solo Lettura',
+                permissions: {
+                    viewAll: false, // Non vede Gestione Ordini
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: true, // Può esportare Excel
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: false, // Non vede Distinta
+                    viewTabella: true, // Vede Tabella Ordini
+                    editTabella: true, // Può modificare celle
+                    highlightCells: true, // Può evidenziare celle
+                    downloadGoogleForm: false // NON può scaricare Google Form
+                }
+            }
+        };
+        
+        // Inizializza utente admin di default
+        async function initializeDefaultUsers() {
+            try {
+                const response = await fetch('/api/users');
+                
+                // Verifica che la risposta sia OK prima di parsare JSON
+                if (!response.ok) {
+                    console.warn('⚠️ API users non disponibile, skip inizializzazione');
+                    return;
+                }
+                
+                const data = await response.json();
+                const users = data.users || [];
+                
+                console.log('🔍 Utenti esistenti:', users.length);
+                
+                if (users.length === 0) {
+                    // Crea admin di default
+                    const createResponse = await fetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'create',
+                            username: 'admin',
+                            password: 'admin123',
+                            role: 'admin',
+                            name: 'Amministratore'
+                        })
+                    });
+                    
+                    if (createResponse.ok) {
+                        console.log('✅ Utente admin creato');
+                    }
+                } else {
+                    console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
+                }
+            } catch (error) {
+                // Silenzioso: l'errore è normale se l'API non è ancora pronta
+                console.warn('⚠️ Impossibile inizializzare utenti:', error.message);
+            }
+        }
+        
+        // Login
+        async function performLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const loginButton = document.getElementById('loginButton');
+            
+            if (!username || !password) {
+                alert('Inserisci username e password');
+                return;
+            }
+            
+            loginButton.disabled = true;
+            loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accesso...';
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'login', username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    currentUser = data.user;
+                    setSessionToken(data.token);
+                    localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
+
+                    const loginScreen = document.getElementById('loginScreen');
+                    const appContainer = document.getElementById('appContainer');
+                    
+                    if (loginScreen) loginScreen.style.display = 'none';
+                    if (appContainer) appContainer.style.display = 'block';
+                    
+                    await loadData();
+                    updateUI();
+                    applyUserPermissions();
+                    startClock();
+                    
+                    // Avvia auto-refresh per sincronizzazione multi-utente
+                    startAutoRefresh();
+                } else {
+                    alert('Credenziali non valide');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Errore di connessione al server');
+            } finally {
+                loginButton.disabled = false;
+                loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accedi';
+            }
+        }// Reimposta tutti i filtri ai valori predefiniti (mostra tutti gli ordini)
+function resetFiltersToDefault() {
+    // Stato → "Tutti"
+    const filterStatus = document.getElementById('filterStatus');
+    if (filterStatus) filterStatus.value = 'all';
+    
+    // Anno/Ruolo → "Tutti"
+    const filterRoleYear = document.getElementById('filterRoleYear');
+    if (filterRoleYear) filterRoleYear.value = '';
+    
+    // ID minimo / massimo → vuoti
+    const filterMinId = document.getElementById('filterMinId');
+    if (filterMinId) filterMinId.value = '';
+    const filterMaxId = document.getElementById('filterMaxId');
+    if (filterMaxId) filterMaxId.value = '';
+    
+    // Taglia, Kit, Articolo, Cliente → vuoti
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+    
+    const filterSize = document.getElementById('filterSize');
+    if (filterSize) filterSize.value = 'all';
+    
+    const filterKitType = document.getElementById('filterKitType');
+    if (filterKitType) filterKitType.value = 'all';
+    
+    const filterItem = document.getElementById('filterItem');
+    if (filterItem) filterItem.value = 'all';
+    
+    console.log('✅ Filtri reimpostati a "Tutti"');
+}
+        
+        // Logout
+        function logout() {
+            if (confirm('Sei sicuro di voler uscire?')) {
+                const token = getSessionToken();
+                clearSession();
+                if (token) {
+                    _originalFetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ action: 'logout' })
+                    }).catch(() => {});
+                }
+                location.reload();
+            }
+        }
+        
+        // Applica permessi interfaccia
+        function applyUserPermissions() {
+            if (!currentUser) return;
+            
+            const role = USER_ROLES[currentUser.role.toUpperCase()] || USER_ROLES.VIEWER;
+            const perms = role.permissions;
+            
+            // Mostra badge utente
+            const badge = document.getElementById('userBadge');
+            badge.textContent = `${currentUser.name} (${role.name})`;
+            badge.classList.remove('hidden');
+            
+            // Gestione pulsanti header
+            document.getElementById('btnUserManagement').classList.toggle('hidden', !perms.manageUsers);
+            const btnArchiveManager = document.getElementById('btnArchiveManager');
+            if (btnArchiveManager) btnArchiveManager.classList.toggle('hidden', currentUser.role !== 'admin');
+            document.getElementById('btnReset').classList.toggle('hidden', !perms.resetData);
+            document.getElementById('btnNuovo').classList.toggle('hidden', !perms.createOrders);
+            document.getElementById('btnImportGoogle').classList.toggle('hidden', !perms.importGoogle);
+            document.getElementById('btnExportBackup').classList.toggle('hidden', !perms.exportBackup);
+            document.getElementById('importExcelContainer').classList.toggle('hidden', !perms.importExcel);
+            
+            // Pulsante LOG visibile solo per admin
+            const btnViewLog = document.getElementById('btnViewLog');
+            if (btnViewLog) {
+                btnViewLog.classList.toggle('hidden', currentUser.role !== 'admin');
+            }
+            
+            // Nascondi tab in base ai permessi
+            const ordiniBtn = document.getElementById('nav-ordini');
+            const matrixBtn = document.getElementById('nav-matrix');
+            const tabellaBtn = document.getElementById('nav-tabella-ordini');
+            
+            if (!perms.viewAll) {
+                ordiniBtn.classList.add('hidden');
+                document.getElementById('tab-ordini').classList.add('hidden');
+            }
+            if (!perms.viewDistinta) {
+                matrixBtn.classList.add('hidden');
+                document.getElementById('tab-matrix').classList.add('hidden');
+            }
+            if (!perms.viewTabella) {
+                tabellaBtn.classList.add('hidden');
+                document.getElementById('tab-tabella-ordini').classList.add('hidden');
+            }
+            
+            // Se è TABLE_EDITOR, TABELLA_FULL o TABELLA_READONLY, vai direttamente alla Tabella
+            if (currentUser.role === 'table_editor' || currentUser.role === 'tabella_full' || currentUser.role === 'tabella_readonly') {
+                setTimeout(() => showTab('tabella-ordini'), 100);
+            }
+            
+            // Nascondi Dashboard se non ha permesso
+            const dashboardBtn = document.getElementById('nav-dashboard');
+            const dashboardTab = document.getElementById('tab-dashboard');
+            if (!perms.viewDashboard) {
+                dashboardBtn.classList.add('hidden');
+                if (dashboardTab) dashboardTab.classList.add('hidden');
+                // Se è attualmente sulla dashboard, torna a Gestione Ordini
+                if (dashboardTab && dashboardTab.classList.contains('active')) {
+                    showTab('ordini');
+                }
+            }
+            
+            // Mostra Catalogo SOLO per admin
+            const catalogoBtn = document.getElementById('nav-catalogo');
+            const catalogoTab = document.getElementById('tab-catalogo');
+            if (currentUser.role === 'admin') {
+                if (catalogoBtn) catalogoBtn.classList.remove('hidden');
+            } else {
+                if (catalogoBtn) catalogoBtn.classList.add('hidden');
+                if (catalogoTab) catalogoTab.classList.add('hidden');
+            }
+
+            // Mostra Pagamenti SOLO per admin
+            const pagamentiBtn = document.getElementById('nav-pagamenti');
+            const pagamentiTab = document.getElementById('tab-pagamenti');
+            if (currentUser.role === 'admin') {
+                if (pagamentiBtn) pagamentiBtn.classList.remove('hidden');
+            } else {
+                if (pagamentiBtn) pagamentiBtn.classList.add('hidden');
+                if (pagamentiTab) pagamentiTab.classList.add('hidden');
+            }
+            
+            // Nascondi Quick ID filters se non ha permesso
+            if (!perms.useQuickIdFilters) {
+                const quickIdContainer = document.querySelector('[id="quickIdButtons"]')?.parentElement;
+                if (quickIdContainer) {
+                    quickIdContainer.style.display = 'none';
+                }
+            }
+            
+            // ASSICURA che i filtri siano sempre visibili per TUTTI
+            const ensureFiltersVisible = () => {
+                // Forza visibilità del container principale
+                const filtersContainer = document.getElementById('filtersContainer');
+                if (filtersContainer) {
+                    filtersContainer.style.cssText += 'display: flex !important; visibility: visible !important; opacity: 1 !important; flex-wrap: wrap !important;';
+                }
+                
+                // Forza anche il parent
+                const filterSection = document.querySelector('.p-3.border-b.bg-gray-50');
+                if (filterSection) {
+                    filterSection.style.cssText += 'display: flex !important; visibility: visible !important;';
+                }
+                
+                // Mostra tutti gli elementi di filtro
+                const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
+                                  'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId'];
+                filterIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.cssText += 'display: inline-block !important; visibility: visible !important; pointer-events: auto !important;';
+                        el.disabled = false;
+                    }
+                });
+                
+                console.log('✅ Filtri forzati visibili');
+            };
+            
+            // Esegui immediatamente e dopo timeout
+            setTimeout(ensureFiltersVisible, 0);
+            setTimeout(ensureFiltersVisible, 100);
+            setTimeout(ensureFiltersVisible, 500);
+            setTimeout(ensureFiltersVisible, 1000);
+            setTimeout(ensureFiltersVisible, 2000);
+            
+            // Aggiungi CSS globale per forzare la visibilità dei filtri
+            const filterStyle = document.createElement('style');
+            filterStyle.id = 'filterVisibilityStyle';
+            filterStyle.textContent = `
+                /* Forza visibilità sezione filtri */
+                .p-3.border-b.bg-gray-50 { 
+                    display: flex !important; 
+                    visibility: visible !important; 
+                    opacity: 1 !important; 
+                }
+                #filtersContainer {
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    gap: 0.5rem !important;
+                    visibility: visible !important;
+                }
+                #filtersContainer * {
+                    visibility: visible !important;
+                }
+                /* Forza visibilità singoli filtri */
+                #searchInput, #sortOrder, #filterStatus, #filterRoleYear, 
+                #filterSize, #filterKitType, #filterItem, #filterMinId, #filterMaxId {
+                    display: inline-block !important;
+                    visibility: visible !important;
+                    pointer-events: auto !important;
+                    opacity: 1 !important;
+                }
+            `;
+            document.head.appendChild(filterStyle);
+            
+            // Disabilita campi editabili per utenti senza permessi
+            if (!perms.editOrders || !perms.deleteOrders || !perms.downloadGoogleForm) {
+                const style = document.createElement('style');
+                style.id = 'permissionStyle';
+                let css = '';
+                if (!perms.editOrders) {
+                    // Nascondi solo i pulsanti di configurazione, NON il pulsante "X Capi"
+                    css += `
+                        button.edit-order-btn:not([onclick*="openItemModal"]) { display: none !important; }
+                        td button.edit-order-btn[onclick*="openItemModal"] i.fa-edit { display: none !important; }
+                    `;
+                }
+                if (!perms.deleteOrders) {
+                    css += '.delete-order-btn { display: none !important; } ';
+                }
+                if (!perms.downloadGoogleForm) {
+                    // Nascondi pulsanti download Google Form
+                    css += '.download-google-form-btn { display: none !important; } ';
+                }
+                style.textContent = css;
+                document.head.appendChild(style);
+                
+                // Disabilita input campi quando non ha permessi editOrders
+                if (!perms.editOrders && !perms.editTabella) {
+                    // Lista completa ID filtri da NON disabilitare
+                    const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
+                                      'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId',
+                                      // Filtri Distinta & Magazzino
+                                      'matrixMinId', 'matrixMaxId',
+                                      // Filtri Tabella Ordini
+                                      'tabellaOrdiniMinId', 'tabellaOrdiniMaxId', 'tabellaOrdiniFilterCliente', 'tabellaOrdiniFilterTaglia',
+                                      // Filtri Dashboard
+                                      'dashboardKitFilter', 'dashboardMinId', 'dashboardMaxId'];
+                    
+                    // Funzione per disabilitare inputs dopo il render
+                    window.disableEditInputs = function() {
+                        // Disabilita input taglie, sconto, ecc (MA NON I FILTRI!)
+                        document.querySelectorAll('input.edit-order-btn, select.edit-order-btn').forEach(el => {
+                            // NON disabilitare i filtri
+                            if (filterIds.includes(el.id)) return;
+                            
+                            el.disabled = true;
+                            el.style.backgroundColor = '#f3f4f6';
+                            el.style.cursor = 'not-allowed';
+                            el.style.color = '#6b7280';
+                        });
+                        
+                        // Disabilita TUTTI gli input e select tranne i filtri
+                        document.querySelectorAll('input, select').forEach(el => {
+                            // NON disabilitare i filtri per ID
+                            if (filterIds.includes(el.id)) return;
+                            // NON disabilitare elementi già gestiti o non nella tabella
+                            if (el.type === 'button' || el.type === 'submit') return;
+                            // NON disabilitare elementi nella sezione "Filtri & Ricerca" (Gestione)
+                            if (el.closest('.p-3.border-b.bg-gray-50')) return;
+                            // NON disabilitare elementi nelle aree filtri (header delle sezioni)
+                            if (el.closest('.flex.items-center.gap-3')) return;
+                            if (el.closest('.flex.justify-between.items-center.mb-4')) return;
+                            if (el.closest('.no-print')) return;
+                            // NON disabilitare select STATO se l'utente ha editStatus
+                            if (perms.editStatus && el.classList.contains('status-select')) return;
+                            // NON disabilitare Quick ID buttons
+                            if (el.closest('#quickIdButtons') || el.closest('#quickIdButtonsMatrix') || el.closest('#quickIdButtonsTabella')) return;
+                            
+                            // Disabilita solo se è nella tabella dati (non header/filtri)
+                            const isInDataTable = el.closest('tbody') || el.closest('.overflow-x-auto table');
+                            if (isInDataTable) {
+                                el.disabled = true;
+                                el.style.cursor = 'not-allowed';
+                                el.style.opacity = '0.6';
+                                if (el.tagName === 'INPUT') {
+                                    el.style.backgroundColor = '#f3f4f6';
+                                    el.style.color = '#6b7280';
+                                }
+                            }
+                        });
+                        
+                        // Disabilita pulsante "X Capi" ma lascialo visibile
+                        document.querySelectorAll('button[onclick*="openItemModal"]').forEach(btn => {
+                            if (btn.classList.contains('edit-order-btn')) {
+                                btn.disabled = true;
+                                btn.style.cursor = 'not-allowed';
+                                btn.style.opacity = '0.7';
+                                btn.onclick = null; // Rimuovi evento click
+                            }
+                        });
+                    };
+                    
+                    // Esegui ogni volta che la tabella viene renderizzata
+                    const originalRenderTable = window.renderTable;
+                    window.renderTable = function() {
+                        if (originalRenderTable) originalRenderTable();
+                        setTimeout(() => window.disableEditInputs && window.disableEditInputs(), 100);
+                    };
+                    
+                    // Esegui anche dopo renderMatrices per disabilitare giacenze
+                    const originalRenderMatrices = window.renderMatrices;
+                    window.renderMatrices = function(manualUpdate) {
+                        if (originalRenderMatrices) originalRenderMatrices(manualUpdate);
+                        setTimeout(() => window.disableEditInputs && window.disableEditInputs(), 100);
+                    };
+                }
+            }
+        }
+        
+        // Gestione utenti (solo admin)
+        async function openUserManagement() {
+            if (!currentUser || currentUser.role !== 'admin') {
+                alert('⚠️ Accesso negato. Solo gli amministratori possono gestire gli utenti.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const users = data.users || [];
+            
+            let html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="event.target === this && closeUserManagement()">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="flex justify-between items-center mb-4 pb-4 border-b">
+                            <h2 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-users text-indigo-600 mr-2"></i>
+                                Gestione Utenti
+                            </h2>
+                            <button onclick="closeUserManagement()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <button onclick="openAddUserForm()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold mr-2">
+                                <i class="fas fa-user-plus mr-2"></i>Nuovo Utente
+                            </button>
+                            <button onclick="openActivityLog()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                                <i class="fas fa-history mr-2"></i>Visualizza LOG (20 azioni)
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nome</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ruolo</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Creato il</th>
+                                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+            `;
+            
+            users.forEach(user => {
+                const role = USER_ROLES[user.role.toUpperCase()] || USER_ROLES.VIEWER;
+                const isCurrentUser = user.username === currentUser.username;
+                
+                html += `
+                    <tr class="${isCurrentUser ? 'bg-blue-50' : ''}">
+                        <td class="px-4 py-3 text-sm font-bold">${user.username}</td>
+                        <td class="px-4 py-3 text-sm">${user.name}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 rounded text-xs font-bold ${
+                                user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                                user.role === 'viewer_full' ? 'bg-green-100 text-green-800' :
+                                user.role === 'contributor' ? 'bg-yellow-100 text-yellow-800' :
+                                user.role === 'tabella_full' ? 'bg-cyan-100 text-cyan-800' :
+                                user.role === 'tabella_readonly' ? 'bg-purple-100 text-purple-800' :
+                                user.role === 'table_editor' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                            }">
+                                ${role.name}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${new Date(user.createdAt).toLocaleDateString('it-IT')}</td>
+                        <td class="px-4 py-3 text-center">
+                            ${isCurrentUser ? `
+                                <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                            ` : `
+                                <button onclick="changePassword('${user.username}')" class="text-blue-600 hover:text-blue-800 mx-1" title="Cambia password">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                <button onclick="editUser('${user.username}')" class="text-orange-600 hover:text-orange-800 mx-1" title="Modifica ruolo">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteUser('${user.username}')" class="text-red-600 hover:text-red-800 mx-1" title="Elimina utente">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Errore nel caricamento degli utenti');
+            }
+        }
+        
+        function closeUserManagement() {
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) modal.remove();
+        }
+        
+        function openAddUserForm() {
+            const html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4">Crea Nuovo Utente</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Username</label>
+                                <input type="text" id="newUserUsername" class="w-full border rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Nome Completo</label>
+                                <input type="text" id="newUserName" class="w-full border rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Password</label>
+                                <input type="password" id="newUserPassword" class="w-full border rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Ruolo</label>
+                                <select id="newUserRole" class="w-full border rounded px-3 py-2">
+                                    <option value="viewer">Visualizzazione (senza Dashboard)</option>
+                                    <option value="viewer_full">Visualizzazione (con Dashboard)</option>
+                                    <option value="contributor">Contributore (Google Form)</option>
+                                    <option value="contributor_advanced">Contributore Avanzato (Form + Stato)</option>
+                                    <option value="table_editor">Editor Tabella (solo Tabella Ordini)</option>
+                                    <option value="tabella_full">Tabella Completa</option>
+                                    <option value="tabella_readonly">Tabella Solo Lettura</option>
+                                    <option value="admin">Amministratore</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-6">
+                            <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold">
+                                Annulla
+                            </button>
+                            <button onclick="saveNewUser()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                                <i class="fas fa-save mr-2"></i>Salva
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+        
+        async function saveNewUser() {
+            const username = document.getElementById('newUserUsername').value.trim();
+            const name = document.getElementById('newUserName').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const role = document.getElementById('newUserRole').value;
+            
+            if (!username || !name || !password) {
+                alert('⚠️ Compila tutti i campi');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'create',
+                        username,
+                        password,
+                        role,
+                        name
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logActivity('CREATE_USER', `Creato nuovo utente: ${username} (${name}) - Ruolo: ${role}`);
+                    
+                    // Chiudi modals
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    
+                    showQuickNotification('✅ Utente creato con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nella creazione utente'}`);
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                alert('Errore di connessione al server');
+            }
+        }
+        
+        async function deleteUser(username) {
+            if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) return;
+            
+            // Non permettere eliminazione admin corrente
+            if (currentUser && currentUser.username === username) {
+                alert('⚠️ Non puoi eliminare il tuo stesso account mentre sei loggato!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'delete',
+                        username
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logActivity('DELETE_USER', `Eliminato utente: ${username}`);
+                    
+                    closeUserManagement();
+                    showQuickNotification('✅ Utente eliminato', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nell\'eliminazione utente'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Errore di connessione al server');
+            }
+        }
+        
+        // Modifica ruolo utente
+        async function editUser(username) {
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                const users = data.users || [];
+                const user = users.find(u => u.username === username);
+            
+            if (!user) {
+                alert('⚠️ Utente non trovato');
+                return;
+            }
+            
+            const html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4">Modifica Utente: ${user.username}</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Nome Completo</label>
+                                <input type="text" id="editUserName" value="${user.name}" class="w-full border rounded px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Ruolo</label>
+                                <select id="editUserRole" class="w-full border rounded px-3 py-2">
+                                    <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Visualizzazione (senza Dashboard)</option>
+                                    <option value="viewer_full" ${user.role === 'viewer_full' ? 'selected' : ''}>Visualizzazione (con Dashboard)</option>
+                                    <option value="contributor" ${user.role === 'contributor' ? 'selected' : ''}>Contributore (Google Form)</option>
+                                    <option value="contributor_advanced" ${user.role === 'contributor_advanced' ? 'selected' : ''}>Contributore Avanzato (Form + Stato)</option>
+                                    <option value="table_editor" ${user.role === 'table_editor' ? 'selected' : ''}>Editor Tabella (solo Tabella Ordini)</option>
+                                    <option value="tabella_full" ${user.role === 'tabella_full' ? 'selected' : ''}>Tabella Completa</option>
+                                    <option value="tabella_readonly" ${user.role === 'tabella_readonly' ? 'selected' : ''}>Tabella Solo Lettura</option>
+                                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Amministratore</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-6">
+                            <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold">
+                                Annulla
+                            </button>
+                            <button onclick="saveEditUser('${user.username}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                                <i class="fas fa-save mr-2"></i>Salva
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            } catch (error) {
+                console.error('Error loading user:', error);
+                alert('Errore nel caricamento utente');
+            }
+        }
+        
+        async function saveEditUser(username) {
+            const newName = document.getElementById('editUserName').value.trim();
+            const newRole = document.getElementById('editUserRole').value;
+            
+            if (!newName) {
+                alert('⚠️ Il nome è obbligatorio');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'edit',
+                        username,
+                        name: newName,
+                        role: newRole
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logActivity('EDIT_USER', `Modificato utente: ${username} - Nuovo ruolo: ${newRole}`);
+                    
+                    // Chiudi modals
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    
+                    showQuickNotification('✅ Utente modificato con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nella modifica utente'}`);
+                }
+            } catch (error) {
+                console.error('Error editing user:', error);
+                alert('Errore di connessione al server');
+            }
+        }
+        
+        // Cambio password
+        function changePassword(username) {
+            const html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4">
+                            <i class="fas fa-key text-blue-600 mr-2"></i>
+                            Cambia Password - ${username}
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Nuova Password</label>
+                                <input type="password" id="newPassword1" class="w-full border rounded px-3 py-2" placeholder="Inserisci nuova password">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Conferma Password</label>
+                                <input type="password" id="newPassword2" class="w-full border rounded px-3 py-2" placeholder="Conferma password">
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-6">
+                            <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold">
+                                Annulla
+                            </button>
+                            <button onclick="saveNewPassword('${username}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                                <i class="fas fa-save mr-2"></i>Salva
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+        
+        async function saveNewPassword(username) {
+            const pass1 = document.getElementById('newPassword1').value;
+            const pass2 = document.getElementById('newPassword2').value;
+            
+            if (!pass1 || !pass2) {
+                alert('⚠️ Compila entrambi i campi');
+                return;
+            }
+            
+            if (pass1 !== pass2) {
+                alert('⚠️ Le password non coincidono');
+                return;
+            }
+            
+            if (pass1.length < 4) {
+                alert('⚠️ La password deve essere di almeno 4 caratteri');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update',
+                        username,
+                        newPassword: pass1
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    logActivity('CHANGE_PASSWORD', `Password modificata per utente: ${username}`);
+                    
+                    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+                    showQuickNotification('✅ Password aggiornata con successo!', 'success');
+                    openUserManagement();
+                } else {
+                    alert(`⚠️ ${data.error || 'Errore nell\'aggiornamento password'}`);
+                }
+            } catch (error) {
+                console.error('Error updating password:', error);
+                alert('Errore di connessione al server');
+            }
+        }
+        
+        // ===== SISTEMA CATALOGO =====
+
+        // CARICA CATALOGO DA /api/catalog
+        function loadCatalogData() {
+  try {
+    const formUrlEl = document.getElementById('catalogFormUrlInput');
+    const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
+    const titleEl = document.getElementById('catalogTitleInput');
+    const logoEl = document.getElementById('catalogLogoUrlInput');
+    const noteEl = document.getElementById('catalogOrderNoteInput'); // ✅ NUOVO
+
+    if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
+      console.warn('Elementi catalogo non trovati');
+      return;
+    }
+
+    formUrlEl.value = catalogData.qrUrl || '';
+    pdfUrlEl.value = catalogData.fullCatalogUrl || '';
+    titleEl.value = catalogData.title || '';
+    logoEl.value = catalogData.logo || '';
+    
+    // ✅ NUOVO: Carica la nota
+    if (noteEl) {
+        noteEl.value = catalogData.orderNote || '';
+    }
+
+    renderCatalogItems();
+  } catch (err) {
+    console.error('Errore loadCatalogData: ', err);
+  }
+}
+
+// ✅ NUOVA FUNZIONE: Salva solo gli items del catalogo (senza controllare campi HTML)
+async function saveCatalogItems() {
+    try {
+        console.log('💾 Salvataggio items catalogo...', catalogData.items?.length || 0);
+        
+        // Salva TUTTO su Redis (con catalogData.items aggiornati)
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save',
+                globalItems: globalItems,
+                globalKitTypes: globalKitTypes,
+                quickIdFilters: quickIdFilters,
+                catalog: catalogData  // ✅ Include items aggiornati
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        console.log('✅ Items catalogo salvati - Totale:', catalogData.items?.length || 0);
+        
+    } catch (error) {
+        console.error('❌ Errore salvataggio items catalogo:', error);
+        alert('❌ Errore nel salvataggio degli articoli: ' + error.message);
+    }
+}
+
+// Salva la configurazione completa del catalogo (header + items)
+async function saveCatalogConfig() {
+    try {
+        const formUrlEl = document.getElementById('catalogFormUrlInput');
+        const pdfUrlEl = document.getElementById('catalogPdfUrlInput');
+        const titleEl = document.getElementById('catalogTitleInput');
+        const logoEl = document.getElementById('catalogLogoUrlInput');
+        const noteEl = document.getElementById('catalogOrderNoteInput'); // ✅ NUOVO
+        
+        if (!formUrlEl || !pdfUrlEl || !titleEl || !logoEl) {
+            console.warn('⚠️ Elementi header catalogo non trovati, salvo solo items');
+            return await saveCatalogItems();
+        }
+        
+        // Aggiorna SOLO i campi header (NON toccare items!)
+        catalogData.title = titleEl.value.trim();
+        catalogData.qrUrl = formUrlEl.value.trim();
+        catalogData.fullCatalogUrl = pdfUrlEl.value.trim();
+        catalogData.logo = logoEl.value.trim();
+        catalogData.orderNote = noteEl ? noteEl.value.trim() : ''; // ✅ NUOVO
+        // ✅ catalogData.items rimane invariato!
+        
+        // Salva TUTTO su Redis
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save',
+                globalItems: globalItems,
+                globalKitTypes: globalKitTypes,
+                quickIdFilters: quickIdFilters,
+                catalog: catalogData  // ✅ Include items esistenti
+            })
+        });
+        
+        alert('✅ Configurazione catalogo salvata con successo!');
+        console.log('✅ Catalogo salvato - Items:', catalogData.items?.length || 0);
+        
+    } catch (error) {
+        console.error('❌ Errore salvataggio catalogo:', error);
+        alert('❌ Errore nel salvataggio del catalogo: ' + error.message);
+    }
+}
+        
+        // ══════════════════════════════════════════════════════════
+        // GESTIONE PACCHETTI KIT
+        // ══════════════════════════════════════════════════════════
+        
+        function toggleKitSection(kitKey) {
+            const section = document.getElementById(`section-${kitKey}`);
+            const icon = document.getElementById(`icon-${kitKey}`);
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                // Popola gli articoli quando si apre la sezione
+                setTimeout(() => renderKitItems(), 50);
+            } else {
+                section.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+        
+        function updateKitData(kitKey) {
+            // Raccogli gli articoli selezionati
+            const checkboxes = document.querySelectorAll(`#items-${kitKey} input[type="checkbox"]:checked`);
+            const selectedItems = Array.from(checkboxes).map(cb => {
+                const itemData = JSON.parse(cb.dataset.item);
+                return {
+                    name: itemData.name,
+                    image: itemData.images?.[0] || itemData.image,
+                    images: itemData.images,
+                    description: itemData.description,
+                    price: itemData.price
+                };
+            });
+            catalogData.kits[kitKey].items = selectedItems;
+            
+            // Aggiorna preview
+            renderKitPreview(kitKey, selectedItems);
+            
+            console.log(`Kit ${kitKey} aggiornato:`, catalogData.kits[kitKey]);
+        }
+        
+        function renderKitPreview(kitKey, items) {
+            const previewContainer = document.getElementById(`preview-${kitKey}`);
+            const previewItems = document.getElementById(`preview-items-${kitKey}`);
+            
+            if (!items || items.length === 0) {
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            previewItems.innerHTML = items.map(item => `
+                <div class="bg-white rounded-lg p-2 shadow-sm border">
+                    ${item.image 
+                        ? `<img src="${item.image}" class="w-full h-24 object-cover rounded mb-1">`
+                        : '<div class="w-full h-24 bg-gray-200 rounded mb-1 flex items-center justify-center"><i class="fas fa-tshirt text-gray-400 text-2xl"></i></div>'
+                    }
+                    <p class="text-xs font-semibold text-gray-900 truncate" title="${item.name}">${item.name}</p>
+                    ${item.description ? `<p class="text-xs text-gray-500 line-clamp-2 mt-1">${item.description}</p>` : ''}
+                    ${item.price ? `<p class="text-xs font-bold text-blue-600 mt-1">${item.price}€</p>` : ''}
+                </div>
+            `).join('');
+            
+            previewContainer.style.display = 'block';
+        }
+        
+        function renderKitItems() {
+            // Popola le checkbox per ogni kit con gli articoli del catalogo
+            const kitKeys = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
+            
+            if (!catalogData.items || catalogData.items.length === 0) {
+                // Nessun articolo nel catalogo
+                kitKeys.forEach(kitKey => {
+                    const container = document.getElementById(`items-${kitKey}`);
+                    if (!container) return;
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-2"></i>
+                            <p class="text-sm">Nessun articolo nel catalogo.</p>
+                            <p class="text-xs">Aggiungi articoli nella sezione "Articoli nel Catalogo" qui sotto.</p>
+                        </div>
+                    `;
+                });
+                return;
+            }
+            
+            kitKeys.forEach(kitKey => {
+                const container = document.getElementById(`items-${kitKey}`);
+                if (!container) return;
+                
+                container.innerHTML = catalogData.items.map((item, idx) => {
+                    const isSelected = catalogData.kits[kitKey].items.some(i => i.name === item.name);
+                    const firstImage = item.images?.[0] || item.image || '';
+                    return `
+                        <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer transition">
+                            <input type="checkbox" 
+                                   ${isSelected ? 'checked' : ''}
+                                   onchange="updateKitData('${kitKey}')"
+                                   data-item='${JSON.stringify(item).replace(/'/g, "&apos;")}'
+                                   class="w-5 h-5 flex-shrink-0">
+                            ${firstImage ? `<img src="${firstImage}" class="w-16 h-16 object-cover rounded flex-shrink-0">` : '<div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center flex-shrink-0"><i class="fas fa-tshirt text-gray-400"></i></div>'}
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-gray-900">${item.name}</p>
+                                ${item.description ? `<p class="text-xs text-gray-500 truncate">${item.description}</p>` : ''}
+                                ${item.price ? `<p class="text-xs font-bold text-blue-600 mt-1">${item.price}€</p>` : ''}
+                            </div>
+                        </label>
+                    `;
+                }).join('');
+                
+                // Aggiorna preview con articoli già selezionati
+                if (catalogData.kits[kitKey].items.length > 0) {
+                    renderKitPreview(kitKey, catalogData.kits[kitKey].items);
+                }
+            });
+        }
+        
+        function openKitsPublicPage() {
+            // Apri la pagina pubblica dei kit (catalogo.html già esistente)
+            const url = window.location.origin + window.location.pathname.replace('index.html', 'catalogo.html');
+            window.open(url, '_blank');
+        }
+
+        // Renderizza gli articoli del catalogo
+        function renderCatalogItems() {
+            
+            const container = document.getElementById('catalogItemsList');
+            if (!container) return;
+            
+            if (!catalogData.items || catalogData.items.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-400 py-8 col-span-full">
+                        <i class="fas fa-box-open text-4xl mb-2"></i>
+                        <p>Nessun articolo nel catalogo. Clicca "Aggiungi Articolo" o "Importa da DB".</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            catalogData.items.forEach((item, index) => {
+                const imagesHtml = item.images && item.images.length > 0 
+                    ? item.images.map(img => `<img src="${img}" alt="${item.name}" onclick="openImageLightbox('${img}')">`).join('')
+                    : `<div class="catalog-item-placeholder"><i class="fas fa-tshirt text-3xl mb-2"></i><br>${item.name}</div>`;
+                
+                html += `
+                    <div class="catalog-item-card" data-index="${index}">
+                        <div class="catalog-item-images">
+                            ${imagesHtml}
+                        </div>
+                        <div class="p-3">
+                            <input type="text" value="${item.name || ''}" placeholder="Nome articolo" 
+                                class="w-full font-bold text-gray-800 border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none mb-2"
+                                onchange="updateCatalogItem(${index}, 'name', this.value)">
+                            <textarea placeholder="Descrizione o link..." rows="2"
+                                class="w-full text-xs text-gray-600 border rounded p-1 resize-none mb-2"
+                                onchange="updateCatalogItem(${index}, 'description', this.value)">${item.description || ''}</textarea>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-1">
+                                    <span class="text-xs text-gray-500">€</span>
+                                    <input type="number" value="${item.price || 0}" 
+                                        class="w-16 text-lg font-bold text-green-600 border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none"
+                                        onchange="updateCatalogItem(${index}, 'price', this.value)">
+                                </div>
+                                <div class="flex gap-1">
+                                    <button onclick="editCatalogItemImages(${index})" class="text-blue-500 hover:text-blue-700 px-2 py-1" title="Gestisci immagini">
+                                        <i class="fas fa-images"></i>
+                                    </button>
+                                    <button onclick="removeCatalogItem(${index})" class="text-red-500 hover:text-red-700 px-2 py-1" title="Rimuovi">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Aggiorna anche le checkbox dei kit
+            renderKitItems();
+        }
+        
+        // Aggiorna un campo di un articolo
+        async function updateCatalogItem(index, field, value) {
+    if (catalogData.items[index]) {
+        catalogData.items[index][field] = field === 'price' ? parseFloat(value) || 0 : value;
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
+        }
+    }
+        
+        // Aggiungi nuovo articolo
+        async function addCatalogItem() {  // ✅ AGGIUNTO "async"
+        catalogData.items.push({
+        name: 'Nuovo Articolo',
+        description: '',
+        price: 0,
+        images: []
+        });
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
+    }
+        
+        // Rimuovi articolo
+        async function removeCatalogItem(index) {  // ✅ AGGIUNTO "async"
+        if (confirm('Sei sicuro di voler rimuovere questo articolo?')) {
+        catalogData.items.splice(index, 1);
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
+        }
+    }
+        
+        // Gestisci immagini articolo
+async function editCatalogItemImages(index) {
+    const item = catalogData.items[index];
+    const currentImages = (item.images || []).join('\n');
+    
+    // Crea modal con textarea
+    const modalHtml = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onclick="this.remove()">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full mx-4" onclick="event.stopPropagation()">
+                <h3 class="text-xl font-bold mb-4 text-gray-900">
+                    <i class="fas fa-images text-blue-600 mr-2"></i>
+                    Gestisci Immagini: ${item.name}
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">
+                    Inserisci gli URL delle immagini (uno per riga, max 3):
+                </p>
+                <textarea 
+                    id="imageUrlsTextarea" 
+                    rows="6" 
+                    class="w-full border rounded p-3 font-mono text-sm"
+                    placeholder="https://example.com/img1.jpg&#10;https://example.com/img2.jpg&#10;https://example.com/img3.jpg"
+                >${currentImages}</textarea>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button onclick="this.closest('.fixed').remove()" 
+                        class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold">
+                        Annulla
+                    </button>
+                    <button onclick="saveImageUrls(${index})" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                        <i class="fas fa-save mr-2"></i>Salva
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.getElementById('imageUrlsTextarea').focus();
+}
+
+// Funzione per salvare gli URL delle immagini
+async function saveImageUrls(index) {
+    const textarea = document.getElementById('imageUrlsTextarea');
+    const newImages = textarea.value;
+    
+    if (newImages !== null) {
+        catalogData.items[index].images = newImages.split('\n').filter(url => url.trim()).slice(0, 3);
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
+    }
+    
+    // Chiudi il modal
+    document.querySelector('.fixed.inset-0').remove();
+}
+        
+        // Importa articoli dal database
+        async function importItemsFromDB() {  // ✅ AGGIUNTO "async"
+    if (confirm('Vuoi importare tutti gli articoli dal database? Gli articoli esistenti verranno mantenuti.')) {
+        globalItems.forEach(itemName => {
+            const priceMatch = itemName.match(/\((\d+)€\)/);
+            const price = priceMatch ? parseInt(priceMatch[1]) : 0;
+            const name = itemName.replace(/\s*\(\d+€\)\s*$/, '').trim();
+            
+            const exists = catalogData.items.some(i => i.name === name);
+            if (!exists) {
+                catalogData.items.push({
+                    name: name,
+                    description: '',
+                    price: price,
+                    images: []
+                });
+            }
+        });
+        
+        renderCatalogItems();
+        await saveCatalogItems();  // ✅ Usa la nuova funzione
+        showQuickNotification(`Importati ${globalItems.length} articoli dal DB`, 'success');
+    }
+}
+        
+        // Apri anteprima catalogo pubblico
+        async function openCatalogPreview() {
+            await saveCatalogConfig(); // Salva prima
+            window.open('/catalogo.html', '_blank'); // Poi apri anteprima
+        }
+        
+        // Copia link catalogo
+        function copyCatalogLink() {
+            const publicUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'catalogo.html';
+            navigator.clipboard.writeText(publicUrl).then(() => {
+                showQuickNotification('Link copiato negli appunti!', 'success');
+            }).catch(() => {
+                prompt('Copia questo link:', publicUrl);
+            });
+        }
+        
+        // Lightbox per immagini
+        function openImageLightbox(imageUrl) {
+            const lightbox = document.createElement('div');
+            lightbox.className = 'catalog-image-lightbox';
+            lightbox.innerHTML = `<img src="${imageUrl}" alt="Immagine ingrandita">`;
+            lightbox.onclick = () => lightbox.remove();
+            document.body.appendChild(lightbox);
+        }
+        
+        // Aggiorna preview QR
+        function updateQrPreview() {
+            // Placeholder per futura integrazione QR
+        }
+        
+        // ===== SISTEMA LOG ATTIVITÀ =====
+        
+        // Registra un'azione nello storico CONDIVISO (su Redis)
+        async function logActivity(action, details) {
+        const ignoredActions = ['SAVE', 'AUTOSAVE', 'Salvataggio dati'];
+        if (ignoredActions.includes(action)) return; // <--- se qui c'è 'Salvataggio dati' NON verrà mai loggato
+
+        const user = typeof currentUser === 'string'
+            ? currentUser
+            : (currentUser && currentUser.username) || 'Amministratore';
+
+         try {
+            await fetch('/api/logs', {
+            method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user,
+                action,
+                details,
+            timestamp: new Date().toISOString()
+            })
+         });
+        } catch (e) {
+         console.warn('Errore caricamento log:', e);
+         }
+        }
+
+        
+        // Mostra lo storico CONDIVISO da Redis
+        async function openActivityLog() {
+        try {
+            const res = await fetch('/api/logs');
+            const data = await res.json();
+            if (data.logs && data.logs.length > 0) {
+        console.log('DEBUG LOGS[0]:', JSON.stringify(data.logs[0], null, 2));
+        }
+
+        // AGGIUNGI QUESTO
+        console.log('DEBUG LOGS:', data.logs && data.logs[0]);
+
+    if (data.success && data.logs) {
+      const logs = data.logs.slice(0, 20); // ultime 20 azioni
+
+      let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">';
+      html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">';
+      html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
+      html += '<h2 class="text-2xl font-bold text-gray-900">';
+      html += '<i class="fas fa-history text-blue-600 mr-2"></i>';
+      html += 'LOG Attività (Ultime 20 Azioni)';
+      html += '</h2>';
+      html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\">";
+      html += '<i class="fas fa-times text-2xl"></i>';
+      html += '</button>';
+      html += '</div>';
+
+      if (logs.length === 0) {
+        html += '<p class="text-gray-500 text-center py-8">Nessuna attività registrata</p>';
+      } else {
+        const actionColors = {
+          'CREATE_ORDER': 'bg-green-100 text-green-800',
+          'EDIT_ORDER': 'bg-blue-100 text-blue-800',
+          'DELETE_ORDER': 'bg-red-100 text-red-800',
+          'IMPORT_GOOGLE': 'bg-purple-100 text-purple-800',
+          'EXPORT_BACKUP': 'bg-teal-100 text-teal-800',
+          'CREATE_USER': 'bg-green-100 text-green-800',
+          'DELETE_USER': 'bg-red-100 text-red-800',
+          'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
+          'LOGIN': 'bg-blue-100 text-blue-800',
+          'RESET_DATA': 'bg-red-100 text-red-800',
+          'CHANGESTATUS': 'bg-indigo-100 text-indigo-800'
+        };
+
+        html += '<div class="overflow-x-auto">';
+        html += '<table class="min-w-full divide-y divide-gray-200">';
+        html += '<thead class="bg-gray-50">';
+        html += '<tr>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data/Ora</th>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Utente</th>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Azione</th>';
+        html += '<th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Descrizione</th>';
+        html += '</tr>';
+        html += '</thead>';
+        html += '<tbody class="bg-white divide-y divide-gray-200">';
+
+        logs.forEach(log => {
+        // Leggi il campo data: prova in quest'ordine
+        const rawTs = log.timestamp || log.time || log.date || log.createdAt;
+
+        let dateStr = '';
+        let timeStr = '';
+
+        if (rawTs) {
+         const d = new Date(rawTs);
+            if (!isNaN(d.getTime())) {
+            dateStr = d.toLocaleDateString('it-IT');
+            timeStr = d.toLocaleTimeString('it-IT');
+            }
+        }
+
+        // Utente come stringa “pulita”
+        let userDisplay = '';
+        if (typeof log.user === 'string') {
+         userDisplay = log.user;
+         } else if (log.user && typeof log.user === 'object') {
+            userDisplay = log.user.name || log.user.username || 'Amministratore';
+        } else {
+            userDisplay = 'Amministratore';
+        }
+
+        const actionColor = actionColors[log.action] || 'bg-gray-100 text-gray-800';
+
+         html += `
+            <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm text-gray-700">${dateStr} ${timeStr}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${userDisplay}</td>
+            <td class="px-4 py-3 text-sm ${actionColor} font-bold rounded">${log.action}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${log.details || ''}</td>
+            </tr>`;
+        });
+
+        html += '</tbody>';
+        html += '</table>';
+        html += '</div>';
+
+        html += '<div class="mt-4 pt-4 border-t text-center">';
+        html += '<button onclick="clearActivityLog()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-bold">';
+        html += '<i class="fas fa-trash mr-2"></i>Cancella LOG';
+        html += '</button>';
+        html += '</div>';
+      }
+
+      html += '</div>'; // chiude contenitore bianco
+      html += '</div>'; // chiude overlay
+
+      document.body.insertAdjacentHTML('beforeend', html);
+    }
+  } catch (error) {
+    console.error('Errore caricamento log:', error);
+    alert('❌ Impossibile caricare lo storico delle attività.');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ARCHIVIO STAGIONI PRECEDENTI
+// ══════════════════════════════════════════════════════════════════════
+
+// Estrae i prefissi ID disponibili dagli ordini correnti (es. "2025_", "2025A_")
+function getAvailableOrderPrefixes() {
+    const prefixes = new Set();
+    orders.forEach(o => {
+        const m = (o.displayId || '').match(/^([A-Za-z0-9]+_)/);
+        if (m) prefixes.add(m[1]);
+    });
+    return Array.from(prefixes).sort();
+}
+
+async function openArchiveManager() {
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert('Solo un amministratore può gestire l\'archivio stagioni.');
+        return;
+    }
+
+    let index = [];
+    try {
+        const res = await fetch('/api/archive');
+        const data = await res.json();
+        if (data.success) index = data.index || [];
+    } catch (e) {
+        console.error('Errore caricamento archivi:', e);
+        alert('❌ Impossibile caricare l\'elenco archivi.');
+        return;
+    }
+
+    const prefixes = getAvailableOrderPrefixes();
+
+    let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" id="archiveManagerModal">';
+    html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">';
+    html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
+    html += '<h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-archive text-slate-600 mr-2"></i>Archivio Stagioni</h2>';
+    html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\"><i class=\"fas fa-times text-2xl\"></i></button>";
+    html += '</div>';
+
+    // ── Sezione: crea nuovo archivio ─────────────────────────────────────
+    html += '<div class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">';
+    html += '<h3 class="font-bold text-slate-800 mb-2"><i class="fas fa-plus-circle mr-1"></i>Crea nuovo archivio</h3>';
+    if (prefixes.length === 0) {
+        html += '<p class="text-sm text-gray-500">Nessun ordine attivo da archiviare.</p>';
+    } else {
+        html += '<p class="text-xs text-gray-600 mb-2">Seleziona uno o più prefissi ID da spostare in archivio. Gli ordini archiviati vengono rimossi da Gestione/Distinta/Dashboard ma restano consultabili qui.</p>';
+        html += '<div class="flex flex-wrap gap-3 mb-3">';
+        prefixes.forEach(p => {
+            const count = orders.filter(o => (o.displayId || '').startsWith(p)).length;
+            html += `<label class="flex items-center gap-1 text-sm bg-white border rounded px-2 py-1 cursor-pointer">
+                <input type="checkbox" class="archivePrefixCheckbox" value="${p}">
+                <span>${p} <span class="text-gray-400">(${count} ordini)</span></span>
+            </label>`;
+        });
+        html += '</div>';
+        html += '<button onclick="createSeasonArchive()" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded font-bold text-sm">';
+        html += '<i class="fas fa-box-archive mr-2"></i>Archivia selezionati';
+        html += '</button>';
+    }
+    html += '</div>';
+
+    // ── Sezione: archivi esistenti ───────────────────────────────────────
+    html += '<h3 class="font-bold text-gray-800 mb-2"><i class="fas fa-boxes-stacked mr-1"></i>Archivi esistenti</h3>';
+    if (index.length === 0) {
+        html += '<p class="text-sm text-gray-500 text-center py-6">Nessun archivio creato finora.</p>';
+    } else {
+        html += '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">';
+        html += '<thead class="bg-gray-50"><tr>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Etichetta</th>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Creato il</th>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Ordini</th>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Azioni</th>';
+        html += '</tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+        index.forEach(a => {
+            const d = new Date(a.createdAt);
+            html += `<tr class="hover:bg-gray-50">
+                <td class="px-3 py-2 text-sm font-medium text-gray-800">${a.label}</td>
+                <td class="px-3 py-2 text-sm text-gray-600">${d.toLocaleDateString('it-IT')} ${d.toLocaleTimeString('it-IT')}</td>
+                <td class="px-3 py-2 text-sm text-gray-600">${a.orderCount}</td>
+                <td class="px-3 py-2 text-sm">
+                    <button onclick="viewSeasonArchive('${a.id}')" class="text-blue-600 hover:text-blue-800 font-bold mr-3"><i class="fas fa-eye mr-1"></i>Consulta</button>
+                    <button onclick="restoreSeasonArchive('${a.id}', '${a.label.replace(/'/g, "\\'")}')" class="text-green-600 hover:text-green-800 font-bold mr-3"><i class="fas fa-undo mr-1"></i>Ripristina</button>
+                    <button onclick="deleteSeasonArchive('${a.id}', '${a.label.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 font-bold"><i class="fas fa-trash mr-1"></i>Elimina</button>
+                </td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+    }
+
+    html += '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+window.openArchiveManager = openArchiveManager;
+
+async function createSeasonArchive() {
+    const checked = Array.from(document.querySelectorAll('.archivePrefixCheckbox:checked')).map(el => el.value);
+    if (checked.length === 0) {
+        alert('Seleziona almeno un prefisso da archiviare.');
+        return;
+    }
+
+    const count = orders.filter(o => checked.some(p => (o.displayId || '').startsWith(p))).length;
+    const label = prompt(`Etichetta per questo archivio (es. "Stagione 2024-2025"):`, checked.join(', '));
+    if (label === null) return; // annullato
+
+    if (!confirm(`Archiviare ${count} ordini (prefissi: ${checked.join(', ')})?\n\nGli ordini verranno rimossi dalle viste operative (Gestione, Distinta, Dashboard) e spostati nell'archivio "${label}".`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create',
+                prefixes: checked,
+                label: label || checked.join(', '),
+                createdBy: (currentUser && (currentUser.name || currentUser.username)) || 'Amministratore'
+            })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ Errore: ${data.error || 'archiviazione fallita'}`);
+            return;
+        }
+
+        showQuickNotification(`✅ Archiviati ${data.archivedCount} ordini`, 'success');
+        logActivity('ARCHIVE_ORDERS', `Archiviati ${data.archivedCount} ordini (${label})`);
+
+        // Ricarica gli ordini correnti dal server (l'archiviazione li ha già rimossi lato Redis)
+        const ordersRes = await fetch('/api/orders');
+        const ordersData = await ordersRes.json();
+        if (ordersData.success) {
+            orders = ordersData.data.orders || [];
+            lastOrderId = ordersData.data.lastOrderId || 0;
+            currentPrefix = ordersData.data.currentPrefix || currentPrefix;
+            highlightedSizeCells = ordersData.data.highlightedSizeCells || highlightedSizeCells;
+            lastDataHash = getDataHash(); // evita che autoRefresh/saveData veda un falso conflitto e re-inserisca gli ordini appena archiviati
+            updateUI();
+        }
+
+        document.getElementById('archiveManagerModal')?.remove();
+        openArchiveManager();
+    } catch (e) {
+        console.error('Errore creazione archivio:', e);
+        alert('❌ Errore di rete durante la creazione dell\'archivio.');
+    }
+}
+window.createSeasonArchive = createSeasonArchive;
+
+async function viewSeasonArchive(id) {
+    try {
+        const res = await fetch(`/api/archive?id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ ${data.error || 'Archivio non trovato'}`);
+            return;
+        }
+        const archive = data.archive;
+
+        let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">';
+        html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">';
+        html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
+        html += `<h2 class="text-xl font-bold text-gray-900"><i class="fas fa-box-open text-slate-600 mr-2"></i>${archive.label} <span class="text-sm font-normal text-gray-500">(sola lettura — ${archive.orders.length} ordini)</span></h2>`;
+        html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\"><i class=\"fas fa-times text-2xl\"></i></button>";
+        html += '</div>';
+
+        html += '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200 text-sm">';
+        html += '<thead class="bg-gray-50"><tr>';
+        ['ID', 'Atleta', 'Kit', 'Taglia', 'Stato', 'Totale'].forEach(h => {
+            html += `<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">${h}</th>`;
+        });
+        html += '</tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+        archive.orders.forEach(o => {
+            html += `<tr class="hover:bg-gray-50">
+                <td class="px-3 py-2 font-mono text-xs">${o.displayId || ''}</td>
+                <td class="px-3 py-2">${o.customer || ''}</td>
+                <td class="px-3 py-2">${(o.kitType || '').split('(')[0].trim()}</td>
+                <td class="px-3 py-2">${o.mainSize || ''}</td>
+                <td class="px-3 py-2">${o.status || ''}</td>
+                <td class="px-3 py-2">${typeof calculateOrderTotal === 'function' ? calculateOrderTotal(o) + '€' : ''}</td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+
+        html += `<p class="text-xs text-gray-400 mt-3">Creato il ${new Date(archive.createdAt).toLocaleString('it-IT')} da ${archive.createdBy || 'N/D'} · Prefissi: ${archive.prefixes.join(', ')} · Pagamenti in snapshot: ${(archive.paymentsSnapshot || []).length}</p>`;
+
+        html += '</div></div>';
+        document.body.insertAdjacentHTML('beforeend', html);
+    } catch (e) {
+        console.error('Errore consultazione archivio:', e);
+        alert('❌ Impossibile aprire l\'archivio.');
+    }
+}
+window.viewSeasonArchive = viewSeasonArchive;
+
+async function restoreSeasonArchive(id, label) {
+    if (!confirm(`Ripristinare l'archivio "${label}" negli ordini attivi?\n\nGli ordini torneranno visibili in Gestione, Distinta e Dashboard. L'archivio verrà rimosso dall'elenco (i dati restano negli ordini attivi).`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'restore', id })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ Errore: ${data.error || 'ripristino fallito'}`);
+            return;
+        }
+
+        let msg = `♻️ Ripristinati ${data.restoredCount} ordini`;
+        if (data.skippedCount > 0) msg += ` (${data.skippedCount} saltati per ID già esistente)`;
+        showQuickNotification(msg, 'success');
+        logActivity('RESTORE_ARCHIVE', `Ripristinato archivio "${label}" (${data.restoredCount} ordini)`);
+
+        // Ricarica gli ordini correnti dal server (il ripristino li ha già rimessi lato Redis)
+        const ordersRes = await fetch('/api/orders');
+        const ordersData = await ordersRes.json();
+        if (ordersData.success) {
+            orders = ordersData.data.orders || [];
+            lastOrderId = ordersData.data.lastOrderId || 0;
+            currentPrefix = ordersData.data.currentPrefix || currentPrefix;
+            highlightedSizeCells = ordersData.data.highlightedSizeCells || highlightedSizeCells;
+            lastDataHash = getDataHash(); // evita che autoRefresh/saveData veda un falso conflitto e rimuova gli ordini appena ripristinati
+            updateUI();
+        }
+
+        document.getElementById('archiveManagerModal')?.remove();
+        openArchiveManager();
+    } catch (e) {
+        console.error('Errore ripristino archivio:', e);
+        alert('❌ Errore di rete durante il ripristino.');
+    }
+}
+window.restoreSeasonArchive = restoreSeasonArchive;
+
+async function deleteSeasonArchive(id, label) {
+    if (!confirm(`Eliminare DEFINITIVAMENTE l'archivio "${label}"?\n\nQuesta operazione non è reversibile: tutti gli ordini e lo snapshot pagamenti contenuti andranno persi per sempre.`)) {
+        return;
+    }
+    if (!confirm(`Ultima conferma: eliminare per sempre "${label}"?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ Errore: ${data.error || 'eliminazione fallita'}`);
+            return;
+        }
+        showQuickNotification('🗑️ Archivio eliminato', 'success');
+        logActivity('DELETE_ARCHIVE', `Eliminato archivio "${label}"`);
+        document.getElementById('archiveManagerModal')?.remove();
+        openArchiveManager();
+    } catch (e) {
+        console.error('Errore eliminazione archivio:', e);
+        alert('❌ Errore di rete durante l\'eliminazione.');
+    }
+}
+window.deleteSeasonArchive = deleteSeasonArchive;
+
+async function clearActivityLog() {
+  if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
+
+  try {
+    // per ora usa l'azione 'clear' via POST, come da tuo server
+    await fetch('/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clear' })
+    });
+    document.querySelectorAll('.fixed.inset-0').forEach(m => m.remove());
+    showQuickNotification('✅ LOG cancellato', 'success');
+  } catch (error) {
+    alert('❌ Errore durante la cancellazione del log.');
+  }
+}
+        
+        // ===== FINE SISTEMA LOG =====
+        
+        // Verifica permessi prima di azioni
+        function checkPermission(action) {
+            if (!currentUser) return false;
+            const role = USER_ROLES[currentUser.role.toUpperCase()] || USER_ROLES.VIEWER;
+            return role.permissions[action] === true;
+        }
+        
+        // ===== FINE SISTEMA UTENTI =====
+        
+        // ===== QUICK ID BUTTONS =====
+        
+        // Inizializza i Quick ID buttons in TUTTE le sezioni
+        function initQuickIdButtons() {
+            // Usa la variabile globale quickIdFilters (caricata da Redis)
+            
+            // IDs dei container in tutte le sezioni
+            const containers = [
+                'quickIdButtons',        // Gestione Ordini
+                'quickIdButtonsMatrix',  // Distinta & Magazzino
+                'quickIdButtonsTabella', // Tabella Ordini
+                'quickIdButtonsDashboard' // Dashboard
+            ];
+            
+            let html = '';
+            for (let i = 1; i <= 15; i++) { // 15 pulsanti
+                const filter = quickIdFilters[i];
+                const hasConfig = filter && filter.min && filter.max;
+                const bgColor = hasConfig ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 hover:bg-gray-400 cursor-not-allowed';
+                const title = hasConfig ? `${filter.min} → ${filter.max}` : 'Non configurato';
+                
+                html += `<button 
+                    onclick="applyQuickIdFilter(${i})" 
+                    class="${bgColor} text-white px-2 py-1 rounded text-xs font-bold transition min-w-[30px]"
+                    title="${title}"
+                    ${!hasConfig ? 'disabled' : ''}>
+                    ${i}
+                </button>`;
+            }
+            
+            // Popola tutti i container
+            containers.forEach(id => {
+                const container = document.getElementById(id);
+                if (container) container.innerHTML = html;
+            });
+        }
+        
+        // Applica filtro Quick ID a TUTTE le sezioni
+        function applyQuickIdFilter(num) {
+            // Usa la variabile globale quickIdFilters (caricata da Redis)
+            const filter = quickIdFilters[num];
+            
+            if (!filter || !filter.min || !filter.max) {
+                alert(`⚠️ Il pulsante ${num} non è configurato.\n\nClicca sul pulsante ⚙️ per configurarlo.`);
+                return;
+            }
+            
+            // Funzione per trovare l'ID completo che corrisponde al numero
+            const findMatchingId = (inputValue, selectElement) => {
+                if (!selectElement || !selectElement.options) return inputValue;
+                
+                // Se è già un ID completo (es: 2025_068), usalo direttamente
+                if (inputValue.includes('_') || inputValue.includes('A_')) {
+                    return inputValue;
+                }
+                
+                // Altrimenti è solo un numero (es: 68), trova l'ID corrispondente
+                const targetNum = parseInt(inputValue);
+                for (let opt of selectElement.options) {
+                    const optValue = opt.value;
+                    const match = optValue.match(/(\d+)$/);
+                    if (match && parseInt(match[1]) === targetNum) {
+                        return optValue;
+                    }
+                }
+                
+                return inputValue; // Fallback
+            };
+            
+            // 1. GESTIONE ORDINI
+            const filterMinId = document.getElementById('filterMinId');
+            const filterMaxId = document.getElementById('filterMaxId');
+            if (filterMinId && filterMaxId) {
+                const minId = findMatchingId(filter.min, filterMinId);
+                const maxId = findMatchingId(filter.max, filterMaxId);
+                filterMinId.value = minId;
+                filterMaxId.value = maxId;
+                renderTable();
+            }
+            
+            // 2. DISTINTA & MAGAZZINO
+            const matrixMinId = document.getElementById('matrixMinId');
+            const matrixMaxId = document.getElementById('matrixMaxId');
+            if (matrixMinId && matrixMaxId) {
+                const minId = findMatchingId(filter.min, matrixMinId);
+                const maxId = findMatchingId(filter.max, matrixMaxId);
+                matrixMinId.value = minId;
+                matrixMaxId.value = maxId;
+                renderMatrices(true); // IMPORTANTE: true per non resettare i filtri!
+            }
+            
+            // 3. TABELLA ORDINI
+            const tabellaMinId = document.getElementById('tabellaOrdiniMinId');
+            const tabellaMaxId = document.getElementById('tabellaOrdiniMaxId');
+            if (tabellaMinId && tabellaMaxId) {
+                // Popola i select se vuoti
+                if (tabellaMinId.options.length === 0) {
+                    populateTabellaOrdiniFilters();
+                }
+                const minId = findMatchingId(filter.min, tabellaMinId);
+                const maxId = findMatchingId(filter.max, tabellaMaxId);
+                tabellaMinId.value = minId;
+                tabellaMaxId.value = maxId;
+                renderTabellaOrdini();
+            }
+            
+            // 4. DASHBOARD
+            const dashboardMinId = document.getElementById('dashboardMinId');
+            const dashboardMaxId = document.getElementById('dashboardMaxId');
+            if (dashboardMinId && dashboardMaxId) {
+                // Popola i select se vuoti
+                if (dashboardMinId.options.length === 0) {
+                    populateDashboardIdFilters();
+                }
+                const minId = findMatchingId(filter.min, dashboardMinId);
+                const maxId = findMatchingId(filter.max, dashboardMaxId);
+                dashboardMinId.value = minId;
+                dashboardMaxId.value = maxId;
+                // I totali generali non cambiano, aggiorna solo la parte filtrata
+                renderChart();
+                renderKitAnalysis();
+            }
+            
+            console.log(`✅ Filtro Quick ID ${num} applicato: ${filter.min} → ${filter.max}`);
+            showQuickNotification(`Filtro ${num}: ${filter.min} → ${filter.max}`, 'success');
+        }
+        
+        // Reset filtri ID in tutte le sezioni
+        function resetAllIdFilters() {
+            // 1. GESTIONE ORDINI - trova primo e ultimo ID
+            const filterMinId = document.getElementById('filterMinId');
+            const filterMaxId = document.getElementById('filterMaxId');
+            if (filterMinId && filterMaxId && filterMinId.options.length > 0) {
+                filterMinId.selectedIndex = 0;
+                filterMaxId.selectedIndex = filterMaxId.options.length - 1;
+                renderTable();
+            }
+            
+            // 2. DISTINTA & MAGAZZINO
+            const matrixMinId = document.getElementById('matrixMinId');
+            const matrixMaxId = document.getElementById('matrixMaxId');
+            if (matrixMinId && matrixMaxId && matrixMinId.options.length > 0) {
+                matrixMinId.selectedIndex = 0;
+                matrixMaxId.selectedIndex = matrixMaxId.options.length - 1;
+                renderMatrices();
+            }
+            
+            // 3. TABELLA ORDINI
+            const tabellaMinId = document.getElementById('tabellaOrdiniMinId');
+            const tabellaMaxId = document.getElementById('tabellaOrdiniMaxId');
+            if (tabellaMinId && tabellaMaxId && tabellaMinId.options.length > 0) {
+                tabellaMinId.selectedIndex = 0;
+                tabellaMaxId.selectedIndex = tabellaMaxId.options.length - 1;
+                renderTabellaOrdini();
+            }
+            
+            showQuickNotification('Filtri ID resettati', 'info');
+        }
+        
+        // Mostra notifica rapida
+        function showQuickNotification(message, type = 'success') {
+            const colors = {
+                success: 'bg-green-600',
+                info: 'bg-blue-600',
+                warning: 'bg-orange-600',
+                error: 'bg-red-600'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded shadow-lg z-50 transition-opacity`;
+            notification.innerHTML = `<i class="fas fa-check mr-2"></i>${message}`;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+        
+        // Apri modal configurazione
+        function openQuickIdConfig() {
+            // Usa la variabile globale quickIdFilters (caricata da Redis)
+            
+            let html = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeQuickIdConfig()">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="flex justify-between items-center mb-4 sticky top-0 bg-white pb-4 border-b">
+                            <h2 class="text-xl font-bold text-gray-900">
+                                <i class="fas fa-cog text-blue-600 mr-2"></i>
+                                Configura Quick ID Filters (1-15)
+                            </h2>
+                            <button onclick="closeQuickIdConfig()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <p class="text-sm text-gray-600 mb-4">
+                            Configura fino a 15 intervalli ID per accesso rapido. Puoi usare solo numeri (es: 69) o ID completi (es: 2025_069).
+                        </p>
+                        
+                        <div class="grid grid-cols-3 gap-4">
+            `;
+            
+            for (let i = 1; i <= 15; i++) { // 15 pulsanti
+                const filter = quickIdFilters[i] || {};
+                html += `
+                    <div class="border rounded p-3 bg-gray-50">
+                        <div class="font-bold text-sm mb-2 text-gray-700">
+                            <span class="bg-blue-600 text-white px-2 py-1 rounded">${i}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input 
+                                type="text" 
+                                id="quickIdMin_${i}" 
+                                value="${filter.min || ''}" 
+                                placeholder="ID Min"
+                                class="text-sm border rounded px-2 py-1 w-full">
+                            <span class="text-gray-500">→</span>
+                            <input 
+                                type="text" 
+                                id="quickIdMax_${i}" 
+                                value="${filter.max || ''}" 
+                                placeholder="ID Max"
+                                class="text-sm border rounded px-2 py-1 w-full">
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                        </div>
+                        
+                        <div class="flex justify-end gap-2 mt-6 sticky bottom-0 bg-white pt-4 border-t">
+                            <button onclick="closeQuickIdConfig()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded font-bold">
+                                Annulla
+                            </button>
+                            <button onclick="saveQuickIdConfig()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-bold">
+                                <i class="fas fa-save mr-2"></i>Salva
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+        
+        // Chiudi modal
+        // Chiudi modal
+function closeQuickIdConfig() {
+    const modal = document.querySelector('.fixed.inset-0');
+    if (modal) modal.remove();
+}
+
+// Salva TUTTI i Quick ID Filters configurati nel modal
+async function saveQuickIdConfig() {
+    try {
+        // Leggi tutti i 15 filtri dal modal
+        const newFilters = {};
+        let configuredCount = 0;
+        
+        for (let i = 1; i <= 15; i++) {
+            const minInput = document.getElementById(`quickIdMin_${i}`);
+            const maxInput = document.getElementById(`quickIdMax_${i}`);
+            
+            if (minInput && maxInput) {
+                const min = minInput.value.trim().toUpperCase();
+                const max = maxInput.value.trim().toUpperCase();
+                
+                // Se entrambi i campi sono compilati, salva il filtro
+                if (min && max) {
+                    newFilters[i] = { min: min, max: max };
+                    configuredCount++;
+                }
+            }
+        }
+        
+        // Aggiorna la variabile globale
+        quickIdFilters = newFilters;
+        
+        // Salva su Redis tramite saveData()
+        await saveData();
+        
+        // Chiudi il modal
+        closeQuickIdConfig();
+        
+        // Aggiorna i pulsanti nella UI
+        initQuickIdButtons();
+        
+        // Mostra conferma
+        alert(`✅ Configurazione salvata su server!\n\n${configuredCount} pulsanti configurati su 15 disponibili.\n\nTutti gli utenti vedranno questa configurazione.`);
+        
+        console.log('✅ Quick ID Filters salvati:', quickIdFilters);
+        
+    } catch (error) {
+        console.error('❌ Errore salvataggio Quick ID Filters:', error);
+        alert('❌ Errore durante il salvataggio. Riprova.');
+    }
+}
+        // Inizializza all'avvio
+        initQuickIdButtons();
+        // ✅ Carica dati pagamenti da Redis all'avvio
+        loadPaymentsData();
+        initFiltersPanelState();
+        window.addEventListener('resize', initFiltersPanelState);
+    
+
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║              SISTEMA VERIFICA PAGAMENTI                         ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+
+        // ─── CONFIGURAZIONE (adatta ai tuoi ruoli reali) ─────────────────────
+        const PAY_CONFIG = {
+            // ✅ Valori confermati dall'utente
+            primaSquadraRoles: ['1^ Squadra'],
+            allenatoreRoles:   ['Allenatore'],
+            tolerancePercent:  20,
+            causalePatterns: {
+                prima_squadra: ['PRIMA SQUADRA', '1^ SQUADRA', '1° SQUADRA', 'F. PRIMA', 'GO CALCIO 1°', '11.PRIMA', 'F. GO CALCIO 1°'],
+                // ✅ mini_kit PRIMA di kit_completo — evita che 'KIT 2025' generico ingoii i Mini Kit
+                mini_kit:      ['H. MINI KIT', 'MINI KIT'],
+                kit_completo:  ['G. KIT', 'KIT COMPLETO'],  // rimossa 'KIT 2025': troppo generico
+                kit_dirigente: ['I. KIT DIRIGENTE', 'KIT DIRIGENTE'],
+                quota_annuale: ['GO CALCIO', 'ESORDIENTI', 'PRE-ISCRIZIONE', 'PREISCRIZIONE', 'PRE ISCRIZIONE'],
+                capo_singolo:  ['I. BORSONE', 'I. FELPA', 'I. GIACCONE', 'I. CALZETTONI',
+                                'I. CAPPELLO', 'I. KWAY', 'I. SCALDACOLLO', 'I. POLO',
+                                'I. T-SHIRT', 'I. ZAINETTO', 'I. PANTALONCINO', 'I.FELPA',
+                                'I.CALZETTONE', 'I.PALLONE', 'I. SCIARPA', 'I. SHORTS']
+            }
+        };
+
+        // ─── STATO IN MEMORIA ─────────────────────────────────────────────────
+        let paymentsData = {
+            payments: [],
+            manualOverrides: {},
+            quotaConfig: { primaSquadraQuota: 250, primaSquadraTranches: [], annualQuotas: {} },
+            importedAt: null
+        };
+        let currentOverrideKey = null;
+
+        // ─── CARICA DA REDIS ──────────────────────────────────────────────────
+        async function loadPaymentsData() {
+            try {
+                const res = await fetch('/api/payments');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        paymentsData = json.data;
+                        console.log(`💳 Pagamenti caricati: ${paymentsData.payments?.length || 0} voci`);
+                        applyPaymentColorsToOrders();
+                    }
+                }
+            } catch (e) { console.warn('⚠️ Errore caricamento pagamenti:', e); }
+        }
+
+        // ─── IMPORT CSV ───────────────────────────────────────────────────────
+        async function handlePaymentsCSVImport(event) {
+            try {
+                const file = event.target.files[0];
+                if (!file) return;
+                event.target.value = '';
+
+                showQuickNotification('⏳ Lettura file in corso...', 'info');
+
+                const text = await file.text();
+                const payments = parsePaymentsCSV(text);
+
+                if (payments.length === 0) {
+                    alert('❌ Nessun pagamento trovato nel file. Verifica il formato CSV (separatore ; e colonna Stato=Completato).');
+                    return;
+                }
+
+                showQuickNotification(`⏳ Importazione ${payments.length} pagamenti...`, 'info');
+
+                // Snapshot degli override manuali verde già esistenti (da preservare)
+                // Non calcoliamo getPaymentStatus qui per evitare errori — usiamo solo
+                // gli override già salvati su Redis come sorgente di verità
+                const existingOverrides = JSON.parse(JSON.stringify(paymentsData.manualOverrides || {}));
+
+                // Salva i nuovi pagamenti su Redis
+                const res = await fetch('/api/payments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'import', payments })
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${errText.slice(0,200)}`);
+                }
+
+                const json = await res.json();
+
+                if (!json.success) {
+                    throw new Error(json.error || 'Risposta API non success');
+                }
+
+                // Aggiorna stato locale
+                paymentsData.payments  = payments;
+                paymentsData.importedAt = new Date().toISOString();
+                // Ripristina gli override manuali che potrebbero essere stati sovrascritti
+                paymentsData.manualOverrides = existingOverrides;
+
+                applyPaymentColorsToOrders();
+                renderPaymentsTab();
+                showQuickNotification(`✅ Importati ${payments.length} pagamenti`, 'success');
+
+            } catch (e) {
+                console.error('Import CSV error:', e);
+                alert('❌ Errore import: ' + e.message);
+            }
+        }
+
+        // ─── PARSER CSV ────────────────────────────────────────────────────────────
+        function parsePaymentsCSV(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) return [];
+            const sep = lines[0].includes(';') ? ';' : ',';
+            const headers = lines[0].split(sep).map(h => h.trim().replace(/"/g,''));
+            const parsed = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(sep).map(c => c.trim().replace(/"/g,''));
+                if (cols.length < 6) continue;
+                const row = {};
+                headers.forEach((h, idx) => row[h] = cols[idx] || '');
+
+                // Normalizza importo (col F)
+                const importoRaw = (row['Importo'] || '0')
+                    .replace(/â¬|€|EUR/gi,'').replace(',','.').trim();
+                const importo = parseFloat(importoRaw) || 0;
+
+                if ((row['Stato'] || '') !== 'Completato') continue;
+                if (importo <= 0) continue;
+
+                // Col B, C, H
+                let cognome = (row['Cognome'] || '').trim();   // Col B
+                let nome    = (row['Nome']    || '').trim();   // Col C
+                const pagante = (row['Pagante'] || '').trim(); // Col H
+                const causale = row['Causale'] || '';
+
+                // ✅ Sorgente 1: Col G — estrai "per Cognome Nome" dalla causale
+                const mCausale = causale.match(/,\s*per\s+(.+)$/i)
+                               || causale.match(/\bper\s+([A-ZÀ-Ùa-zà-ù][A-ZÀ-Ùa-zà-ù\s']+?)(?:\s+stagione|\s*$)/i);
+                const nomeFromCausale = mCausale ? mCausale[1].trim().replace(/\s+/g,' ') : '';
+
+                // Se B+C vuoti, usa col G come fonte principale
+                if (!cognome && !nome && nomeFromCausale) {
+                    const parts = nomeFromCausale.split(/\s+/);
+                    cognome = parts[0] || '';
+                    nome    = parts.slice(1).join(' ');
+                }
+
+                // ✅ Sorgente 3: Col H (Pagante) se ancora vuoto
+                if (!cognome && !nome && pagante) {
+                    const parts = pagante.split(/\s+/);
+                    cognome = parts[0] || '';
+                    nome    = parts.slice(1).join(' ');
+                }
+
+                if (!cognome) continue;
+
+                const causaleUp = causale.toUpperCase();
+                let tipo = 'quota_annuale';
+                for (const [t, patterns] of Object.entries(PAY_CONFIG.causalePatterns)) {
+                    if (patterns.some(p => causaleUp.includes(p.toUpperCase()))) { tipo = t; break; }
+                }
+
+                // ✅ Lista nomi alternativi per fuzzy matching multi-sorgente
+                const altNamesSet = new Set();
+                altNamesSet.add(`${cognome} ${nome}`.trim());
+                if (nomeFromCausale) altNamesSet.add(nomeFromCausale);
+                if (pagante) {
+                    altNamesSet.add(pagante);
+                    // Prova anche invertito (Nome Cognome → Cognome Nome)
+                    const pp = pagante.split(/\s+/);
+                    if (pp.length >= 2) altNamesSet.add(`${pp[pp.length-1]} ${pp.slice(0,-1).join(' ')}`);
+                }
+
+                parsed.push({
+                    id: row['ID'] || `csv_${i}`,
+                    cognome, nome,
+                    fullName: `${cognome} ${nome}`.trim(),
+                    altNames: [...altNamesSet].filter(Boolean), // ✅ tutti i nomi alternativi
+                    importo,
+                    causale,
+                    tipo,
+                    isPreiscrizione: causaleUp.includes('PRE-ISCRIZIONE') || causaleUp.includes('PREISCRIZIONE'),
+                    data: row['Data'] || '',
+                    manuale: false
+                });
+            }
+            return parsed;
+        }
+
+        // ─── MOTORE DI CALCOLO STATO PAGAMENTO ───────────────────────────────
+        function getPaymentStatus(order) {
+            const emptyData = !paymentsData.payments || paymentsData.payments.length === 0;
+            const key = (order.customer || '').trim();
+            // ✅ FIX: normalizza il ruolo rimuovendo spazi doppi e confronta in modo flessibile
+            const roleRaw = (order.roleOrYear || '').trim();
+            const role = roleRaw.toLowerCase().replace(/\s+/g, ' ');
+
+            // Override manuale ha priorità assoluta
+            const ov = paymentsData.manualOverrides?.[key];
+            if (ov) {
+                return { stato: ov.stato, label: '✏️ Manuale', pagato:0, dovuto:0, delta:0,
+                         dettaglio: ov.nota || 'Override manuale', isOverride: true };
+            }
+
+            if (emptyData) return { stato:'bianco', label:'Nessun dato', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
+
+            // ✅ Ordine annullato/trasferito → Verde (non deve pagare)
+            if (order.status === 'Ordine annullato' || order.status === 'Ordine trasferito ad altro ID') {
+                return { stato:'verde', label:'🚫 Annullato', pagato:0, dovuto:0, delta:0, dettaglio:'Ordine annullato — nessun pagamento richiesto' };
+            }
+
+            const kitName = (order.kitType || '').toLowerCase();
+            // ✅ isKitBase = true per qualsiasi ordine con articoli da pagare
+            // Include: kit completo, mini kit, kit dirigente, abbigliamento singolo
+            const isKitBase = kitName.includes('kit') || 
+                              kitName.includes('abbigliamento') || 
+                              kitName.includes('singolo') ||
+                              (order.itemsList?.length > 0);
+
+            // ✅ FIX: match flessibile per Prima Squadra (gestisce "1^Squadra", "1^ Squadra", "1^squadra" ecc.)
+            const roleNorm = role.replace(/[\s^°]/g, '');  // rimuovi spazi, ^ e °
+            const isPrimaSquadra = PAY_CONFIG.primaSquadraRoles.some(r => {
+                const rNorm = r.toLowerCase().replace(/[\s^°]/g, '');
+                return roleNorm === rNorm || role.includes(r.toLowerCase());
+            });
+            const isAllenatore = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
+
+            // Allenatori: kit base gratuito
+            if (isAllenatore && isKitBase && !kitName.includes('extra') && !kitName.includes('singol')) {
+                return { stato:'verde', label:'🎁 Gratuito', pagato:0, dovuto:0, delta:0, dettaglio:'Allenatore: kit incluso' };
+            }
+
+            // ✅ Prima Squadra: il kit è INCLUSO nella quota
+            // La colonna Abbigliamento mostra "Kit incluso" (Verde),
+            // la verifica del pagamento avviene nella colonna Iscrizione tramite getIscrizioneStatus
+            if (isPrimaSquadra && isKitBase) {
+                return { stato:'verde', label:'🎽 Kit incluso', pagato:0, dovuto:0, delta:0,
+                         dettaglio:'Kit incluso nella quota PS — verifica in colonna Iscrizione' };
+            }
+
+            // Per tutti gli altri: verifica pagamento kit/abbigliamento
+            const dovuto = calculateOrderTotal(order);
+            const logicaLabel = '';
+
+            // Cerca pagamenti kit per questo atleta (tipo + articoli specifici)
+            const trovati = trovaPagamentiAtleta(key, false, isKitBase, order.kitType, order.itemsList);
+
+            if (trovati.length === 0) {
+                return { stato:'bianco', label:'Non trovato', pagato:0, dovuto, delta:-dovuto,
+                         dettaglio:'Nessun pagamento abbigliamento nel CSV', pagamenti:[] };
+            }
+
+            const totalePagato = trovati.reduce((s,p) => s + p.importo, 0);
+            const delta = totalePagato - dovuto;
+            const percDiff = dovuto > 0 ? Math.abs(delta/dovuto)*100 : 0;
+            const hasDubbio = trovati.some(p => p.confidence === 'bassa');
+
+            let stato, label;
+            if (delta >= 0)                                          { stato = 'verde';    label = `✅ Pagato`; }
+            else if (percDiff <= PAY_CONFIG.tolerancePercent || hasDubbio) { stato = 'giallo';   label = hasDubbio ? '⚠️ Verifica' : `🟡 Parziale (${Math.round(percDiff)}%)`; }
+            else                                                     { stato = 'arancione'; label = `🟠 Debito ${Math.abs(Math.round(delta))}€`; }
+
+            return { stato, label, pagato: totalePagato, dovuto, delta,
+                     dettaglio: trovati.map(p=>`${p.causale}: ${p.importo}€`).join(' | ') + logicaLabel,
+                     pagamenti: trovati };
+        }
+
+        // ─── STATO ISCRIZIONE ANNUALE (separato dall'abbigliamento) ──────────────
+        function getIscrizioneStatus(order) {
+            const key      = (order.customer || '').trim();
+            const roleRaw  = (order.roleOrYear || '').trim();
+            const role     = roleRaw.toLowerCase();
+
+            // ✅ Prima Squadra: verifica quota PS nella colonna Iscrizione
+            const roleNorm = role.replace(/[\s^°]/g, '');
+            const isPrimaSquadra = PAY_CONFIG.primaSquadraRoles.some(r =>
+                roleNorm === r.toLowerCase().replace(/[\s^°]/g,'') || role.includes(r.toLowerCase()));
+
+            if (isPrimaSquadra) {
+                // Cerca pagamenti tipo prima_squadra o quota_annuale PS
+                const quotaPS = paymentsData.quotaConfig?.primaSquadraQuota || 0;
+                const target = normName(key);
+                const pagsPS = (paymentsData.payments || []).filter(p => {
+                    if (!['prima_squadra','quota_annuale'].includes(p.tipo)) return false;
+                    // ✅ Controlla anche altNames (G, B+C, H)
+                    const namesToCheck = [
+                        normName(p.fullName || `${p.cognome} ${p.nome}`),
+                        ...(p.altNames || []).map(n => normName(n))
+                    ].filter(Boolean);
+                    return Math.max(...namesToCheck.map(n => nameScore(target, n))) >= 0.65;
+                });
+                const totalePagatoPS = pagsPS.reduce((s,p) => s + p.importo, 0);
+
+                if (pagsPS.length === 0)
+                    return { stato:'bianco', label:'Non pagata', pagato:0, dovuto: quotaPS,
+                             delta: -quotaPS, dettaglio:'Nessuna quota PS nel CSV' };
+
+                if (quotaPS === 0)
+                    return { stato:'giallo', label:`${totalePagatoPS}€ pagati`, pagato: totalePagatoPS,
+                             dovuto:0, delta:0, dettaglio:'⚠️ Configura quota PS in Config Quote' };
+
+                const deltaPS = totalePagatoPS - quotaPS;
+                const percPS  = Math.abs(deltaPS / quotaPS) * 100;
+                let stato, label;
+                if (deltaPS >= 0)                               { stato='verde';    label=`✅ ${totalePagatoPS}€`; }
+                else if (percPS <= PAY_CONFIG.tolerancePercent) { stato='giallo';   label=`🟡 ${totalePagatoPS}/${quotaPS}€`; }
+                else                                            { stato='arancione';label=`🟠 ${totalePagatoPS}/${quotaPS}€`; }
+
+                return { stato, label, pagato: totalePagatoPS, dovuto: quotaPS, delta: deltaPS,
+                         dettaglio: pagsPS.map(p=>`${p.causale.split(',')[0]}: ${p.importo}€`).join(' + ') };
+            }
+
+            // Allenatori: iscrizione gratuita
+            const isAllenatore = PAY_CONFIG.allenatoreRoles.some(r => role.includes(r.toLowerCase()));
+            if (isAllenatore) return { stato:'verde', label:'🎁 Gratis', pagato:0, dovuto:0, delta:0, dettaglio:'Allenatore' };
+
+            // ✅ Ordine annullato/trasferito → Verde (nessun pagamento richiesto)
+            if (order.status === 'Ordine annullato' || order.status === 'Ordine trasferito ad altro ID') {
+                return { stato:'verde', label:'🚫 Annullato', pagato:0, dovuto:0, delta:0, dettaglio:'Ordine annullato' };
+            }
+
+            if (!paymentsData.payments || paymentsData.payments.length === 0)
+                return { stato:'bianco', label:'—', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
+
+            // Quota annuale configurata per questa annata
+            const quotaConfigurata = paymentsData.quotaConfig?.annualQuotas?.[roleRaw] || 0;
+
+            // Cerca pagamenti tipo quota_annuale per questo atleta
+            const target = normName(key);
+            const pagsIscrizione = (paymentsData.payments || []).filter(p => {
+                if (!['quota_annuale'].includes(p.tipo)) return false;
+                // ✅ Controlla anche altNames (G, B+C, H)
+                const namesToCheck = [
+                    normName(p.fullName || `${p.cognome} ${p.nome}`),
+                    ...(p.altNames || []).map(n => normName(n))
+                ].filter(Boolean);
+                return Math.max(...namesToCheck.map(n => nameScore(target, n))) >= 0.65;
+            });
+
+            const totalePagato = pagsIscrizione.reduce((s,p) => s + p.importo, 0);
+
+            if (pagsIscrizione.length === 0) {
+                return { stato:'bianco', label:'Non pagata', pagato:0, dovuto: quotaConfigurata,
+                         delta: -quotaConfigurata, dettaglio:'Nessuna quota nel CSV' };
+            }
+
+            // Se non c'è quota configurata mostra solo il pagato senza confronto
+            if (quotaConfigurata === 0) {
+                return { stato:'giallo', label:`${totalePagato}€ pagati`, pagato: totalePagato,
+                         dovuto:0, delta:0, dettaglio:'⚠️ Configura quota per ' + roleRaw };
+            }
+
+            const delta = totalePagato - quotaConfigurata;
+            const percDiff = Math.abs(delta / quotaConfigurata) * 100;
+
+            let stato, label;
+            if (delta >= 0)                                    { stato='verde';    label=`✅ ${totalePagato}€`; }
+            else if (percDiff <= PAY_CONFIG.tolerancePercent)  { stato='giallo';   label=`🟡 ${totalePagato}/${quotaConfigurata}€`; }
+            else                                               { stato='arancione';label=`🟠 ${totalePagato}/${quotaConfigurata}€`; }
+
+            return { stato, label, pagato: totalePagato, dovuto: quotaConfigurata, delta,
+                     dettaglio: pagsIscrizione.map(p=>`${p.causale.split(',')[0]}: ${p.importo}€`).join(' + ') };
+        }
+
+        // ─── FUZZY MATCH ATLETA ────────────────────────────────────────────────
+        // ── Mappa kitType ordine → tipo pagamento CSV ─────────────────────────────
+        function kitTypeToPaymentTipi(kitName) {
+            const k = (kitName || '').toLowerCase();
+            if (k.includes('kit dirigente'))                                      return ['kit_dirigente'];
+            if (k.includes('mini kit'))                                           return ['mini_kit'];
+            if (k.includes('kit portiere') || k.includes('kit allenatore') ||
+                k.includes('kit completo') || k.includes('kit giocatore') ||
+                k.includes('kit calcio'))                                         return ['kit_completo'];
+            if (k.includes('kit'))                                                return ['kit_completo','mini_kit','kit_dirigente'];
+            // Abbigliamento Singolo o qualsiasi cosa senza "kit"
+            return ['capo_singolo'];
+        }
+
+        // ── Estrai keyword da nome articolo per match causale CSV ─────────────────
+        function extractItemKeywords(itemName) {
+            // ✅ Rimuove solo prefisso "X. " (lettera + PUNTO + SPAZIO obbligatorio)
+            // NON rimuovere lettere singole senza punto (es. "KWAY" non è un prefisso)
+            let clean = (itemName || '')
+                .replace(/^[A-Z]\. /i, '')               // rimuovi solo "I. " "G. " (punto + spazio)
+                .replace(/\s*\([^)€\d]*\)\s*/g, ' ')   // rimuovi (CALCIO), (SPOLF)
+                .replace(/\s*\(\d+€\)\s*/g, '')         // rimuovi (7€)
+                .replace(/\s+/g, ' ').trim().toLowerCase();
+            // ✅ NON rimuovere il trattino: "t-shirt" rimane "t-shirt" per il match
+            // Soglia >= 2 per parole corte (es. "kw")
+            return clean.split(/\s+/).filter(w => w.length >= 2);
+        }
+
+        // ── Trova pagamenti per atleta con matching tipo-specifico ────────────────
+        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase, kitName, itemsList) {
+            const target = normName(nomeCompleto);
+            if (!target) return [];
+
+            const tipiAttesi   = kitTypeToPaymentTipi(kitName);
+            const isCapoSingolo = tipiAttesi[0] === 'capo_singolo';
+
+            // Per Abbigliamento Singolo: costruisci set di keyword dagli articoli
+            // es. ["calzettoni", "giaccone", "pantaloncino", "t-shirt"]
+            let itemKeywords = [];
+            if (isCapoSingolo && itemsList && itemsList.length > 0) {
+                itemKeywords = itemsList.flatMap(item => {
+                    const name = typeof item === 'string' ? item : (item.name || '');
+                    return extractItemKeywords(name);
+                });
+                // Rimuovi duplicati
+                itemKeywords = [...new Set(itemKeywords)];
+            }
+
+            return (paymentsData.payments || []).filter(p => {
+                // ── Match nome ────────────────────────────────────────────────────
+                const namesToCheck = [
+                    normName(p.fullName || `${p.cognome} ${p.nome}`),
+                    ...(p.altNames || []).map(n => normName(n))
+                ].filter(Boolean);
+                const score = Math.max(...namesToCheck.map(n => nameScore(target, n)));
+                if (score < 0.65) return false;
+
+                // ── Prima Squadra ─────────────────────────────────────────────────
+                if (isPrimaSquadra && isKitBase) {
+                    return ['prima_squadra','quota_annuale'].includes(p.tipo);
+                }
+
+                // ── Tipo pagamento ────────────────────────────────────────────────
+                // ✅ Per kit, accetta sia mini_kit che kit_completo:
+                // alcune famiglie usano la causale G. KIT anche per il Mini Kit
+                // (es. Curci Alessandro: ordine Mini Kit 135€, causale G. KIT 2025-2026)
+                const tipiKitFlessibili = ['mini_kit','kit_completo'];
+                const tuttiTipiKitFlessibili = tipiAttesi.every(t => tipiKitFlessibili.includes(t));
+                const matchTipo = tipiAttesi.includes(p.tipo) ||
+                    (tuttiTipiKitFlessibili && tipiKitFlessibili.includes(p.tipo));
+                if (!matchTipo) return false;
+
+                // ── Capi singoli: match per nome articolo nella causale ───────────
+                // Se abbiamo keyword dagli articoli, verifica che la causale
+                // contenga almeno una di esse (es. "calzettoni" in "I. CALZETTONI")
+                if (isCapoSingolo && itemKeywords.length > 0) {
+                    const causNorm = normName(p.causale);
+                    // ✅ Confronta sia con trattino che senza (t-shirt ↔ t shirt)
+                    const kwMatch = itemKeywords.some(kw => {
+                        if (causNorm.includes(kw)) return true;
+                        // Prova con trattino→spazio (t-shirt → t shirt)
+                        const kwNoHyphen = kw.replace(/-/g, ' ');
+                        if (causNorm.includes(kwNoHyphen)) return true;
+                        // Prova rimuovendo il trattino (t-shirt → tshirt)
+                        const kwNoHyphen2 = kw.replace(/-/g, '');
+                        return causNorm.replace(/ /g,'').includes(kwNoHyphen2);
+                    });
+                    if (!kwMatch) return false;
+                }
+
+                return true;
+            }).map(p => ({
+                ...p,
+                confidence: Math.max(
+                    nameScore(target, normName(p.fullName || `${p.cognome} ${p.nome}`)),
+                    ...((p.altNames || []).map(n => nameScore(target, normName(n))))
+                ) >= 0.85 ? 'alta' : 'bassa'
+            }));
+        }  // fine trovaPagamentiAtleta
+
+        function normName(n) {
+            return (n||'').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+                .replace(/['\-]/g,' ').replace(/\s+/g,' ').trim();
+        }
+
+        function nameScore(a, b) {
+            if (a === b) return 1;
+            const wa = a.split(' ').filter(w=>w.length>1);
+            const wb = b.split(' ').filter(w=>w.length>1);
+            const hits = wa.filter(w => wb.some(x => x.includes(w)||w.includes(x)));
+            return hits.length / Math.max(wa.length, wb.length);
+        }
+
+        // ─── COLORI ───────────────────────────────────────────────────────────
+        const PAY_COLORS = {
+            verde:    { bg:'#d4edda', border:'#28a745', text:'#155724' },
+            giallo:   { bg:'#fff3cd', border:'#ffc107', text:'#856404' },
+            arancione:{ bg:'#ffe0b2', border:'#ff9800', text:'#e65100' },
+            bianco:   { bg:'#ffffff', border:'#dee2e6', text:'#495057' }
+        };
+
+        // ─── APPLICA COLORI NELLA LISTA ORDINI ───────────────────────────────
+        function applyPaymentColorsToOrders() {
+            orders.forEach(order => {
+                const status = getPaymentStatus(order);
+                const color  = PAY_COLORS[status.stato] || PAY_COLORS.bianco;
+                // Colora la TD Cliente (ha data-payment-id)
+                const el = document.querySelector(`[data-payment-id="${order.id}"]`);
+                if (el) {
+                    el.style.backgroundColor = color.bg;
+                    el.style.borderLeft = `4px solid ${color.border}`;
+                    el.title = `${status.label} | Pagato: ${status.pagato}€ | Dovuto: ${status.dovuto}€`;
+                }
+                // Colora anche la TD ID (sticky, ha data-payment-id-col)
+                const elId = document.querySelector(`[data-payment-id-col="${order.id}"]`);
+                if (elId) {
+                    elId.style.backgroundColor = color.bg;
+                }
+            });
+        }
+
+        // ─── RENDER TAB PAGAMENTI ─────────────────────────────────────────────
+        function renderPaymentsTab() {
+            const tbody = document.getElementById('payments-table-body');
+            const statsEl = document.getElementById('payments-stats');
+            const dateEl = document.getElementById('payments-import-date');
+            if (!tbody) return;
+
+            if (paymentsData.importedAt) {
+                const d = new Date(paymentsData.importedAt);
+                dateEl.textContent = `Ultimo import: ${d.toLocaleString('it-IT')} — ${paymentsData.payments?.length||0} voci`;
+            }
+
+            // ── Leggi tutti i filtri ─────────────────────────────────────────────
+            const search          = (document.getElementById('pay-search')?.value||'').toLowerCase().trim();
+            const filterRuolo     = (document.getElementById('pay-filter-ruolo')?.value||'').toLowerCase().trim();
+            const filterKit       = (document.getElementById('pay-filter-kit')?.value||'').toLowerCase().trim();
+            const filterDovutoMin = parseFloat(document.getElementById('pay-filter-dovuto-min')?.value) || null;
+            const filterDovutoMax = parseFloat(document.getElementById('pay-filter-dovuto-max')?.value) || null;
+            const filterPagatoMin = parseFloat(document.getElementById('pay-filter-pagato-min')?.value) || null;
+            const filterPagatoMax = parseFloat(document.getElementById('pay-filter-pagato-max')?.value) || null;
+            const filterDeltaMin  = parseFloat(document.getElementById('pay-filter-delta-min')?.value) || null;
+            const filterDeltaMax  = parseFloat(document.getElementById('pay-filter-delta-max')?.value) || null;
+            const filterAbbig     = document.getElementById('pay-filter-abbigliamento')?.value || 'tutti';
+            const filterIscr      = document.getElementById('pay-filter-iscrizione')?.value   || 'tutti';
+            const filterDettaglio = (document.getElementById('pay-filter-dettaglio')?.value||'').toLowerCase().trim();
+
+            // ── Prima passa: filtra ordini per campi dell'ordine (senza calcolare status) ─
+            let ordiniDaVerificare = orders.filter(o => {
+                // ID / Cliente
+                if (search && !o.customer?.toLowerCase().includes(search) && !o.displayId?.toLowerCase().includes(search)) return false;
+                // Anno/Ruolo
+                if (filterRuolo && !(o.roleOrYear||'').toLowerCase().includes(filterRuolo)) return false;
+                // Tipo Kit
+                if (filterKit   && !(o.kitType||'').toLowerCase().includes(filterKit)) return false;
+                return true;
+            });
+
+            // Calcola stato abbigliamento + iscrizione per ciascuno
+            const rows = ordiniDaVerificare.map(o => ({
+                order:   o,
+                status:  getPaymentStatus(o),
+                iscr:    getIscrizioneStatus(o)
+            }));
+
+            // ── Seconda passa: filtra per valori calcolati (dovuto/pagato/delta/stato) ──
+            const filtered = rows.filter(r => {
+                const s    = r.status;
+                const iscr = r.iscr;
+
+                // Abbigliamento stato
+                if (filterAbbig !== 'tutti' && s.stato !== filterAbbig) return false;
+                // Iscrizione stato
+                if (filterIscr  !== 'tutti' && iscr.stato !== filterIscr) return false;
+
+                // Dovuto €
+                if (filterDovutoMin !== null && s.dovuto < filterDovutoMin) return false;
+                if (filterDovutoMax !== null && s.dovuto > filterDovutoMax) return false;
+                // Pagato €
+                if (filterPagatoMin !== null && s.pagato < filterPagatoMin) return false;
+                if (filterPagatoMax !== null && s.pagato > filterPagatoMax) return false;
+                // Delta €
+                if (filterDeltaMin  !== null && s.delta  < filterDeltaMin)  return false;
+                if (filterDeltaMax  !== null && s.delta  > filterDeltaMax)  return false;
+
+                // Dettaglio (ricerca testo libero su label + dettaglio)
+                if (filterDettaglio) {
+                    const haystack = ((s.dettaglio||'') + ' ' + (iscr.dettaglio||'')).toLowerCase();
+                    if (!haystack.includes(filterDettaglio)) return false;
+                }
+
+                return true;
+            });
+
+            // Statistiche
+            const stats = { verde:0, giallo:0, arancione:0, bianco:0, totDovuto:0, totPagato:0 };
+            rows.forEach(r => {
+                stats[r.status.stato]++;
+                stats.totDovuto += r.status.dovuto || 0;
+                stats.totPagato += r.status.pagato || 0;
+            });
+
+            statsEl.innerHTML = `
+                <div class="bg-green-50 border border-green-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-green-700">${stats.verde}</div>
+                    <div class="text-xs text-green-600">✅ Pagati</div>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-yellow-600">${stats.giallo}</div>
+                    <div class="text-xs text-yellow-600">🟡 Da verificare</div>
+                </div>
+                <div class="bg-orange-50 border border-orange-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-orange-600">${stats.arancione}</div>
+                    <div class="text-xs text-orange-600">🟠 Con debito</div>
+                </div>
+                <div class="bg-gray-50 border border-gray-300 rounded p-2 text-center">
+                    <div class="text-xl font-bold text-gray-500">${stats.bianco}</div>
+                    <div class="text-xs text-gray-500">⬜ Non trovati</div>
+                </div>
+                <div class="bg-blue-50 border border-blue-300 rounded p-2 text-center">
+                    <div class="text-sm font-bold text-blue-700">${stats.totPagato}€ / ${stats.totDovuto}€</div>
+                    <div class="text-xs text-blue-600">💰 Incassato / Dovuto</div>
+                </div>`;
+
+            // Tabella
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center py-6 text-gray-400">Nessun ordine trovato con questi filtri</td></tr>';
+                return;
+            }
+
+            // Ordina: arancione > giallo > bianco > verde
+            // Ordinamento: non-verdi prima (arancione→giallo→bianco), poi verdi
+            // All'interno di ogni gruppo: ordine ID progressivo (2025_001 < 2025_002 < 2026_001)
+            const sortOrder = { arancione:0, giallo:1, bianco:2, verde:3 };
+            filtered.sort((a, b) => {
+                const groupA = sortOrder[a.status.stato] ?? 9;
+                const groupB = sortOrder[b.status.stato] ?? 9;
+                if (groupA !== groupB) return groupA - groupB;
+                // Stesso gruppo → ordine progressivo per displayId
+                return compareDisplayIds(a.order.displayId, b.order.displayId);
+            });
+
+            tbody.innerHTML = filtered.map(({ order: o, status: s, iscr }) => {
+                const c = PAY_COLORS[s.stato] || PAY_COLORS.bianco;
+                const deltaColor = s.delta > 0 ? 'text-green-600' : s.delta < 0 ? 'text-red-600' : 'text-gray-500';
+                const overrideIcon = s.isOverride ? '<i class="fas fa-user-edit text-blue-500 ml-1" title="Override manuale"></i>' : '';
+
+                // Colonna Iscrizione
+                const iColors = PAY_COLORS[iscr.stato] || PAY_COLORS.bianco;
+                const iscrCell = iscr.stato === 'n/a'
+                    ? `<span class="text-gray-300 text-xs">—</span>`
+                    : `<span class="px-2 py-1 rounded text-xs font-bold" style="background:${iColors.bg};color:${iColors.text};border:1px solid ${iColors.border}" title="${iscr.dettaglio||''}">${iscr.label}</span>`;
+
+                return `<tr class="border-b hover:bg-gray-50">
+                    <td class="px-3 py-2 font-mono text-xs font-bold text-blue-800">${o.displayId}</td>
+                    <td class="px-3 py-2 font-bold text-xs">${o.customer || '-'}</td>
+                    <td class="px-3 py-2 text-xs text-gray-600">${o.roleOrYear || '-'}</td>
+                    <td class="px-3 py-2 text-xs text-gray-600">${(o.kitType||'-').split('(')[0].trim()}</td>
+                    <td class="px-3 py-2 text-right font-bold text-xs">${s.dovuto > 0 ? s.dovuto+'€' : '<span class="text-green-600">Gratis</span>'}</td>
+                    <td class="px-3 py-2 text-right text-xs">${s.pagato > 0 ? s.pagato+'€' : '-'}</td>
+                    <td class="px-3 py-2 text-right text-xs font-bold ${deltaColor}">${s.dovuto > 0 ? (s.delta >= 0 ? '+' : '')+Math.round(s.delta)+'€' : '-'}</td>
+                    <td class="px-3 py-2 text-center">
+                        <span class="px-2 py-1 rounded text-xs font-bold" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">
+                            ${s.label}${overrideIcon}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-center">${iscrCell}</td>
+                    <td class="px-3 py-2 text-xs text-gray-500 max-w-xs truncate" title="${s.dettaglio||''}">${s.dettaglio||'-'}</td>
+                    <td class="px-3 py-2 text-center">
+                        <div class="flex gap-1 justify-center">
+                            <button onclick="showPaymentDetail('${o.id}')" class="text-blue-500 hover:text-blue-700 text-xs" title="Dettaglio pagamenti">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button onclick="openOverrideModal('${o.customer}')" class="text-orange-500 hover:text-orange-700 text-xs" title="Override manuale">
+                                <i class="fas fa-user-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            // Applica anche i colori nella lista ordini
+            applyPaymentColorsToOrders();
+        }
+
+        // ─── RESET FILTRI PAGAMENTI ───────────────────────────────────────────────
+        function resetPaymentFilters() {
+            ['pay-search','pay-filter-ruolo','pay-filter-kit',
+             'pay-filter-dovuto-min','pay-filter-dovuto-max',
+             'pay-filter-pagato-min','pay-filter-pagato-max',
+             'pay-filter-delta-min','pay-filter-delta-max',
+             'pay-filter-dettaglio'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            ['pay-filter-abbigliamento','pay-filter-iscrizione'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = 'tutti';
+            });
+            renderPaymentsTab();
+        }
+
+        // ─── DETTAGLIO PAGAMENTI ATLETA ────────────────────────────────────────
+        function showPaymentDetail(orderId) {
+            const order = orders.find(o => String(o.id) === String(orderId));
+            if (!order) return;
+
+            const status = getPaymentStatus(order);
+            const panel = document.getElementById('payments-detail-panel');
+            const title = document.getElementById('payments-detail-title');
+            const list  = document.getElementById('payments-detail-list');
+
+            title.textContent = `Pagamenti trovati per: ${order.customer} (${order.displayId})`;
+
+            if (!status.pagamenti || status.pagamenti.length === 0) {
+                list.innerHTML = '<p class="text-gray-400 text-sm">Nessun pagamento trovato nel CSV per questo cliente.</p>';
+            } else {
+                list.innerHTML = `
+                    <table class="w-full text-xs border-collapse">
+                        <thead><tr class="bg-gray-100">
+                            <th class="px-3 py-2 text-left">Data</th>
+                            <th class="px-3 py-2 text-left">Causale</th>
+                            <th class="px-3 py-2 text-left">Tipo</th>
+                            <th class="px-3 py-2 text-right">Importo</th>
+                            <th class="px-3 py-2 text-center">Confidenza</th>
+                        </tr></thead>
+                        <tbody>
+                            ${status.pagamenti.map(p => `
+                                <tr class="border-b">
+                                    <td class="px-3 py-1">${p.data||'-'}</td>
+                                    <td class="px-3 py-1">${p.causale||'-'}</td>
+                                    <td class="px-3 py-1"><span class="bg-blue-100 text-blue-700 px-1 rounded">${p.tipo}</span>${p.manuale?'<span class="ml-1 bg-green-100 text-green-700 px-1 rounded">manuale</span>':''}</td>
+                                    <td class="px-3 py-1 text-right font-bold">${p.importo}€</td>
+                                    <td class="px-3 py-1 text-center">
+                                        <span class="${p.confidence==='alta'?'text-green-600':'text-orange-500'} font-bold">
+                                            ${p.confidence==='alta'?'✅ Alta':'⚠️ Bassa'}
+                                        </span>
+                                    </td>
+                                </tr>`).join('')}
+                            <tr class="bg-gray-50 font-bold">
+                                <td colspan="3" class="px-3 py-2 text-right">TOTALE PAGATO:</td>
+                                <td class="px-3 py-2 text-right">${status.pagato}€</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>`;
+            }
+
+            panel.classList.remove('hidden');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ─── MODAL OVERRIDE MANUALE ────────────────────────────────────────────
+        function openOverrideModal(clienteKey) {
+            currentOverrideKey = clienteKey;
+            document.getElementById('override-cliente-label').textContent = 'Cliente: ' + clienteKey;
+            const ov = paymentsData.manualOverrides?.[clienteKey];
+            document.getElementById('override-stato').value = ov?.stato || 'verde';
+            document.getElementById('override-nota').value  = ov?.nota  || '';
+            document.getElementById('overridePaymentModal').classList.remove('hidden');
+        }
+
+        function closeOverrideModal() {
+            document.getElementById('overridePaymentModal').classList.add('hidden');
+            currentOverrideKey = null;
+        }
+
+        async function savePaymentOverride() {
+            if (!currentOverrideKey) return;
+            const stato = document.getElementById('override-stato').value;
+            const nota  = document.getElementById('override-nota').value;
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'override', key: currentOverrideKey, stato, nota }) });
+                if (!paymentsData.manualOverrides) paymentsData.manualOverrides = {};
+                paymentsData.manualOverrides[currentOverrideKey] = { stato, nota };
+                closeOverrideModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Override salvato', 'success');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
+        async function removePaymentOverride() {
+            if (!currentOverrideKey) return;
+            if (!confirm('Rimuovere l\'override manuale per ' + currentOverrideKey + '?')) return;
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'override', key: currentOverrideKey, stato: null }) });
+                if (paymentsData.manualOverrides) delete paymentsData.manualOverrides[currentOverrideKey];
+                closeOverrideModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Override rimosso', 'info');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
+        // ─── MODAL PAGAMENTO MANUALE ───────────────────────────────────────────
+        function openManualPaymentModal() {
+            document.getElementById('mp-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('manualPaymentModal').classList.remove('hidden');
+        }
+
+        function closeManualPaymentModal() {
+            document.getElementById('manualPaymentModal').classList.add('hidden');
+        }
+
+        async function saveManualPayment() {
+            const cliente = document.getElementById('mp-cliente').value.trim();
+            const importo = parseFloat(document.getElementById('mp-importo').value) || 0;
+            const tipo    = document.getElementById('mp-tipo').value;
+            const causale = document.getElementById('mp-causale').value.trim();
+            const data    = document.getElementById('mp-data').value;
+
+            if (!cliente || importo <= 0) { alert('Inserisci cliente e importo'); return; }
+
+            const parts = cliente.split(/\s+/);
+            const payment = {
+                cognome: parts[0], nome: parts.slice(1).join(' '),
+                fullName: cliente, importo, tipo, causale, data, manuale: true
+            };
+
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'addManual', payment }) });
+                paymentsData.payments.push({ ...payment, id:`manual_${Date.now()}`, stato:'Completato' });
+                closeManualPaymentModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Pagamento manuale aggiunto', 'success');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
+        // ─── MODAL CONFIG QUOTE ────────────────────────────────────────────────
+        // Annate standard da pre-popolare (mappate dalle causali CSV)
+        const ANNATE_DEFAULT = [
+            '2019','2018','2017','2016','2015','2014','2013','2012','2011','2010',
+            '2009','2008','2007','2006','Dirigente','Allenatore 20'
+        ];
+
+        function openQuotaConfigModal() {
+            const qc = paymentsData.quotaConfig || {};
+            document.getElementById('qc-prima-squadra-quota').value = qc.primaSquadraQuota || 250;
+
+            // Tranche
+            const container = document.getElementById('qc-tranches-container');
+            container.innerHTML = '';
+            (qc.primaSquadraTranches || []).forEach((t,i) => addTrancheRow(t, i));
+
+            // Quote annuali — usa quelle salvate oppure prepopola con annate default
+            const aqContainer = document.getElementById('qc-annual-quotas');
+            aqContainer.innerHTML = '';
+            const savedQuotas = qc.annualQuotas || {};
+
+            if (Object.keys(savedQuotas).length > 0) {
+                // Mostra quelle salvate
+                Object.entries(savedQuotas).forEach(([cat, val]) => addAnnualQuotaRow(cat, val));
+            } else {
+                // Prima volta: pre-popola con le annate standard (importo da compilare)
+                ANNATE_DEFAULT.forEach(cat => addAnnualQuotaRow(cat, ''));
+            }
+
+            document.getElementById('quotaConfigModal').classList.remove('hidden');
+        }
+
+        function closeQuotaConfigModal() {
+            document.getElementById('quotaConfigModal').classList.add('hidden');
+        }
+
+        function addTranche() { addTrancheRow({}, document.getElementById('qc-tranches-container').children.length); }
+
+        function addTrancheRow(t, i) {
+            const container = document.getElementById('qc-tranches-container');
+            if (container.children.length >= 4) { alert('Massimo 4 tranche'); return; }
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 items-center';
+            div.innerHTML = `<span class="text-xs text-gray-500 w-16">Tranche ${i+1}</span>
+                <input type="number" placeholder="Importo €" value="${t.importo||''}" class="border rounded px-2 py-1 text-xs w-24 qc-tranche-importo">
+                <input type="date" value="${t.scadenza||''}" class="border rounded px-2 py-1 text-xs qc-tranche-scadenza">
+                <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-times"></i></button>`;
+            container.appendChild(div);
+        }
+
+        function addAnnualQuota() { addAnnualQuotaRow('', ''); }
+
+        function addAnnualQuotaRow(cat, val) {
+            const container = document.getElementById('qc-annual-quotas');
+            const div = document.createElement('div');
+            div.className = 'flex gap-1 items-center mb-1';
+            div.innerHTML = `<input type="text" placeholder="Annata/Ruolo" value="${cat}" class="border rounded px-2 py-1 text-xs w-24 qc-aq-cat font-bold">
+                <span class="text-xs text-gray-400 flex-shrink-0">€</span>
+                <input type="number" placeholder="0" value="${val}" class="border rounded px-2 py-1 text-xs w-20 qc-aq-val">
+                <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 text-xs flex-shrink-0"><i class="fas fa-times"></i></button>`;
+            container.appendChild(div);
+        }
+
+        async function saveQuotaConfig() {
+            const primaSquadraQuota = parseFloat(document.getElementById('qc-prima-squadra-quota').value) || 0;
+
+            const tranches = Array.from(document.querySelectorAll('#qc-tranches-container > div')).map(div => ({
+                importo:  parseFloat(div.querySelector('.qc-tranche-importo')?.value) || 0,
+                scadenza: div.querySelector('.qc-tranche-scadenza')?.value || ''
+            })).filter(t => t.importo > 0);
+
+            const annualQuotas = {};
+            document.querySelectorAll('#qc-annual-quotas > div').forEach(div => {
+                const cat = div.querySelector('.qc-aq-cat')?.value?.trim();
+                const val = parseFloat(div.querySelector('.qc-aq-val')?.value) || 0;
+                // ✅ Salva anche con val=0 (significa "non ancora configurata") se ha una categoria
+                if (cat) annualQuotas[cat] = val;
+            });
+
+            const quotaConfig = { primaSquadraQuota, primaSquadraTranches: tranches, annualQuotas };
+            try {
+                await fetch('/api/payments', { method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ action:'saveConfig', quotaConfig }) });
+                paymentsData.quotaConfig = quotaConfig;
+                closeQuotaConfigModal();
+                renderPaymentsTab();
+                showQuickNotification('✅ Configurazione quote salvata', 'success');
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+
