@@ -998,7 +998,13 @@
                     fullCatalogUrl: "",
                     items: []
                 };
-                
+
+                // Garantisce che tutte le chiavi kit esistano (cataloghi salvati prima dell'introduzione dei kit)
+                if (!catalogData.kits) catalogData.kits = {};
+                ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'].forEach(k => {
+                    if (!catalogData.kits[k]) catalogData.kits[k] = { name: k, description: '', items: [] };
+                });
+
                 console.log('✅ Dati caricati da Redis:');
                 console.log('  - Items catalogo:', catalogData.items?.length || 0);
                 console.log('  - Quick ID filters:', Object.keys(quickIdFilters).length);
@@ -6106,11 +6112,17 @@ async function saveCatalogConfig() {
                 };
             });
             catalogData.kits[kitKey].items = selectedItems;
-            
+
             // Aggiorna preview
             renderKitPreview(kitKey, selectedItems);
-            
+
             console.log(`Kit ${kitKey} aggiornato:`, catalogData.kits[kitKey]);
+        }
+
+        function updateKitPrice(kitKey, value) {
+            const price = parseFloat(value);
+            catalogData.kits[kitKey].discountedPrice = isNaN(price) ? null : price;
+            console.log(`Prezzo kit ${kitKey} aggiornato:`, catalogData.kits[kitKey].discountedPrice);
         }
         
         function renderKitPreview(kitKey, items) {
@@ -6144,6 +6156,12 @@ async function saveCatalogConfig() {
             if (!catalogData.items || catalogData.items.length === 0) {
                 // Nessun articolo nel catalogo
                 kitKeys.forEach(kitKey => {
+                    const priceInput = document.getElementById(`price-${kitKey}`);
+                    if (priceInput) {
+                        const price = catalogData.kits[kitKey].discountedPrice;
+                        priceInput.value = (price === null || price === undefined) ? '' : price;
+                    }
+
                     const container = document.getElementById(`items-${kitKey}`);
                     if (!container) return;
                     container.innerHTML = `
@@ -6158,9 +6176,15 @@ async function saveCatalogConfig() {
             }
             
             kitKeys.forEach(kitKey => {
+                const priceInput = document.getElementById(`price-${kitKey}`);
+                if (priceInput) {
+                    const price = catalogData.kits[kitKey].discountedPrice;
+                    priceInput.value = (price === null || price === undefined) ? '' : price;
+                }
+
                 const container = document.getElementById(`items-${kitKey}`);
                 if (!container) return;
-                
+
                 container.innerHTML = catalogData.items.map((item, idx) => {
                     const isSelected = catalogData.kits[kitKey].items.some(i => i.name === item.name);
                     const firstImage = item.images?.[0] || item.image || '';
