@@ -6125,10 +6125,24 @@ async function saveCatalogConfig() {
             console.log(`Prezzo kit ${kitKey} aggiornato:`, catalogData.kits[kitKey].discountedPrice);
         }
 
+        const kitDefaultNames = {
+            kit_completo_campo: 'Kit Completo Giocatore da Campo',
+            kit_completo_portiere: 'Kit Completo Portiere',
+            mini_kit_campo: 'Mini Kit Giocatore da Campo',
+            mini_kit_portiere: 'Mini Kit Portiere',
+            kit_generico: 'Kit Generico'
+        };
+
+        function updateKitSectionHeader(kitKey) {
+            const header = document.getElementById(`header-name-${kitKey}`);
+            if (header) header.textContent = catalogData.kits[kitKey].name || kitDefaultNames[kitKey];
+        }
+
         function updateKitName(kitKey, value) {
             const trimmed = value.trim();
             if (!trimmed) return; // evita di salvare un titolo vuoto nel catalogo pubblico
             catalogData.kits[kitKey].name = trimmed;
+            updateKitSectionHeader(kitKey);
             console.log(`Nome kit ${kitKey} aggiornato:`, catalogData.kits[kitKey].name);
         }
         
@@ -6165,6 +6179,7 @@ async function saveCatalogConfig() {
                 kitKeys.forEach(kitKey => {
                     const nameInput = document.getElementById(`name-${kitKey}`);
                     if (nameInput) nameInput.value = catalogData.kits[kitKey].name || '';
+                    updateKitSectionHeader(kitKey);
 
                     const priceInput = document.getElementById(`price-${kitKey}`);
                     if (priceInput) {
@@ -6188,6 +6203,7 @@ async function saveCatalogConfig() {
             kitKeys.forEach(kitKey => {
                 const nameInput = document.getElementById(`name-${kitKey}`);
                 if (nameInput) nameInput.value = catalogData.kits[kitKey].name || '';
+                updateKitSectionHeader(kitKey);
 
                 const priceInput = document.getElementById(`price-${kitKey}`);
                 if (priceInput) {
