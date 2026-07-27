@@ -6415,10 +6415,55 @@ function updateUI() {
         }
 
         // ===== INIZIALIZZAZIONE =====
-        
+
         // Dichiarazione variabili globali
         let currentUser = null;
-        
+
+        // ===== SESSIONE: token allegato automaticamente a tutte le fetch verso /api/ =====
+        function getSessionToken() {
+            return sessionStorage.getItem('orderFlowSessionToken');
+        }
+
+        function setSessionToken(token) {
+            if (token) sessionStorage.setItem('orderFlowSessionToken', token);
+        }
+
+        function clearSession() {
+            sessionStorage.removeItem('orderFlowSessionToken');
+            localStorage.removeItem('orderFlowCurrentUser');
+            currentUser = null;
+        }
+
+        function forceLogoutToLogin(message) {
+            clearSession();
+            const loginScreen = document.getElementById('loginScreen');
+            const appContainer = document.getElementById('appContainer');
+            if (appContainer) appContainer.style.display = 'none';
+            if (loginScreen) loginScreen.style.display = 'flex';
+            if (message) alert(message);
+        }
+
+        const _originalFetch = window.fetch.bind(window);
+        window.fetch = function(input, init) {
+            const url = typeof input === 'string' ? input : (input && input.url) || '';
+            if (url.startsWith('/api/')) {
+                init = init || {};
+                const isLoginOrOptions = init.method === 'OPTIONS' ||
+                    (typeof init.body === 'string' && init.body.includes('"action":"login"'));
+                const token = getSessionToken();
+                if (token && !isLoginOrOptions) {
+                    init.headers = { ...(init.headers || {}), 'Authorization': `Bearer ${token}` };
+                }
+                return _originalFetch(input, init).then(response => {
+                    if (response.status === 401 && !isLoginOrOptions) {
+                        forceLogoutToLogin('Sessione scaduta, effettua di nuovo il login.');
+                    }
+                    return response;
+                });
+            }
+            return _originalFetch(input, init);
+        };
+
         // IMPORTANTE: Check login first, then load data - DOPO che il DOM è pronto
         document.addEventListener('DOMContentLoaded', () => {
             // Inizializza utenti di default
@@ -6439,9 +6484,9 @@ function updateUI() {
                 });
             }
             
-            // Auto-login se sessione attiva
+            // Auto-login se sessione attiva (richiede sia l'utente salvato che un token ancora valido)
             const savedUser = localStorage.getItem('orderFlowCurrentUser');
-            if (savedUser) {
+            if (savedUser && getSessionToken()) {
                 try {
                     currentUser = JSON.parse(savedUser);
                     const loginScreen = document.getElementById('loginScreen');
@@ -6466,6 +6511,7 @@ function updateUI() {
                     if (loginScreen) loginScreen.style.display = 'flex';
                 }
             } else {
+                if (savedUser && !getSessionToken()) localStorage.removeItem('orderFlowCurrentUser');
                 const loginScreen = document.getElementById('loginScreen');
                 if (loginScreen) loginScreen.style.display = 'flex';
                 startClock();
@@ -6704,8 +6750,9 @@ function updateUI() {
                 
                 if (data.success && data.user) {
                     currentUser = data.user;
+                    setSessionToken(data.token);
                     localStorage.setItem('orderFlowCurrentUser', JSON.stringify(currentUser));
-                    
+
                     const loginScreen = document.getElementById('loginScreen');
                     const appContainer = document.getElementById('appContainer');
                     
@@ -6764,7 +6811,15 @@ function resetFiltersToDefault() {
         // Logout
         function logout() {
             if (confirm('Sei sicuro di voler uscire?')) {
-                localStorage.removeItem('orderFlowCurrentUser');
+                const token = getSessionToken();
+                clearSession();
+                if (token) {
+                    _originalFetch('/api/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ action: 'logout' })
+                    }).catch(() => {});
+                }
                 location.reload();
             }
         }

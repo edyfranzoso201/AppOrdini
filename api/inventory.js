@@ -1,8 +1,11 @@
 import { getRedis, KEYS } from './lib/redis.js';
+import { requireAuth } from './lib/auth.js';
 
 export default async function handler(req, res) {
+  if (!(await requireAuth(req, res))) return;
+
   const redis = getRedis();
-  
+
   try {
     if (req.method === 'GET') {
       const data = await redis.get(KEYS.INVENTORY);

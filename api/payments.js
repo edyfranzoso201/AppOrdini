@@ -1,4 +1,5 @@
 import { getRedis } from './lib/redis.js';
+import { requireAuth } from './lib/auth.js';
 
 const PAYMENTS_KEY = 'orderflow:payments';
 
@@ -6,9 +7,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+
+  if (!(await requireAuth(req, res))) return;
 
   const redis = getRedis();
 

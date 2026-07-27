@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { getRedis, KEYS } from './lib/redis.js';
+import { createSession, verifySession, revokeSession, requireAuth } from './lib/auth.js';
 
 const USERS_KEY = 'orderflow:users';
 const BCRYPT_ROUNDS = 10;
@@ -11,9 +12,11 @@ function isBcryptHash(value) {
 
 export default async function handler(req, res) {
   const redis = getRedis();
-  
+
   try {
     if (req.method === 'GET') {
+      if (!(await requireAuth(req, res))) return;
+
       // Get all users (senza passwords per sicurezza)
       const users = await redis.get(USERS_KEY) || [];
       const safeUsers = users.map(u => ({
@@ -22,15 +25,16 @@ export default async function handler(req, res) {
         role: u.role,
         createdAt: u.createdAt
       }));
-      
+
       return res.status(200).json({
         success: true,
         users: safeUsers
       });
-      
+
     } else if (req.method === 'POST') {
       const { action, username, password, name, role, newPassword } = req.body;
-      
+
+      // Azioni raggiungibili senza sessione attiva
       if (action === 'login') {
         // Login user
         const users = await redis.get(USERS_KEY) || [];
@@ -52,8 +56,10 @@ export default async function handler(req, res) {
         }
 
         if (valid) {
+          const { token } = await createSession(user);
           return res.status(200).json({
             success: true,
+            token,
             user: {
               username: user.username,
               name: user.name,
@@ -67,7 +73,27 @@ export default async function handler(req, res) {
           });
         }
 
-      } else if (action === 'create') {
+      } else if (action === 'verify') {
+        const authHeader = req.headers['authorization'] || '';
+        const token = (authHeader.match(/^Bearer\s+(.+)$/i) || [])[1];
+        const session = await verifySession(token);
+        if (!session) {
+          return res.status(401).json({ success: false, error: 'Sessione non valida o scaduta' });
+        }
+        return res.status(200).json({ success: true, user: session });
+
+      } else if (action === 'logout') {
+        const authHeader = req.headers['authorization'] || '';
+        const token = (authHeader.match(/^Bearer\s+(.+)$/i) || [])[1];
+        await revokeSession(token);
+        return res.status(200).json({ success: true });
+
+      }
+
+      // Da qui in poi serve una sessione valida
+      if (!(await requireAuth(req, res))) return;
+
+      if (action === 'create') {
         // Create new user
         const users = await redis.get(USERS_KEY) || [];
         

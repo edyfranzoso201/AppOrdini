@@ -1,4 +1,5 @@
 import { getRedis } from './lib/redis.js';
+import { requireAuth } from './lib/auth.js';
 
 const CONFIG_KEY = 'orderflow:config';
 
@@ -6,13 +7,14 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
   const redis = getRedis();
 
   try {
+    // GET resta pubblico: catalogo.html lo consulta senza login
     if (req.method === 'GET') {
       const config = await redis.get(CONFIG_KEY);
       console.log(`GET /api/config - items: ${config?.catalog?.items?.length||0}, kits: ${Object.keys(config?.catalog?.kits||{}).length}`);
@@ -27,6 +29,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data });
 
     } else if (req.method === 'POST') {
+      if (!(await requireAuth(req, res))) return;
+
       const { action, globalItems, globalKitTypes, quickIdFilters, catalog } = req.body;
 
       if (action === 'save') {

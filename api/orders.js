@@ -1,19 +1,22 @@
 import { getRedis, KEYS } from './lib/redis.js';
+import { requireAuth } from './lib/auth.js';
 
 export default async function handler(req, res) {
   // ✅ CORS headers - necessari per tutte le API
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
+  if (!(await requireAuth(req, res))) return;
+
   const redis = getRedis();
-  
+
   try {
     if (req.method === 'GET') {
       const data = await redis.get(KEYS.ORDERS);
