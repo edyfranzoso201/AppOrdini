@@ -6176,8 +6176,7 @@ async function saveCatalogConfig() {
         
         function openKitsPublicPage() {
             // Apri la pagina pubblica dei kit (catalogo.html già esistente)
-            const url = window.location.origin + window.location.pathname.replace('index.html', 'catalogo.html');
-            window.open(url, '_blank');
+            window.open('/catalogo.html', '_blank');
         }
 
         // Renderizza gli articoli del catalogo
@@ -6358,7 +6357,7 @@ async function saveImageUrls(index) {
         
         // Copia link catalogo
         function copyCatalogLink() {
-            const publicUrl = window.location.origin + window.location.pathname.replace('index.html', '') + 'catalogo.html';
+            const publicUrl = window.location.origin + '/catalogo.html';
             navigator.clipboard.writeText(publicUrl).then(() => {
                 showQuickNotification('Link copiato negli appunti!', 'success');
             }).catch(() => {
