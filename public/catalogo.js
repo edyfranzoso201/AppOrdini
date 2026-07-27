@@ -250,10 +250,10 @@
                                     <span class="text-3xl font-bold text-yellow-300 drop-shadow">€${parseFloat(kit.discountedPrice).toFixed(2)}</span>
                                 </div>
                             ` : ''}
-                            <a href="${orderUrl || '#'}" 
+                            <a href="https://docs.google.com/forms/d/e/1FAIpQLScZrznifm9Rhju7jAX5j2qnLdJyzukRd2PU9nQLEkmCwGEi9A/viewform"
                                target="_blank"
                                class="block w-full text-center bg-white hover:bg-opacity-90 text-blue-900 font-bold py-4 px-6 rounded-lg transition shadow-lg">
-                                <i class="fas fa-shopping-cart mr-2"></i>Ordina questo kit
+                                <i class="fas fa-shopping-cart mr-2"></i>Ordina
                             </a>
                         </div>
                     </div>
