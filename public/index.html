@@ -441,6 +441,9 @@
             <button onclick="openUserManagement()" id="btnUserManagement" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden">
                 <i class="fas fa-users"></i>
             </button>
+            <button onclick="openArchiveManager()" id="btnArchiveManager" class="bg-slate-600 hover:bg-slate-700 text-white px-2 py-1.5 rounded text-xs font-bold shadow transition hidden" title="Archivio stagioni precedenti">
+                <i class="fas fa-archive"></i>
+            </button>
             <button onclick="openActivityLog()" id="btnViewLog" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 rounded font-bold hidden">
                 <i class="fas fa-history mr-1"></i><span class="hidden md:inline">Visualizza LOG (</span><span id="logCount">20</span><span class="hidden md:inline"> azioni)</span>
             </button>
@@ -6779,6 +6782,8 @@ function resetFiltersToDefault() {
             
             // Gestione pulsanti header
             document.getElementById('btnUserManagement').classList.toggle('hidden', !perms.manageUsers);
+            const btnArchiveManager = document.getElementById('btnArchiveManager');
+            if (btnArchiveManager) btnArchiveManager.classList.toggle('hidden', currentUser.role !== 'admin');
             document.getElementById('btnReset').classList.toggle('hidden', !perms.resetData);
             document.getElementById('btnNuovo').classList.toggle('hidden', !perms.createOrders);
             document.getElementById('btnImportGoogle').classList.toggle('hidden', !perms.importGoogle);
@@ -8001,6 +8006,230 @@ async function saveImageUrls(index) {
     alert('❌ Impossibile caricare lo storico delle attività.');
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// ARCHIVIO STAGIONI PRECEDENTI
+// ══════════════════════════════════════════════════════════════════════
+
+// Estrae i prefissi ID disponibili dagli ordini correnti (es. "2025_", "2025A_")
+function getAvailableOrderPrefixes() {
+    const prefixes = new Set();
+    orders.forEach(o => {
+        const m = (o.displayId || '').match(/^([A-Za-z0-9]+_)/);
+        if (m) prefixes.add(m[1]);
+    });
+    return Array.from(prefixes).sort();
+}
+
+async function openArchiveManager() {
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert('Solo un amministratore può gestire l\'archivio stagioni.');
+        return;
+    }
+
+    let index = [];
+    try {
+        const res = await fetch('/api/archive');
+        const data = await res.json();
+        if (data.success) index = data.index || [];
+    } catch (e) {
+        console.error('Errore caricamento archivi:', e);
+        alert('❌ Impossibile caricare l\'elenco archivi.');
+        return;
+    }
+
+    const prefixes = getAvailableOrderPrefixes();
+
+    let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" id="archiveManagerModal">';
+    html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">';
+    html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
+    html += '<h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-archive text-slate-600 mr-2"></i>Archivio Stagioni</h2>';
+    html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\"><i class=\"fas fa-times text-2xl\"></i></button>";
+    html += '</div>';
+
+    // ── Sezione: crea nuovo archivio ─────────────────────────────────────
+    html += '<div class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">';
+    html += '<h3 class="font-bold text-slate-800 mb-2"><i class="fas fa-plus-circle mr-1"></i>Crea nuovo archivio</h3>';
+    if (prefixes.length === 0) {
+        html += '<p class="text-sm text-gray-500">Nessun ordine attivo da archiviare.</p>';
+    } else {
+        html += '<p class="text-xs text-gray-600 mb-2">Seleziona uno o più prefissi ID da spostare in archivio. Gli ordini archiviati vengono rimossi da Gestione/Distinta/Dashboard ma restano consultabili qui.</p>';
+        html += '<div class="flex flex-wrap gap-3 mb-3">';
+        prefixes.forEach(p => {
+            const count = orders.filter(o => (o.displayId || '').startsWith(p)).length;
+            html += `<label class="flex items-center gap-1 text-sm bg-white border rounded px-2 py-1 cursor-pointer">
+                <input type="checkbox" class="archivePrefixCheckbox" value="${p}">
+                <span>${p} <span class="text-gray-400">(${count} ordini)</span></span>
+            </label>`;
+        });
+        html += '</div>';
+        html += '<button onclick="createSeasonArchive()" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded font-bold text-sm">';
+        html += '<i class="fas fa-box-archive mr-2"></i>Archivia selezionati';
+        html += '</button>';
+    }
+    html += '</div>';
+
+    // ── Sezione: archivi esistenti ───────────────────────────────────────
+    html += '<h3 class="font-bold text-gray-800 mb-2"><i class="fas fa-boxes-stacked mr-1"></i>Archivi esistenti</h3>';
+    if (index.length === 0) {
+        html += '<p class="text-sm text-gray-500 text-center py-6">Nessun archivio creato finora.</p>';
+    } else {
+        html += '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200">';
+        html += '<thead class="bg-gray-50"><tr>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Etichetta</th>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Creato il</th>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Ordini</th>';
+        html += '<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Azioni</th>';
+        html += '</tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+        index.forEach(a => {
+            const d = new Date(a.createdAt);
+            html += `<tr class="hover:bg-gray-50">
+                <td class="px-3 py-2 text-sm font-medium text-gray-800">${a.label}</td>
+                <td class="px-3 py-2 text-sm text-gray-600">${d.toLocaleDateString('it-IT')} ${d.toLocaleTimeString('it-IT')}</td>
+                <td class="px-3 py-2 text-sm text-gray-600">${a.orderCount}</td>
+                <td class="px-3 py-2 text-sm">
+                    <button onclick="viewSeasonArchive('${a.id}')" class="text-blue-600 hover:text-blue-800 font-bold mr-3"><i class="fas fa-eye mr-1"></i>Consulta</button>
+                    <button onclick="deleteSeasonArchive('${a.id}', '${a.label.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 font-bold"><i class="fas fa-trash mr-1"></i>Elimina</button>
+                </td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+    }
+
+    html += '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+window.openArchiveManager = openArchiveManager;
+
+async function createSeasonArchive() {
+    const checked = Array.from(document.querySelectorAll('.archivePrefixCheckbox:checked')).map(el => el.value);
+    if (checked.length === 0) {
+        alert('Seleziona almeno un prefisso da archiviare.');
+        return;
+    }
+
+    const count = orders.filter(o => checked.some(p => (o.displayId || '').startsWith(p))).length;
+    const label = prompt(`Etichetta per questo archivio (es. "Stagione 2024-2025"):`, checked.join(', '));
+    if (label === null) return; // annullato
+
+    if (!confirm(`Archiviare ${count} ordini (prefissi: ${checked.join(', ')})?\n\nGli ordini verranno rimossi dalle viste operative (Gestione, Distinta, Dashboard) e spostati nell'archivio "${label}".`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create',
+                prefixes: checked,
+                label: label || checked.join(', '),
+                createdBy: (currentUser && (currentUser.name || currentUser.username)) || 'Amministratore'
+            })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ Errore: ${data.error || 'archiviazione fallita'}`);
+            return;
+        }
+
+        showQuickNotification(`✅ Archiviati ${data.archivedCount} ordini`, 'success');
+        logActivity('ARCHIVE_ORDERS', `Archiviati ${data.archivedCount} ordini (${label})`);
+
+        // Ricarica gli ordini correnti dal server (l'archiviazione li ha già rimossi lato Redis)
+        const ordersRes = await fetch('/api/orders');
+        const ordersData = await ordersRes.json();
+        if (ordersData.success) {
+            orders = ordersData.data.orders || [];
+            lastOrderId = ordersData.data.lastOrderId || 0;
+            currentPrefix = ordersData.data.currentPrefix || currentPrefix;
+            updateUI();
+        }
+
+        document.getElementById('archiveManagerModal')?.remove();
+        openArchiveManager();
+    } catch (e) {
+        console.error('Errore creazione archivio:', e);
+        alert('❌ Errore di rete durante la creazione dell\'archivio.');
+    }
+}
+window.createSeasonArchive = createSeasonArchive;
+
+async function viewSeasonArchive(id) {
+    try {
+        const res = await fetch(`/api/archive?id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ ${data.error || 'Archivio non trovato'}`);
+            return;
+        }
+        const archive = data.archive;
+
+        let html = '<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">';
+        html += '<div class="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">';
+        html += '<div class="flex justify-between items-center mb-4 pb-4 border-b sticky top-0 bg-white">';
+        html += `<h2 class="text-xl font-bold text-gray-900"><i class="fas fa-box-open text-slate-600 mr-2"></i>${archive.label} <span class="text-sm font-normal text-gray-500">(sola lettura — ${archive.orders.length} ordini)</span></h2>`;
+        html += "<button onclick=\"this.closest('.fixed').remove()\" class=\"text-gray-400 hover:text-gray-600 ml-2\"><i class=\"fas fa-times text-2xl\"></i></button>";
+        html += '</div>';
+
+        html += '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200 text-sm">';
+        html += '<thead class="bg-gray-50"><tr>';
+        ['ID', 'Atleta', 'Kit', 'Taglia', 'Stato', 'Totale'].forEach(h => {
+            html += `<th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">${h}</th>`;
+        });
+        html += '</tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+        archive.orders.forEach(o => {
+            html += `<tr class="hover:bg-gray-50">
+                <td class="px-3 py-2 font-mono text-xs">${o.displayId || ''}</td>
+                <td class="px-3 py-2">${o.customer || ''}</td>
+                <td class="px-3 py-2">${(o.kitType || '').split('(')[0].trim()}</td>
+                <td class="px-3 py-2">${o.mainSize || ''}</td>
+                <td class="px-3 py-2">${o.status || ''}</td>
+                <td class="px-3 py-2">${typeof calculateOrderTotal === 'function' ? calculateOrderTotal(o) + '€' : ''}</td>
+            </tr>`;
+        });
+        html += '</tbody></table></div>';
+
+        html += `<p class="text-xs text-gray-400 mt-3">Creato il ${new Date(archive.createdAt).toLocaleString('it-IT')} da ${archive.createdBy || 'N/D'} · Prefissi: ${archive.prefixes.join(', ')} · Pagamenti in snapshot: ${(archive.paymentsSnapshot || []).length}</p>`;
+
+        html += '</div></div>';
+        document.body.insertAdjacentHTML('beforeend', html);
+    } catch (e) {
+        console.error('Errore consultazione archivio:', e);
+        alert('❌ Impossibile aprire l\'archivio.');
+    }
+}
+window.viewSeasonArchive = viewSeasonArchive;
+
+async function deleteSeasonArchive(id, label) {
+    if (!confirm(`Eliminare DEFINITIVAMENTE l'archivio "${label}"?\n\nQuesta operazione non è reversibile: tutti gli ordini e lo snapshot pagamenti contenuti andranno persi per sempre.`)) {
+        return;
+    }
+    if (!confirm(`Ultima conferma: eliminare per sempre "${label}"?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ Errore: ${data.error || 'eliminazione fallita'}`);
+            return;
+        }
+        showQuickNotification('🗑️ Archivio eliminato', 'success');
+        logActivity('DELETE_ARCHIVE', `Eliminato archivio "${label}"`);
+        document.getElementById('archiveManagerModal')?.remove();
+        openArchiveManager();
+    } catch (e) {
+        console.error('Errore eliminazione archivio:', e);
+        alert('❌ Errore di rete durante l\'eliminazione.');
+    }
+}
+window.deleteSeasonArchive = deleteSeasonArchive;
 
 async function clearActivityLog() {
   if (!confirm('Sei sicuro di voler cancellare tutto il LOG delle attività?')) return;
