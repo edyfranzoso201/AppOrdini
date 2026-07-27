@@ -1,6 +1,13 @@
+import bcrypt from 'bcryptjs';
 import { getRedis, KEYS } from './lib/redis.js';
 
 const USERS_KEY = 'orderflow:users';
+const BCRYPT_ROUNDS = 10;
+
+// Riconosce un hash bcrypt (es. $2a$10$...) per distinguerlo da una password legacy in chiaro
+function isBcryptHash(value) {
+  return typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
+}
 
 export default async function handler(req, res) {
   const redis = getRedis();
@@ -27,9 +34,24 @@ export default async function handler(req, res) {
       if (action === 'login') {
         // Login user
         const users = await redis.get(USERS_KEY) || [];
-        const user = users.find(u => u.username === username && u.password === password);
-        
+        const userIndex = users.findIndex(u => u.username === username);
+        const user = userIndex !== -1 ? users[userIndex] : null;
+
+        let valid = false;
         if (user) {
+          if (isBcryptHash(user.password)) {
+            valid = await bcrypt.compare(password, user.password);
+          } else {
+            // Password legacy in chiaro: verifica diretta, poi migra all'hash
+            valid = user.password === password;
+            if (valid) {
+              users[userIndex].password = await bcrypt.hash(password, BCRYPT_ROUNDS);
+              await redis.set(USERS_KEY, users);
+            }
+          }
+        }
+
+        if (valid) {
           return res.status(200).json({
             success: true,
             user: {
@@ -44,7 +66,7 @@ export default async function handler(req, res) {
             error: 'Credenziali non valide'
           });
         }
-        
+
       } else if (action === 'create') {
         // Create new user
         const users = await redis.get(USERS_KEY) || [];
@@ -59,7 +81,7 @@ export default async function handler(req, res) {
         
         users.push({
           username,
-          password,
+          password: await bcrypt.hash(password, BCRYPT_ROUNDS),
           name,
           role,
           createdAt: new Date().toISOString()
@@ -84,7 +106,7 @@ export default async function handler(req, res) {
           });
         }
         
-        users[userIndex].password = newPassword;
+        users[userIndex].password = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
         users[userIndex].updatedAt = new Date().toISOString();
         
         await redis.set(USERS_KEY, users);
