@@ -2939,28 +2939,7 @@
     isSaving = false; // ✅ Sblocca auto-refresh
   }
 }
-      // Funzione per registrare un'azione nello storico
-      // ✅ Salva su Redis via /api/activity
-      async function logActivity(action, description, details = {}) {
-        const logEntry = {
-            timestamp: new Date().toISOString(),
-            user: currentUser ? currentUser.username : 'Sistema',
-            userName: currentUser ? currentUser.name : 'Sistema',
-            action: action,
-            description: description,
-            details: details
-        };
-        try {
-            await fetch('/api/activity', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'add', log: logEntry })
-            });
-        } catch (e) {
-            console.warn('Log non salvato:', e);
-        }
-      }
-        function generateNewId(isManual = false) { 
+        function generateNewId(isManual = false) {
             lastOrderId++; 
             const sequence = lastOrderId.toString().padStart(3, '0');
             const newId = `${currentPrefix}${sequence}`;

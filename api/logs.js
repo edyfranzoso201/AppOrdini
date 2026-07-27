@@ -20,7 +20,14 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-  const { user, action, details, timestamp } = req.body;
+  const { action } = req.body;
+
+  if (action === 'clear') {
+    await redis.set(KEYS.ACTIVITY_LOG, JSON.stringify([]));
+    return res.status(200).json({ success: true, message: 'Activity log cleared' });
+  }
+
+  const { user, details, timestamp } = req.body;
 
   const newLog = {
     user,
