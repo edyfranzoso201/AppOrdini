@@ -1,3 +1,17 @@
+        // Alcuni CDN esterni (es. kappa.com) bloccano il caricamento diretto nel browser
+        // (ERR_BLOCKED_BY_ORB). Le immagini di quei domini passano dal proxy server-side.
+        const IMAGE_PROXY_HOSTS = ['www.kappa.com', 'kappa.com', 'www.kappateamsports.com', 'kappateamsports.com'];
+        function proxyImageUrl(url) {
+            if (!url) return url;
+            try {
+                const parsed = new URL(url, window.location.origin);
+                if (IMAGE_PROXY_HOSTS.includes(parsed.hostname)) {
+                    return '/api/image-proxy?url=' + encodeURIComponent(url);
+                }
+            } catch {}
+            return url;
+        }
+
         // Carica i dati del catalogo da Redis
         async function loadCatalog() {
             try {
@@ -82,8 +96,8 @@
                         
                         card.innerHTML = `
                             <div class="aspect-square bg-gradient-to-br from-blue-700 to-blue-800 flex items-center justify-center p-8">
-                                ${item.images && item.images.length > 0 ? 
-                                    `<img src="${item.images[0]}" alt="${item.name}" class="w-full h-full object-contain" onerror="this.parentElement.innerHTML='<svg class=\\'w-20 h-20 text-white\\' fill=\\'currentColor\\' viewBox=\\'0 0 20 20\\'><path d=\\'M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z\\'/></svg>';">` :
+                                ${item.images && item.images.length > 0 ?
+                                    `<img src="${proxyImageUrl(item.images[0])}" alt="${item.name}" class="w-full h-full object-contain" onerror="this.parentElement.innerHTML='<svg class=\\'w-20 h-20 text-white\\' fill=\\'currentColor\\' viewBox=\\'0 0 20 20\\'><path d=\\'M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z\\'/></svg>';">` :
                                     `<svg class="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
                                     </svg>`
@@ -213,8 +227,8 @@
                             </h4>
                             ${kit.items.map(item => `
                                 <div class="flex items-start gap-3 bg-white bg-opacity-10 backdrop-blur-sm p-3 rounded-lg border border-white border-opacity-20">
-                                    ${item.image 
-                                        ? `<img src="${item.image}" alt="${escapeHtml(item.name)}" class="w-20 h-20 object-cover rounded border-2 border-white flex-shrink-0">`
+                                    ${item.image
+                                        ? `<img src="${proxyImageUrl(item.image)}" alt="${escapeHtml(item.name)}" class="w-20 h-20 object-cover rounded border-2 border-white flex-shrink-0">`
                                         : `<div class="w-20 h-20 bg-white bg-opacity-20 rounded flex items-center justify-center border-2 border-white border-opacity-30 flex-shrink-0">
                                             <i class="fas fa-tshirt text-white text-2xl"></i>
                                            </div>`
@@ -267,7 +281,7 @@
             images.forEach((img, index) => {
                 imageHTML += `
                     <div class="w-full max-w-2xl mb-4">
-                        <img src="${img}" alt="${itemName} - Foto ${index + 1}" 
+                        <img src="${proxyImageUrl(img)}" alt="${itemName} - Foto ${index + 1}"
                              class="w-full rounded-lg shadow-2xl">
                     </div>
                 `;

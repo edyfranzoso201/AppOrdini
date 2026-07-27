@@ -175,8 +175,22 @@
         }
 
         let globalItems = []; 
+        // Alcuni CDN esterni (es. kappa.com) bloccano il caricamento diretto nel browser
+        // (ERR_BLOCKED_BY_ORB). Le immagini di quei domini passano dal proxy server-side.
+        const IMAGE_PROXY_HOSTS = ['www.kappa.com', 'kappa.com', 'www.kappateamsports.com', 'kappateamsports.com'];
+        function proxyImageUrl(url) {
+            if (!url) return url;
+            try {
+                const parsed = new URL(url, window.location.origin);
+                if (IMAGE_PROXY_HOSTS.includes(parsed.hostname)) {
+                    return '/api/image-proxy?url=' + encodeURIComponent(url);
+                }
+            } catch {}
+            return url;
+        }
+
         let orders = [];
-        let ordersBackup = []; // Backup locale degli ordini 
+        let ordersBackup = []; // Backup locale degli ordini
         let inventory = {}; 
         let globalKitTypes = {}; 
         let quickIdFilters = {}; // Filtri Quick ID condivisi su Redis
@@ -6110,8 +6124,8 @@ async function saveCatalogConfig() {
             
             previewItems.innerHTML = items.map(item => `
                 <div class="bg-white rounded-lg p-2 shadow-sm border">
-                    ${item.image 
-                        ? `<img src="${item.image}" class="w-full h-24 object-cover rounded mb-1">`
+                    ${item.image
+                        ? `<img src="${proxyImageUrl(item.image)}" class="w-full h-24 object-cover rounded mb-1">`
                         : '<div class="w-full h-24 bg-gray-200 rounded mb-1 flex items-center justify-center"><i class="fas fa-tshirt text-gray-400 text-2xl"></i></div>'
                     }
                     <p class="text-xs font-semibold text-gray-900 truncate" title="${item.name}">${item.name}</p>
@@ -6197,8 +6211,8 @@ async function saveCatalogConfig() {
             
             let html = '';
             catalogData.items.forEach((item, index) => {
-                const imagesHtml = item.images && item.images.length > 0 
-                    ? item.images.map(img => `<img src="${img}" alt="${item.name}" onclick="openImageLightbox('${img}')">`).join('')
+                const imagesHtml = item.images && item.images.length > 0
+                    ? item.images.map(img => `<img src="${proxyImageUrl(img)}" alt="${item.name}" onclick="openImageLightbox('${img}')">`).join('')
                     : `<div class="catalog-item-placeholder"><i class="fas fa-tshirt text-3xl mb-2"></i><br>${item.name}</div>`;
                 
                 html += `
@@ -6369,7 +6383,7 @@ async function saveImageUrls(index) {
         function openImageLightbox(imageUrl) {
             const lightbox = document.createElement('div');
             lightbox.className = 'catalog-image-lightbox';
-            lightbox.innerHTML = `<img src="${imageUrl}" alt="Immagine ingrandita">`;
+            lightbox.innerHTML = `<img src="${proxyImageUrl(imageUrl)}" alt="Immagine ingrandita">`;
             lightbox.onclick = () => lightbox.remove();
             document.body.appendChild(lightbox);
         }
