@@ -4859,7 +4859,7 @@ function deleteOrder(id) {
                 // Breakdown per tipo KIT
                 const kitBreakdown = {};
                 filteredOrders.forEach(o => {
-                    const kitType = o.kitType || 'Non specificato';
+                    const kitType = (o.kitType || 'Non specificato').split('(')[0].trim();
                     if (!kitBreakdown[kitType]) {
                         kitBreakdown[kitType] = 0;
                     }
@@ -4937,26 +4937,25 @@ function deleteOrder(id) {
             const select = document.getElementById('dashboardKitFilter');
             if (!select) return;
             
-            // Raccogli tutti i tipi di kit dagli ordini
+            // Raccogli tutti i tipi di kit dagli ordini (nome pulito, senza prezzo)
             const kitTypes = new Set();
             orders.forEach(o => {
                 if (o.kitType && o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID') {
-                    kitTypes.add(o.kitType);
+                    kitTypes.add(o.kitType.split('(')[0].trim());
                 }
             });
-            
+
             // Ordina alfabeticamente
             const sortedKits = Array.from(kitTypes).sort();
-            
+
             // Mantieni la selezione corrente
             const currentValue = select.value;
-            
+
             // Ricostruisci le opzioni
             select.innerHTML = '<option value="all">📊 Tutti i Kit</option>';
-            sortedKits.forEach(kit => {
-                const cleanName = kit.split('(')[0].trim();
+            sortedKits.forEach(cleanName => {
                 const opt = document.createElement('option');
-                opt.value = kit;
+                opt.value = cleanName;
                 opt.textContent = cleanName;
                 select.appendChild(opt);
             });
@@ -4992,7 +4991,7 @@ function deleteOrder(id) {
             
             // Applica filtro kit se non è "all"
             if (filterValue !== 'all') {
-                filteredOrders = filteredOrders.filter(o => o.kitType === filterValue);
+                filteredOrders = filteredOrders.filter(o => (o.kitType || '').split('(')[0].trim() === filterValue);
             }
             
             // Calcola totali
@@ -5031,7 +5030,7 @@ function deleteOrder(id) {
             });
             
             ordersForBreakdown.forEach(o => {
-                const kitType = o.kitType || 'Non specificato';
+                const kitType = (o.kitType || 'Non specificato').split('(')[0].trim();
                 if (!kitBreakdown[kitType]) {
                     kitBreakdown[kitType] = 0;
                     kitTotals[kitType] = 0;
@@ -5039,13 +5038,13 @@ function deleteOrder(id) {
                 kitBreakdown[kitType]++;
                 kitTotals[kitType] += calculateOrderTotal(o);
             });
-            
+
             // Ordina per quantità decrescente
             const sortedKits = Object.entries(kitBreakdown).sort((a, b) => b[1] - a[1]);
-            
+
             let breakdownHtml = '';
             sortedKits.forEach(([kitName, count]) => {
-                const cleanName = kitName.split('(')[0].trim();
+                const cleanName = kitName;
                 const kitTotal = kitTotals[kitName];
                 const isSelected = filterValue === kitName;
                 const isStaff = kitName.includes('Allenatore') || kitName.includes('Dirigente') || kitName.includes('Staff');
