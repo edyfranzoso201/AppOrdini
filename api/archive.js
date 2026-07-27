@@ -93,6 +93,40 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, archiveId, archivedCount: toArchive.length, remainingCount: remaining.length });
       }
 
+      // ── Ripristina un archivio negli ordini attivi e lo rimuove ──────────
+      if (action === 'restore') {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ success: false, error: 'ID archivio mancante' });
+
+        const archive = await redis.get(archiveDataKey(id));
+        if (!archive) {
+          return res.status(404).json({ success: false, error: 'Archivio non trovato' });
+        }
+
+        const ordersData = await redis.get(KEYS.ORDERS) || { orders: [], lastOrderId: 0, currentPrefix: `${new Date().getFullYear()}_`, highlightedSizeCells: {} };
+        const currentOrders = ordersData.orders || [];
+
+        // Evita duplicati: non re-inserisce ordini il cui displayId esiste già tra gli attivi
+        const currentIds = new Set(currentOrders.map(o => o.displayId));
+        const toRestore = archive.orders.filter(o => !currentIds.has(o.displayId));
+        const skipped = archive.orders.length - toRestore.length;
+
+        await redis.set(KEYS.ORDERS, {
+          ...ordersData,
+          orders: [...currentOrders, ...toRestore],
+          highlightedSizeCells: { ...(archive.highlightedSizeCells || {}), ...(ordersData.highlightedSizeCells || {}) },
+          updatedAt: new Date().toISOString()
+        });
+
+        await redis.del(archiveDataKey(id));
+        const index = await redis.get(ARCHIVE_INDEX_KEY) || [];
+        const newIndex = index.filter(a => a.id !== id);
+        await redis.set(ARCHIVE_INDEX_KEY, newIndex);
+
+        console.log(`♻️ Archivio ${id} ripristinato: ${toRestore.length} ordini rimessi in attivo, ${skipped} saltati per ID duplicato`);
+        return res.status(200).json({ success: true, restoredCount: toRestore.length, skippedCount: skipped });
+      }
+
       // ── Elimina definitivamente un intero archivio ───────────────────────
       if (action === 'delete') {
         const { id } = req.body;

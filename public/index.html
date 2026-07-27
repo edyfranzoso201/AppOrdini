@@ -8089,6 +8089,7 @@ async function openArchiveManager() {
                 <td class="px-3 py-2 text-sm text-gray-600">${a.orderCount}</td>
                 <td class="px-3 py-2 text-sm">
                     <button onclick="viewSeasonArchive('${a.id}')" class="text-blue-600 hover:text-blue-800 font-bold mr-3"><i class="fas fa-eye mr-1"></i>Consulta</button>
+                    <button onclick="restoreSeasonArchive('${a.id}', '${a.label.replace(/'/g, "\\'")}')" class="text-green-600 hover:text-green-800 font-bold mr-3"><i class="fas fa-undo mr-1"></i>Ripristina</button>
                     <button onclick="deleteSeasonArchive('${a.id}', '${a.label.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 font-bold"><i class="fas fa-trash mr-1"></i>Elimina</button>
                 </td>
             </tr>`;
@@ -8200,6 +8201,47 @@ async function viewSeasonArchive(id) {
     }
 }
 window.viewSeasonArchive = viewSeasonArchive;
+
+async function restoreSeasonArchive(id, label) {
+    if (!confirm(`Ripristinare l'archivio "${label}" negli ordini attivi?\n\nGli ordini torneranno visibili in Gestione, Distinta e Dashboard. L'archivio verrà rimosso dall'elenco (i dati restano negli ordini attivi).`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/archive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'restore', id })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`❌ Errore: ${data.error || 'ripristino fallito'}`);
+            return;
+        }
+
+        let msg = `♻️ Ripristinati ${data.restoredCount} ordini`;
+        if (data.skippedCount > 0) msg += ` (${data.skippedCount} saltati per ID già esistente)`;
+        showQuickNotification(msg, 'success');
+        logActivity('RESTORE_ARCHIVE', `Ripristinato archivio "${label}" (${data.restoredCount} ordini)`);
+
+        // Ricarica gli ordini correnti dal server (il ripristino li ha già rimessi lato Redis)
+        const ordersRes = await fetch('/api/orders');
+        const ordersData = await ordersRes.json();
+        if (ordersData.success) {
+            orders = ordersData.data.orders || [];
+            lastOrderId = ordersData.data.lastOrderId || 0;
+            currentPrefix = ordersData.data.currentPrefix || currentPrefix;
+            updateUI();
+        }
+
+        document.getElementById('archiveManagerModal')?.remove();
+        openArchiveManager();
+    } catch (e) {
+        console.error('Errore ripristino archivio:', e);
+        alert('❌ Errore di rete durante il ripristino.');
+    }
+}
+window.restoreSeasonArchive = restoreSeasonArchive;
 
 async function deleteSeasonArchive(id, label) {
     if (!confirm(`Eliminare DEFINITIVAMENTE l'archivio "${label}"?\n\nQuesta operazione non è reversibile: tutti gli ordini e lo snapshot pagamenti contenuti andranno persi per sempre.`)) {
