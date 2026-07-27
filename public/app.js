@@ -712,7 +712,7 @@
                     }
                     return response.text();
                 })
-                .then(csvText => {
+                .then(async csvText => {
                     console.log('📄 CSV scaricato, lunghezza:', csvText.length);
                     
                     // Converti CSV in array di righe
@@ -756,8 +756,8 @@
                     }
                     
                     // Usa la funzione esistente per processare l'import
-                    processImport(rows);
-                    
+                    await processImport(rows);
+
                     const importedCount = rows.length - 1;
                     console.log('✅ Importazione completata:', importedCount, 'ordini');
                     
@@ -1504,25 +1504,25 @@
             try { 
                 const file = e.target.files[0]; 
                 const reader = new FileReader(); 
-                reader.onload = function(e) { 
-                    try { 
-                        const data = new Uint8Array(e.target.result); 
-                        const wb = XLSX.read(data, {type: 'array'}); 
-                        
+                reader.onload = async function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const wb = XLSX.read(data, {type: 'array'});
+
                         // Leggi primo foglio (ordini)
-                        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}); 
-                        processImport(rows, wb); // Passa anche workbook per leggere magazzino
-                    } catch(err) { 
-                        alert(`ERRORE FILE: ${err.message}`); 
-                    } 
-                }; 
+                        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                        await processImport(rows, wb); // Passa anche workbook per leggere magazzino
+                    } catch(err) {
+                        alert(`ERRORE FILE: ${err.message}`);
+                    }
+                };
                 reader.readAsArrayBuffer(file); 
             } catch (err) { 
                 alert(`ERRORE IMPORT: ${err.message}`); 
             }
         });
 
-        function processImport(rows, wb) {
+        async function processImport(rows, wb) {
             if (!rows || rows.length < 2) return alert("File vuoto.");
             const header = rows[0].map(c => c ? c.toString().toLowerCase() : "");
             let isGestioneOrdini = false; let isGoogleForm = false;
@@ -1607,15 +1607,49 @@
             }
 
             const newOrUpdatedOrders = [];
-            
-            // STEP 1: Trova l'ULTIMO ordine nel database per data/ora
+
+            // STEP 0: Recupera i timestamp degli ordini ARCHIVIATI, per non farli
+            // ricomparire come "nuovi" durante l'import da Google Sheets.
+            // Gli ordini archiviati NON vengono riaggiunti a `orders`: servono
+            // solo per il controllo duplicati (Set separato da existingOrdersMap).
+            const archivedImportKeys = new Set();
+            let archivedOrdersForCheck = [];
+            if (isGoogleForm) {
+                try {
+                    const archIndexRes = await fetch('/api/archive');
+                    const archIndexData = await archIndexRes.json();
+                    const archiveIds = (archIndexData.index || []).map(a => a.id);
+
+                    const archiveDetails = await Promise.all(
+                        archiveIds.map(id =>
+                            fetch('/api/archive?id=' + encodeURIComponent(id))
+                                .then(r => r.json())
+                                .catch(() => null)
+                        )
+                    );
+
+                    archiveDetails.forEach(detail => {
+                        const archOrders = detail?.archive?.orders || [];
+                        archOrders.forEach(o => {
+                            if (o.timestamp) archivedImportKeys.add(o.timestamp);
+                        });
+                        archivedOrdersForCheck.push(...archOrders);
+                    });
+
+                    console.log(`📦 Ordini archiviati caricati per dedup: ${archivedOrdersForCheck.length} (${archivedImportKeys.size} timestamp)`);
+                } catch (e) {
+                    console.warn('⚠️ Impossibile caricare gli archivi per il controllo duplicati import:', e.message);
+                }
+            }
+
+            // STEP 1: Trova l'ULTIMO ordine nel database per data/ora (attivi + archiviati)
             let latestOrder = null;
             let latestTimestampDate = null;
-            if (isGoogleForm && orders.length > 0) {
+            if (isGoogleForm && (orders.length > 0 || archivedOrdersForCheck.length > 0)) {
                 // ✅ FIX: Trova il timestamp MÀS RECENTE tra TUTTI gli ordini con timestamp
                 // NON usare l'ordine con ID più alto (alfabetico) — potrebbe non avere timestamp
                 let latestTimestampMs = 0;
-                orders.forEach(o => {
+                orders.concat(archivedOrdersForCheck).forEach(o => {
                     if (!o.timestamp) return;
                     try {
                         const ts = new Date(roundTimestampOnly(o.timestamp));
@@ -2005,7 +2039,15 @@
                     
                     // CONTROLLO SECONDARIO: Controlla se esiste già tramite importKey
                     let existingOrder = existingOrdersMap.get(importKey);
-                    
+
+                    // CONTROLLO ARCHIVIO: l'ordine potrebbe essere stato archiviato
+                    // (rimosso da `orders` ma ancora presente nell'archivio) — non è nuovo.
+                    if (!existingOrder && archivedImportKeys.has(importKey)) {
+                        if (i < 15) console.log(`   📦 TROVATO IN ARCHIVIO: "${importKey}" — salto (già importato in passato)`);
+                        duplicateCount++;
+                        return;
+                    }
+
                     // LOG DETTAGLIATO per primi 15 ordini
                     if (i < 15) {
                         console.log(`\n🔍 RIGA ${i+2}: ${customer}`);
