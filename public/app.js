@@ -1390,19 +1390,28 @@
             return newId;
         }
         
-        function updatePrefixAndID() { 
+        function updatePrefixAndID() {
             const inputEl = document.getElementById('startPrefixInput');
-            const input = inputEl.value.trim(); 
-            if(!input) { inputEl.value = ''; return; }
+            const input = inputEl.value.trim();
+            if(!input) { refreshNextIdPlaceholder(); return; }
             const match = input.match(/^(\d{4}[A]?_)((\d+))$/i);
-            if(match){ 
+            if(match){
                 const newPrefix=match[1].toUpperCase();
-                const newStartId=parseInt(match[2]); 
-                if(newPrefix!==currentPrefix){ currentPrefix=newPrefix; lastOrderId=newStartId-1; alert(`Nuovo Prefisso: ${currentPrefix} impostato.`); } 
-                else if(newStartId-1>lastOrderId){ lastOrderId=newStartId-1; alert(`ID Sequenza aggiornato.`); } 
+                const newStartId=parseInt(match[2]);
+                if(newPrefix!==currentPrefix){ currentPrefix=newPrefix; lastOrderId=newStartId-1; alert(`Nuovo Prefisso: ${currentPrefix} impostato.`); }
+                else if(newStartId-1>lastOrderId){ lastOrderId=newStartId-1; alert(`ID Sequenza aggiornato.`); }
                 else { alert(`Nessuna modifica.`); }
-                saveData(); inputEl.value = '';
+                saveData(); inputEl.value = ''; refreshNextIdPlaceholder();
             } else { alert('ERRORE: Formato ID non valido.'); }
+        }
+
+        // Mostra come placeholder il prossimo ID che verrà assegnato, cosi' resta visibile
+        // anche dopo che il campo si svuota a modifica avvenuta.
+        function refreshNextIdPlaceholder() {
+            const inputEl = document.getElementById('startPrefixInput');
+            if (!inputEl) return;
+            const nextSequence = (lastOrderId + 1).toString().padStart(3, '0');
+            inputEl.placeholder = `${currentPrefix}${nextSequence}`;
         }
 
         function updateOrderType(id, newType) {
@@ -3961,14 +3970,15 @@ function deleteOrder(id) {
             return { isSaving, ordersCount: orders.length };
         };
 
-function updateUI() { 
+function updateUI() {
             populateGestioneOrdiniIdSelects();
             populateDashboardIdFilters(); // Inizializza filtri Dashboard
             restoreFiltersState(); // Ripristina filtri salvati
-            renderTable(); 
+            renderTable();
             updateDashboardCounts(); // Aggiorna conteggi Dashboard
-            renderChart(); 
-            saveData(); 
+            renderChart();
+            refreshNextIdPlaceholder();
+            saveData();
         }
         
         // Popola i select ID in Gestione Ordini
