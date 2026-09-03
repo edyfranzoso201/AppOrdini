@@ -1394,7 +1394,7 @@
             const inputEl = document.getElementById('startPrefixInput');
             const input = inputEl.value.trim();
             if(!input) { refreshNextIdPlaceholder(); return; }
-            const match = input.match(/^(\d{4}[A]?_)((\d+))$/i);
+            const match = input.match(/^(\d{4}[A-Z]?_)((\d+))$/i);
             if(match){
                 const newPrefix=match[1].toUpperCase();
                 const newStartId=parseInt(match[2]);
