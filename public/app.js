@@ -7538,7 +7538,7 @@ async function saveQuickIdConfig() {
             }
 
             // Cerca pagamenti kit per questo atleta (tipo + articoli specifici)
-            const trovati = trovaPagamentiAtleta(key, false, isKitBase, order.kitType, order.itemsList);
+            const trovati = trovaPagamentiAtleta(key, false, isKitBase, order.kitType, order.itemsList, order);
 
             if (trovati.length === 0) {
                 return { stato:'bianco', label:'Non trovato', pagato:0, dovuto, delta:-dovuto,
@@ -7671,6 +7671,33 @@ async function saveQuickIdConfig() {
             return ['capo_singolo'];
         }
 
+        // ── Stagione: evita di abbinare pagamenti di un'annata a ordini di un'altra ──
+        // Estrae l'anno di INIZIO stagione (es. 2025) da un testo che contiene un
+        // range tipo "2025-2026", "2025/2026" o un anno singolo a 4 cifre.
+        function extractSeasonStartYear(text) {
+            if (!text) return null;
+            const rangeMatch = text.match(/\b(20\d{2})\s*[\/\-]\s*20?\d{2}\b/);
+            if (rangeMatch) return parseInt(rangeMatch[1], 10);
+            const yearMatch = text.match(/\b(20\d{2})\b/);
+            if (yearMatch) return parseInt(yearMatch[1], 10);
+            return null;
+        }
+        // Stagione dell'ordine dedotta dal prefisso ID (es. "2026B_101" → 2026)
+        function getOrderSeasonStartYear(order) {
+            const id = order?.displayId || '';
+            const m = id.match(/^(20\d{2})/);
+            return m ? parseInt(m[1], 10) : null;
+        }
+        // Un pagamento è compatibile con la stagione dell'ordine se la sua causale
+        // NON specifica esplicitamente un'altra stagione. Causali senza anno passano
+        // sempre (per non rompere il matching su CSV vecchi senza indicazione stagione).
+        function isPaymentSeasonCompatible(payment, orderSeasonYear) {
+            if (orderSeasonYear === null) return true; // ID senza anno riconoscibile: non filtrare
+            const paymentSeasonYear = extractSeasonStartYear(payment.causale) || extractSeasonStartYear(payment.data);
+            if (paymentSeasonYear === null) return true; // causale senza anno: non escludere
+            return paymentSeasonYear === orderSeasonYear;
+        }
+
         // ── Estrai keyword da nome articolo per match causale CSV ─────────────────
         function extractItemKeywords(itemName) {
             // ✅ Rimuove solo prefisso "X. " (lettera + PUNTO + SPAZIO obbligatorio)
@@ -7686,12 +7713,13 @@ async function saveQuickIdConfig() {
         }
 
         // ── Trova pagamenti per atleta con matching tipo-specifico ────────────────
-        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase, kitName, itemsList) {
+        function trovaPagamentiAtleta(nomeCompleto, isPrimaSquadra, isKitBase, kitName, itemsList, order) {
             const target = normName(nomeCompleto);
             if (!target) return [];
 
             const tipiAttesi   = kitTypeToPaymentTipi(kitName);
             const isCapoSingolo = tipiAttesi[0] === 'capo_singolo';
+            const orderSeasonYear = order ? getOrderSeasonStartYear(order) : null;
 
             // Per Abbigliamento Singolo: costruisci set di keyword dagli articoli
             // es. ["calzettoni", "giaccone", "pantaloncino", "t-shirt"]
@@ -7713,6 +7741,12 @@ async function saveQuickIdConfig() {
                 ].filter(Boolean);
                 const score = Math.max(...namesToCheck.map(n => nameScore(target, n)));
                 if (score < 0.65) return false;
+
+                // ── Stagione ──────────────────────────────────────────────────────
+                // Scarta pagamenti la cui causale nomina esplicitamente una stagione
+                // diversa da quella dell'ordine (es. causale "G. KIT 2025-2026"
+                // abbinata a un ordine 2026B_ → stagione 2026, va escluso)
+                if (!isPaymentSeasonCompatible(p, orderSeasonYear)) return false;
 
                 // ── Prima Squadra ─────────────────────────────────────────────────
                 if (isPrimaSquadra && isKitBase) {
