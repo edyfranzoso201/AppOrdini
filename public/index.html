@@ -1050,18 +1050,6 @@
                   </select>
                 </div>
 
-                <!-- Iscrizione -->
-                <div class="flex flex-col gap-0.5">
-                  <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Iscrizione</label>
-                  <select id="pay-filter-iscrizione" class="border rounded px-2 py-1 text-xs" onchange="renderPaymentsTab()">
-                    <option value="tutti">Tutti</option>
-                    <option value="verde">🟢 Pagata</option>
-                    <option value="giallo">🟡 Parziale</option>
-                    <option value="arancione">🟠 Debito</option>
-                    <option value="bianco">⬜ Non trovata</option>
-                  </select>
-                </div>
-
                 <!-- Dettaglio (ricerca testo libero) -->
                 <div class="flex flex-col gap-0.5">
                   <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Dettaglio</label>
@@ -1094,13 +1082,12 @@
                     <th class="px-3 py-2 text-right">Pagato €</th>
                     <th class="px-3 py-2 text-right">Delta €</th>
                     <th class="px-3 py-2 text-center">Abbigliamento</th>
-                    <th class="px-3 py-2 text-center">Iscrizione</th>
                     <th class="px-3 py-2 text-left">Dettaglio</th>
                     <th class="px-3 py-2 text-center">Azioni</th>
                   </tr>
                 </thead>
                 <tbody id="payments-table-body">
-                  <tr><td colspan="11" class="text-center py-8 text-gray-400">Importa un file CSV per iniziare</td></tr>
+                  <tr><td colspan="10" class="text-center py-8 text-gray-400">Importa un file CSV per iniziare</td></tr>
                 </tbody>
               </table>
             </div>

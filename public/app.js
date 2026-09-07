@@ -7856,7 +7856,6 @@ async function saveQuickIdConfig() {
             const filterDeltaMin  = parseFloat(document.getElementById('pay-filter-delta-min')?.value) || null;
             const filterDeltaMax  = parseFloat(document.getElementById('pay-filter-delta-max')?.value) || null;
             const filterAbbig     = document.getElementById('pay-filter-abbigliamento')?.value || 'tutti';
-            const filterIscr      = document.getElementById('pay-filter-iscrizione')?.value   || 'tutti';
             const filterDettaglio = (document.getElementById('pay-filter-dettaglio')?.value||'').toLowerCase().trim();
 
             // ── Prima passa: filtra ordini per campi dell'ordine (senza calcolare status) ─
@@ -7884,8 +7883,6 @@ async function saveQuickIdConfig() {
 
                 // Abbigliamento stato
                 if (filterAbbig !== 'tutti' && s.stato !== filterAbbig) return false;
-                // Iscrizione stato
-                if (filterIscr  !== 'tutti' && iscr.stato !== filterIscr) return false;
 
                 // Dovuto €
                 if (filterDovutoMin !== null && s.dovuto < filterDovutoMin) return false;
@@ -7938,7 +7935,7 @@ async function saveQuickIdConfig() {
 
             // Tabella
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="text-center py-6 text-gray-400">Nessun ordine trovato con questi filtri</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-gray-400">Nessun ordine trovato con questi filtri</td></tr>';
                 return;
             }
 
@@ -7959,12 +7956,6 @@ async function saveQuickIdConfig() {
                 const deltaColor = s.delta > 0 ? 'text-green-600' : s.delta < 0 ? 'text-red-600' : 'text-gray-500';
                 const overrideIcon = s.isOverride ? '<i class="fas fa-user-edit text-blue-500 ml-1" title="Override manuale"></i>' : '';
 
-                // Colonna Iscrizione
-                const iColors = PAY_COLORS[iscr.stato] || PAY_COLORS.bianco;
-                const iscrCell = iscr.stato === 'n/a'
-                    ? `<span class="text-gray-300 text-xs">—</span>`
-                    : `<span class="px-2 py-1 rounded text-xs font-bold" style="background:${iColors.bg};color:${iColors.text};border:1px solid ${iColors.border}" title="${iscr.dettaglio||''}">${iscr.label}</span>`;
-
                 return `<tr class="border-b hover:bg-gray-50">
                     <td class="px-3 py-2 font-mono text-xs font-bold text-blue-800">${o.displayId}</td>
                     <td class="px-3 py-2 font-bold text-xs">${o.customer || '-'}</td>
@@ -7978,7 +7969,6 @@ async function saveQuickIdConfig() {
                             ${s.label}${overrideIcon}
                         </span>
                     </td>
-                    <td class="px-3 py-2 text-center">${iscrCell}</td>
                     <td class="px-3 py-2 text-xs text-gray-500 max-w-xs truncate" title="${s.dettaglio||''}">${s.dettaglio||'-'}</td>
                     <td class="px-3 py-2 text-center">
                         <div class="flex gap-1 justify-center">
@@ -8007,7 +7997,7 @@ async function saveQuickIdConfig() {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
-            ['pay-filter-abbigliamento','pay-filter-iscrizione'].forEach(id => {
+            ['pay-filter-abbigliamento'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = 'tutti';
             });
