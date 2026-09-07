@@ -7493,8 +7493,6 @@ async function saveQuickIdConfig() {
                          dettaglio: ov.nota || 'Override manuale', isOverride: true };
             }
 
-            if (emptyData) return { stato:'bianco', label:'Nessun dato', pagato:0, dovuto:0, delta:0, dettaglio:'File non caricato' };
-
             // ✅ Ordine annullato/trasferito → Verde (non deve pagare)
             if (order.status === 'Ordine annullato' || order.status === 'Ordine trasferito ad altro ID') {
                 return { stato:'verde', label:'🚫 Annullato', pagato:0, dovuto:0, delta:0, dettaglio:'Ordine annullato — nessun pagamento richiesto' };
@@ -7503,8 +7501,8 @@ async function saveQuickIdConfig() {
             const kitName = (order.kitType || '').toLowerCase();
             // ✅ isKitBase = true per qualsiasi ordine con articoli da pagare
             // Include: kit completo, mini kit, kit dirigente, abbigliamento singolo
-            const isKitBase = kitName.includes('kit') || 
-                              kitName.includes('abbigliamento') || 
+            const isKitBase = kitName.includes('kit') ||
+                              kitName.includes('abbigliamento') ||
                               kitName.includes('singolo') ||
                               (order.itemsList?.length > 0);
 
@@ -7529,9 +7527,15 @@ async function saveQuickIdConfig() {
                          dettaglio:'Kit incluso nella quota PS — verifica in colonna Iscrizione' };
             }
 
-            // Per tutti gli altri: verifica pagamento kit/abbigliamento
+            // Per tutti gli altri: importo dovuto = totale ordine
             const dovuto = calculateOrderTotal(order);
             const logicaLabel = '';
+
+            // ✅ FIX: senza CSV pagamenti importato, mostra comunque il vero importo dovuto
+            // (non 0/"Gratis") — altrimenti un ordine da pagare sembra gratuito
+            if (emptyData) {
+                return { stato:'bianco', label:'Nessun dato', pagato:0, dovuto, delta:-dovuto, dettaglio:'File non caricato' };
+            }
 
             // Cerca pagamenti kit per questo atleta (tipo + articoli specifici)
             const trovati = trovaPagamentiAtleta(key, false, isKitBase, order.kitType, order.itemsList);
