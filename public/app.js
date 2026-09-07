@@ -2329,11 +2329,18 @@ function handleStatusChange(id, newStatus) {
         openPartialDeliveryPopup(id);
         return; // Il salvataggio verrà fatto dal popup
     } else {
+        // Memorizza lo stato precedente quando si passa a "Pagato", per poter tornare indietro
+        // (usato dal ruolo "Gestione Stato", che vede solo il toggle stato-attuale<->Pagato)
+        if (newStatus === 'Pagato' && oldStatus !== 'Pagato') {
+            o.statusBeforePagato = oldStatus;
+        } else if (newStatus !== 'Pagato') {
+            o.statusBeforePagato = null;
+        }
         o.status = newStatus;
         o.linkedId = null;
         o.partialDeliveryNote = null;
     }
-    
+
     // Log della modifica
     if (oldStatus !== newStatus) {
         logActivity('CHANGE_STATUS', `Ordine ${o.displayId} (${o.customer}): Stato cambiato da "${oldStatus}" a "${newStatus}"`);
@@ -2348,6 +2355,17 @@ function handleStatusChange(id, newStatus) {
 
 // Rendi la funzione disponibile globalmente
 window.handleStatusChange = handleStatusChange;
+
+// Nasconde/mostra un ordine specifico al ruolo "Gestione Stato" (solo admin può usarlo)
+function toggleHiddenFromLimited(id, hidden) {
+    if (!currentUser || currentUser.role !== 'admin') return;
+    const o = orders.find(x => x.id === id);
+    if (!o) return;
+    o.hiddenFromLimited = !!hidden;
+    logActivity('TOGGLE_HIDDEN', `Ordine ${o.displayId} (${o.customer}): ${hidden ? 'nascosto a' : 'reso visibile a'} ruolo "Gestione Stato"`);
+    updateUI();
+}
+window.toggleHiddenFromLimited = toggleHiddenFromLimited;
 
 function deleteOrder(id) {
     const order = orders.find(x => x.id === id);
@@ -2724,11 +2742,19 @@ function deleteOrder(id) {
                 const c = o.customer.trim().toLowerCase();
                 if(c) nameCounts[c] = (nameCounts[c] || 0) + 1;
             });
+            const currentRolePermsTable = (currentUser && USER_ROLES[currentUser.role.toUpperCase()]?.permissions) || {};
             let displayedOrders = orders.filter(o => {
+                // Ruolo "Gestione Stato": nasconde sempre gli ordini annullati e quelli
+                // marcati manualmente dall'admin come nascosti a questo profilo
+                if (currentRolePermsTable.statusToggleOnly) {
+                    if (o.status === 'Ordine annullato') return false;
+                    if (o.hiddenFromLimited) return false;
+                }
+
                 // FILTRO ID MIN/MAX - considera anche il prefisso
                 if (filterMinId && compareIds(o.displayId, filterMinId) < 0) return false;
                 if (filterMaxId && compareIds(o.displayId, filterMaxId) > 0) return false;
-                
+
                 if(filterStatus !== 'all' && o.status !== filterStatus) return false;
                 if(filterSize !== 'all' && o.mainSize !== filterSize) return false; 
                 
@@ -2801,10 +2827,31 @@ function deleteOrder(id) {
                         // Controlla se c'è una nota di consegna parziale
                         const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
                         
+                        const currentRolePerms = (currentUser && USER_ROLES[currentUser.role.toUpperCase()]?.permissions) || {};
+                        let statusOptionsHTML;
+                        if (currentRolePerms.statusToggleOnly) {
+                            // Ruolo "Gestione Stato": il select mostra solo lo stato attuale <-> "Pagato"
+                            if (o.status === 'Pagato') {
+                                statusOptionsHTML = `<option value="Pagato" selected>Pagato</option>`;
+                                // Se esiste uno stato precedente salvato, permette di tornare indietro
+                                if (o.statusBeforePagato) {
+                                    const prevLabel = STATUSES.find(s => s.value === o.statusBeforePagato)?.label || o.statusBeforePagato;
+                                    statusOptionsHTML += `<option value="${o.statusBeforePagato}">${prevLabel}</option>`;
+                                }
+                            } else if (o.status === 'Nuovo') {
+                                // Da "Nuovo" non può ancora marcare Pagato: deve prima passare da un altro stato
+                                statusOptionsHTML = `<option value="Nuovo" selected disabled>Nuovo</option>`;
+                            } else {
+                                const currentLabel = STATUSES.find(s => s.value === o.status)?.label || o.status;
+                                statusOptionsHTML = `<option value="${o.status}" selected>${currentLabel}</option><option value="Pagato">Pagato</option>`;
+                            }
+                        } else {
+                            statusOptionsHTML = STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('');
+                        }
                         statusInfo = `
                         <div class="flex flex-col gap-1">
                             <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
-                                ${STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('')}
+                                ${statusOptionsHTML}
                             </select>
                             ${hasPartialNote ? `
                             <div class="bg-amber-50 border border-amber-300 rounded p-1.5 cursor-pointer hover:bg-amber-100 transition" onclick="openPartialDeliveryPopup(${o.id})" title="Clicca per modificare">
@@ -2853,7 +2900,7 @@ function deleteOrder(id) {
                         ${notePreview || '<span class="text-gray-400 italic">Aggiungi nota...</span>'}
                     </div>
                 </td>
-                <td class="px-4 py-3"><button onclick="openItemModal(${o.id})" class="edit-order-btn bg-white border border-gray-200 text-gray-700 text-xs px-3 py-2 rounded shadow-sm w-full text-left flex justify-between"><span>${o.itemsList.length} Capi</span><i class="fas fa-edit"></i></button></td><td class="px-4 py-3 text-center"><input value="${o.mainSize}" onchange="updateSizes(${o.id}, 'main', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold"></td><td class="px-4 py-3 text-center"><input value="${o.sockSize}" onchange="updateSizes(${o.id}, 'sock', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold text-gray-600"></td><td class="px-4 py-3 text-center text-xs font-bold text-blue-800">${bagType}</td><td class="px-4 py-3 text-center"><div class="flex flex-col items-end"><span class="price-display">${finalTotal}€</span><div class="flex items-center gap-1"><span class="text-[9px] text-gray-400">Sconto:</span><input type="number" value="${o.discount||0}" onchange="updateDiscount(${o.id}, this.value)" class="edit-order-btn discount-input"></div></div></td><td class="px-4 py-3 w-40"><div class="flex flex-col gap-1">${statusInfo}${inventoryBadge}</div></td><td class="px-4 py-3 text-center"><button onclick="downloadOrderToGoogleForm(${o.id})" class="download-google-form-btn text-green-600 hover:text-green-800" title="Scarica ordine tramite Google Form"><i class="fas fa-download"></i></button></td><td class="px-4 py-3 text-center"><button onclick="openItemModal(${o.id})" class="edit-order-btn text-blue-600 hover:text-blue-800"><i class="fas fa-cog"></i></button></td><td class="px-4 py-3 text-center"><button onclick="deleteOrder(${o.id})" class="delete-order-btn text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></td>`; tbody.appendChild(tr);
+                <td class="px-4 py-3"><button onclick="openItemModal(${o.id})" class="edit-order-btn bg-white border border-gray-200 text-gray-700 text-xs px-3 py-2 rounded shadow-sm w-full text-left flex justify-between"><span>${o.itemsList.length} Capi</span><i class="fas fa-edit"></i></button></td><td class="px-4 py-3 text-center"><input value="${o.mainSize}" onchange="updateSizes(${o.id}, 'main', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold"></td><td class="px-4 py-3 text-center"><input value="${o.sockSize}" onchange="updateSizes(${o.id}, 'sock', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold text-gray-600"></td><td class="px-4 py-3 text-center text-xs font-bold text-blue-800">${bagType}</td><td class="px-4 py-3 text-center"><div class="flex flex-col items-end"><span class="price-display">${finalTotal}€</span><div class="flex items-center gap-1"><span class="text-[9px] text-gray-400">Sconto:</span><input type="number" value="${o.discount||0}" onchange="updateDiscount(${o.id}, this.value)" class="edit-order-btn discount-input"></div></div></td><td class="px-4 py-3 w-40"><div class="flex flex-col gap-1">${statusInfo}${inventoryBadge}</div></td><td class="px-4 py-3 text-center"><button onclick="downloadOrderToGoogleForm(${o.id})" class="download-google-form-btn text-green-600 hover:text-green-800" title="Scarica ordine tramite Google Form"><i class="fas fa-download"></i></button></td><td class="px-4 py-3 text-center"><button onclick="openItemModal(${o.id})" class="edit-order-btn text-blue-600 hover:text-blue-800"><i class="fas fa-cog"></i></button></td><td class="px-4 py-3 text-center"><button onclick="deleteOrder(${o.id})" class="delete-order-btn text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></td><td class="px-2 py-3 text-center admin-only-col"><input type="checkbox" onchange="toggleHiddenFromLimited(${o.id}, this.checked)" ${o.hiddenFromLimited ? 'checked' : ''} title="Nascondi questo ordine al ruolo 'Gestione Stato'" class="w-4 h-4 cursor-pointer"></td>`; tbody.appendChild(tr);
             });
             // Applica colori pagamento dopo il render
             setTimeout(() => applyPaymentColorsToOrders(), 0);
@@ -5107,6 +5154,28 @@ function updateUI() {
                     editStatus: true // Può modificare SOLO lo stato
                 }
             },
+            STATUS_MANAGER: {
+                id: 'status_manager',
+                name: 'Gestione Stato (solo Pagato)',
+                permissions: {
+                    viewAll: true, // Vede SOLO il tab Gestione
+                    viewDashboard: false,
+                    createOrders: false,
+                    editOrders: false,
+                    deleteOrders: false,
+                    importGoogle: false,
+                    importExcel: false,
+                    exportBackup: false,
+                    resetData: false,
+                    manageUsers: false,
+                    viewDistinta: false,
+                    viewTabella: false,
+                    downloadGoogleForm: false,
+                    editStatus: true, // Può modificare SOLO lo stato, e solo verso/da "Pagato"
+                    statusToggleOnly: true, // Il select stato mostra solo stato-attuale <-> "Pagato"
+                    useQuickIdFilters: true
+                }
+            },
             TABLE_EDITOR: {
                 id: 'table_editor',
                 name: 'Editor Tabella (solo Tabella Ordini)',
@@ -5324,6 +5393,14 @@ function resetFiltersToDefault() {
             const badge = document.getElementById('userBadge');
             badge.textContent = `${currentUser.name} (${role.name})`;
             badge.classList.remove('hidden');
+
+            // Colonna "nascondi a Gestione Stato" (checkbox) visibile SOLO all'admin
+            if (currentUser.role !== 'admin') {
+                const adminOnlyStyle = document.createElement('style');
+                adminOnlyStyle.id = 'adminOnlyColStyle';
+                adminOnlyStyle.textContent = '.admin-only-col { display: none !important; }';
+                document.head.appendChild(adminOnlyStyle);
+            }
             
             // Gestione pulsanti header
             document.getElementById('btnUserManagement').classList.toggle('hidden', !perms.manageUsers);
@@ -5636,6 +5713,7 @@ function resetFiltersToDefault() {
                                 user.role === 'tabella_full' ? 'bg-cyan-100 text-cyan-800' :
                                 user.role === 'tabella_readonly' ? 'bg-purple-100 text-purple-800' :
                                 user.role === 'table_editor' ? 'bg-blue-100 text-blue-800' :
+                                user.role === 'status_manager' ? 'bg-emerald-100 text-emerald-800' :
                                 'bg-gray-100 text-gray-800'
                             }">
                                 ${role.name}
@@ -5708,6 +5786,7 @@ function resetFiltersToDefault() {
                                     <option value="viewer_full">Visualizzazione (con Dashboard)</option>
                                     <option value="contributor">Contributore (Google Form)</option>
                                     <option value="contributor_advanced">Contributore Avanzato (Form + Stato)</option>
+                                    <option value="status_manager">Gestione Stato (solo Pagato)</option>
                                     <option value="table_editor">Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full">Tabella Completa</option>
                                     <option value="tabella_readonly">Tabella Solo Lettura</option>
@@ -5837,6 +5916,7 @@ function resetFiltersToDefault() {
                                     <option value="viewer_full" ${user.role === 'viewer_full' ? 'selected' : ''}>Visualizzazione (con Dashboard)</option>
                                     <option value="contributor" ${user.role === 'contributor' ? 'selected' : ''}>Contributore (Google Form)</option>
                                     <option value="contributor_advanced" ${user.role === 'contributor_advanced' ? 'selected' : ''}>Contributore Avanzato (Form + Stato)</option>
+                                    <option value="status_manager" ${user.role === 'status_manager' ? 'selected' : ''}>Gestione Stato (solo Pagato)</option>
                                     <option value="table_editor" ${user.role === 'table_editor' ? 'selected' : ''}>Editor Tabella (solo Tabella Ordini)</option>
                                     <option value="tabella_full" ${user.role === 'tabella_full' ? 'selected' : ''}>Tabella Completa</option>
                                     <option value="tabella_readonly" ${user.role === 'tabella_readonly' ? 'selected' : ''}>Tabella Solo Lettura</option>
