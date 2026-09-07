@@ -3943,8 +3943,11 @@ function deleteOrder(id) {
             }
         }
         
-        function openItemModal(id) { 
+        function openItemModal(id) {
             currentEditId = id;
+            // Ruolo "Gestione Stato": può SOLO visualizzare il contenuto, mai modificarlo
+            const rolePerms = (currentUser && USER_ROLES[currentUser.role.toUpperCase()]?.permissions) || {};
+            const readOnlyItems = !!rolePerms.statusToggleOnly;
             const o = orders.find(x => x.id === id); const tb = document.getElementById('modalItemsBody'); tb.innerHTML = '';
             document.getElementById('modalEmail').value = o.email || '';
             document.getElementById('modalPhone').value = o.phone || '';
@@ -3953,8 +3956,11 @@ function deleteOrder(id) {
             const formatted = new Date(o.statusUpdatedAt).toLocaleString('it-IT');
             document.getElementById('modalTimestamp').value += ` | Stato: ${formatted}`;
        }
-            o.itemsList.forEach((item, idx) => { tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2 text-xs" style="max-width: 300px; word-wrap: break-word; white-space: normal;">${item.name}</td><td class="p-2 text-center"><input type="text" value="${item.size}" onchange="updateItemSize(${idx}, this.value)" class="border rounded w-20 text-center font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-300 outline-none"></td><td class="p-2 text-center"><button onclick="delItem(${idx})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button></td></tr>`; });
-            document.getElementById('itemModal').classList.add('active'); 
+            o.itemsList.forEach((item, idx) => { tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2 text-xs" style="max-width: 300px; word-wrap: break-word; white-space: normal;">${item.name}</td><td class="p-2 text-center"><input type="text" value="${item.size}" ${readOnlyItems ? 'disabled' : `onchange="updateItemSize(${idx}, this.value)"`} class="border rounded w-20 text-center font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-300 outline-none${readOnlyItems ? ' opacity-60 cursor-not-allowed' : ''}"></td><td class="p-2 text-center">${readOnlyItems ? '' : `<button onclick="delItem(${idx})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>`}</td></tr>`; });
+            document.getElementById('itemModal').classList.add('active');
+            // Nasconde i controlli di aggiunta articolo per il ruolo in sola lettura
+            const addItemContainer = document.getElementById('addItemContainer');
+            if (addItemContainer) addItemContainer.style.display = readOnlyItems ? 'none' : '';
         }
         function updateItemSize(idx, val) { const o = orders.find(x => x.id === currentEditId);
         if(o && o.itemsList[idx]) { o.itemsList[idx].size = val.toUpperCase().trim(); saveData(); renderMatrices(); } }
@@ -5624,8 +5630,10 @@ function resetFiltersToDefault() {
                         });
                         
                         // Disabilita pulsante "X Capi" ma lascialo visibile
+                        // ECCEZIONE: ruolo "Gestione Stato" può aprire il box in sola visualizzazione
                         document.querySelectorAll('button[onclick*="openItemModal"]').forEach(btn => {
                             if (btn.classList.contains('edit-order-btn')) {
+                                if (perms.statusToggleOnly) return; // resta cliccabile, si apre in sola lettura
                                 btn.disabled = true;
                                 btn.style.cursor = 'not-allowed';
                                 btn.style.opacity = '0.7';
