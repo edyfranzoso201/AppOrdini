@@ -5128,6 +5128,11 @@ function updateUI() {
                         resetFiltersToDefault();
                         updateUI();
                         applyUserPermissions();
+                        // updateUI() ha già renderizzato la tabella PRIMA che applyUserPermissions()
+                        // definisse window.disableEditInputs (che viene agganciata solo dentro i futuri
+                        // renderTable/renderMatrices override): senza questa chiamata esplicita, il primo
+                        // render dopo l'auto-login restava completamente editabile per i ruoli limitati.
+                        setTimeout(() => window.disableEditInputs && window.disableEditInputs(), 100);
                         startClock();
                         startAutoRefresh(); // Avvia auto-refresh anche per auto-login
                     });
@@ -5413,8 +5418,12 @@ function updateUI() {
                     await loadData();
                     updateUI();
                     applyUserPermissions();
+                    // Stesso motivo del ramo auto-login: il render di updateUI() precede la
+                    // definizione di window.disableEditInputs dentro applyUserPermissions(),
+                    // quindi va richiamata esplicitamente per coprire anche il primo render.
+                    setTimeout(() => window.disableEditInputs && window.disableEditInputs(), 100);
                     startClock();
-                    
+
                     // Avvia auto-refresh per sincronizzazione multi-utente
                     startAutoRefresh();
                 } else {
