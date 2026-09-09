@@ -5685,7 +5685,7 @@ function resetFiltersToDefault() {
                     // Funzione per disabilitare inputs dopo il render
                     window.disableEditInputs = function() {
                         // Disabilita input taglie, sconto, ecc (MA NON I FILTRI!)
-                        document.querySelectorAll('input.edit-order-btn, select.edit-order-btn').forEach(el => {
+                        document.querySelectorAll('input.edit-order-btn, select.edit-order-btn, textarea.edit-order-btn').forEach(el => {
                             // NON disabilitare i filtri
                             if (filterIds.includes(el.id)) return;
                             
@@ -5695,8 +5695,8 @@ function resetFiltersToDefault() {
                             el.style.color = '#6b7280';
                         });
                         
-                        // Disabilita TUTTI gli input e select tranne i filtri
-                        document.querySelectorAll('input, select').forEach(el => {
+                        // Disabilita TUTTI gli input, select e textarea (es. campo Cliente) tranne i filtri
+                        document.querySelectorAll('input, select, textarea').forEach(el => {
                             // NON disabilitare i filtri per ID
                             if (filterIds.includes(el.id)) return;
                             // NON disabilitare elementi già gestiti o non nella tabella
@@ -5721,7 +5721,7 @@ function resetFiltersToDefault() {
                                 el.disabled = true;
                                 el.style.cursor = 'not-allowed';
                                 el.style.opacity = '0.6';
-                                if (el.tagName === 'INPUT') {
+                                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
                                     el.style.backgroundColor = '#f3f4f6';
                                     el.style.color = '#6b7280';
                                 }
