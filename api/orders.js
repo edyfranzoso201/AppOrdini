@@ -88,6 +88,110 @@ function applyRoleWriteRules(currentOrders, incomingOrders, rules) {
   return { orders: result, rejected };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Merge a tre vie per i salvataggi admin concorrenti.
+//
+// Il blob ordini viene riscritto INTERO a ogni salvataggio. Con due admin che
+// lavorano insieme (caso normale: uno in Gestione, uno in Tabella) l'ultimo che
+// salva sovrascriveva silenziosamente il lavoro dell'altro: il controllo
+// conflitti lato client confronta un hash che include solo status e note, quindi
+// una taglia o un pagamento modificati da un collega non venivano nemmeno
+// rilevati come conflitto.
+//
+// Qui si confrontano TRE versioni di ogni ordine:
+//   base     = lo stato che il client aveva quando ha caricato i dati (baseVersion)
+//   current  = lo stato attuale su Redis (può contenere modifiche altrui)
+//   incoming = quello che il client sta inviando ora
+//
+// Per ogni campo si applica la modifica del client solo se l'ha davvero
+// cambiato rispetto alla sua base; altrimenti si conserva il valore corrente su
+// Redis. Così due modifiche a campi DIVERSI dello stesso ordine sopravvivono
+// entrambe. Solo quando due utenti toccano lo STESSO campo vince chi salva per
+// ultimo, e il caso viene tracciato nei log.
+function mergeOrdersThreeWay(baseOrders, currentOrders, incomingOrders) {
+  const baseById = new Map();
+  for (const o of baseOrders) {
+    if (o && o.id !== undefined && o.id !== null) baseById.set(String(o.id), o);
+  }
+  const currentById = new Map();
+  for (const o of currentOrders) {
+    if (o && o.id !== undefined && o.id !== null) currentById.set(String(o.id), o);
+  }
+  const incomingById = new Map();
+  for (const o of incomingOrders) {
+    if (o && o.id !== undefined && o.id !== null) incomingById.set(String(o.id), o);
+  }
+
+  const stats = { merged: 0, conflicts: 0, preservedOrders: 0, deleted: 0 };
+  const result = [];
+  const handled = new Set();
+
+  // 1. Si parte dagli ordini presenti ORA su Redis: sono la verità più recente.
+  for (const current of currentOrders) {
+    const id = String(current.id);
+    handled.add(id);
+
+    const incoming = incomingById.get(id);
+    if (!incoming) {
+      // Assente dal payload del client. Se c'era nella sua base, l'ha eliminato
+      // deliberatamente; se non c'era, è un ordine creato da altri nel frattempo
+      // e va conservato.
+      if (baseById.has(id)) {
+        stats.deleted++;
+        continue;
+      }
+      stats.preservedOrders++;
+      result.push(current);
+      continue;
+    }
+
+    const base = baseById.get(id);
+    if (!base) {
+      // Il client non aveva questo ordine nella sua base: non può sapere cosa
+      // sta sovrascrivendo, quindi si tiene la versione su Redis.
+      stats.preservedOrders++;
+      result.push(current);
+      continue;
+    }
+
+    const merged = { ...current };
+    let touched = false;
+    const fields = new Set([...Object.keys(base), ...Object.keys(current), ...Object.keys(incoming)]);
+
+    for (const field of fields) {
+      const baseVal = JSON.stringify(base[field]);
+      const currVal = JSON.stringify(current[field]);
+      const inVal = JSON.stringify(incoming[field]);
+
+      if (inVal === baseVal) continue;        // il client non ha toccato il campo
+      if (currVal === baseVal) {              // nessuno l'ha toccato nel frattempo
+        merged[field] = incoming[field];
+        touched = true;
+        continue;
+      }
+      if (inVal === currVal) continue;        // stessa modifica, nulla da fare
+
+      // Entrambi hanno cambiato lo stesso campo in modo diverso: vince chi
+      // salva per ultimo, ma il caso viene registrato.
+      merged[field] = incoming[field];
+      stats.conflicts++;
+      touched = true;
+    }
+
+    if (touched) stats.merged++;
+    result.push(merged);
+  }
+
+  // 2. Ordini presenti nel payload ma non su Redis: sono nuovi, si aggiungono.
+  for (const incoming of incomingOrders) {
+    const id = String(incoming.id);
+    if (handled.has(id)) continue;
+    result.push(incoming);
+  }
+
+  return { orders: result, stats };
+}
+
 export default async function handler(req, res) {
   // ✅ CORS headers - necessari per tutte le API
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -109,34 +213,74 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const data = await redis.get(KEYS.ORDERS);
       console.log('📦 GET /api/orders - Dati trovati:', data ? 'SI' : 'NO');
-      
+
+      // version identifica la revisione servita: il client la rimanda al
+      // salvataggio come baseVersion, così il server sa su quale stato ha
+      // lavorato e può fondere le modifiche altrui invece di sovrascriverle.
+      const payload = data || { orders: [], lastOrderId: 0, currentPrefix: `${new Date().getFullYear()}_`, highlightedSizeCells: {} };
+
       return res.status(200).json({
         success: true,
-        data: data || { orders: [], lastOrderId: 0, currentPrefix: `${new Date().getFullYear()}_`, highlightedSizeCells: {} }
+        version: payload.version || 0,
+        data: payload
       });
-      
+
     } else if (req.method === 'POST') {
-      const { action, orders, lastOrderId, currentPrefix, highlightedSizeCells } = req.body;
+      const { action, orders, lastOrderId, currentPrefix, highlightedSizeCells, baseVersion, baseOrders } = req.body;
       
       if (action === 'save') {
         const role = (session.role || '').toLowerCase();
 
-        // L'admin resta l'unico che può riscrivere l'intero blob così com'è.
+        // L'admin può riscrivere l'intero blob, ma non alla cieca: se dichiara
+        // su quale versione ha lavorato, le modifiche fatte da altri nel
+        // frattempo vengono fuse invece di essere sovrascritte.
         if (role === 'admin') {
+          const current = await redis.get(KEYS.ORDERS) || {};
+          const currentVersion = current.version || 0;
+          const incomingOrders = Array.isArray(orders) ? orders : [];
+
+          let finalOrders = incomingOrders;
+          let mergeStats = null;
+
+          // Il merge si applica solo se il client ha dichiarato la propria base
+          // ED è rimasto indietro rispetto a Redis. Senza baseVersion (client
+          // non ancora aggiornato) si conserva il comportamento precedente.
+          const isStale = baseVersion !== undefined && baseVersion !== null && baseVersion !== currentVersion;
+
+          if (isStale) {
+            // baseOrders è lo stato che il client aveva al caricamento. Se non
+            // lo invia, si usa il payload stesso come base: il merge degenera
+            // allora nel conservare gli ordini altrui senza perderli.
+            const base = Array.isArray(baseOrders) ? baseOrders : incomingOrders;
+            const res3 = mergeOrdersThreeWay(base, current.orders || [], incomingOrders);
+            finalOrders = res3.orders;
+            mergeStats = res3.stats;
+
+            console.warn(
+              `🔀 POST /api/orders - merge concorrente (${session.username}): ` +
+              `base v${baseVersion} vs corrente v${currentVersion} — ` +
+              `${mergeStats.merged} ordini fusi, ${mergeStats.preservedOrders} preservati da altri, ` +
+              `${mergeStats.conflicts} conflitti sullo stesso campo, ${mergeStats.deleted} eliminati`
+            );
+          }
+
           const dataToSave = {
-            orders: orders || [],
-            lastOrderId: lastOrderId || 0,
+            orders: finalOrders,
+            lastOrderId: Math.max(lastOrderId || 0, current.lastOrderId || 0),
             currentPrefix: currentPrefix || `${new Date().getFullYear()}_`,
             highlightedSizeCells: highlightedSizeCells || {},
+            version: currentVersion + 1,
             updatedAt: new Date().toISOString()
           };
 
           await redis.set(KEYS.ORDERS, dataToSave);
-          console.log(`✅ POST /api/orders - Salvati ${orders?.length || 0} ordini, prefix: ${currentPrefix}`);
+          console.log(`✅ POST /api/orders - Salvati ${finalOrders.length} ordini, prefix: ${currentPrefix}, v${dataToSave.version}`);
 
           return res.status(200).json({
             success: true,
-            message: 'Orders saved successfully'
+            message: 'Orders saved successfully',
+            version: dataToSave.version,
+            merged: mergeStats || undefined
           });
         }
 
@@ -170,6 +314,11 @@ export default async function handler(req, res) {
           highlightedSizeCells: rules.canHighlight
             ? (highlightedSizeCells || {})
             : (current.highlightedSizeCells || {}),
+          // Anche le scritture dei ruoli limitati fanno avanzare la versione,
+          // altrimenti un admin non si accorgerebbe della loro modifica.
+          // Qui non serve il merge a tre vie: applyRoleWriteRules rilegge già
+          // sempre lo stato corrente e ci applica sopra i soli campi consentiti.
+          version: (current.version || 0) + 1,
           updatedAt: new Date().toISOString()
         };
 
@@ -178,11 +327,12 @@ export default async function handler(req, res) {
         if (rejected > 0) {
           console.warn(`⚠️ POST /api/orders - ruolo "${role}" (${session.username}): ${rejected} modifiche non consentite scartate`);
         }
-        console.log(`✅ POST /api/orders - ruolo "${role}": salvati ${mergedOrders.length} ordini`);
+        console.log(`✅ POST /api/orders - ruolo "${role}": salvati ${mergedOrders.length} ordini, v${dataToSave.version}`);
 
         return res.status(200).json({
           success: true,
-          message: 'Orders saved successfully'
+          message: 'Orders saved successfully',
+          version: dataToSave.version
         });
       }
       
