@@ -5109,9 +5109,6 @@ function updateUI() {
 
         // IMPORTANTE: Check login first, then load data - DOPO che il DOM è pronto
         document.addEventListener('DOMContentLoaded', () => {
-            // Inizializza utenti di default
-            initializeDefaultUsers();
-            
             // Setup event listeners per login
             const loginButton = document.getElementById('loginButton');
             const loginPassword = document.getElementById('loginPassword');
@@ -5355,48 +5352,15 @@ function updateUI() {
             }
         };
         
-        // Inizializza utente admin di default
-        async function initializeDefaultUsers() {
-            try {
-                const response = await fetch('/api/users');
-                
-                // Verifica che la risposta sia OK prima di parsare JSON
-                if (!response.ok) {
-                    console.warn('⚠️ API users non disponibile, skip inizializzazione');
-                    return;
-                }
-                
-                const data = await response.json();
-                const users = data.users || [];
-                
-                console.log('🔍 Utenti esistenti:', users.length);
-                
-                if (users.length === 0) {
-                    // Crea admin di default
-                    const createResponse = await fetch('/api/users', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'create',
-                            username: 'admin',
-                            password: 'admin123',
-                            role: 'admin',
-                            name: 'Amministratore'
-                        })
-                    });
-                    
-                    if (createResponse.ok) {
-                        console.log('✅ Utente admin creato');
-                    }
-                } else {
-                    console.log('ℹ️ Utenti già presenti:', users.map(u => u.username));
-                }
-            } catch (error) {
-                // Silenzioso: l'errore è normale se l'API non è ancora pronta
-                console.warn('⚠️ Impossibile inizializzare utenti:', error.message);
-            }
-        }
-        
+        // NOTA: qui esisteva initializeDefaultUsers(), chiamata a ogni
+        // caricamento della pagina PRIMA del login. Interrogava /api/users e,
+        // se la lista risultava vuota, creava un utente admin con password
+        // 'admin123' — credenziali note a chiunque, essendo nel sorgente di un
+        // repo pubblico. Chiunque avesse aperto la pagina con la chiave utenti
+        // svuotata avrebbe quindi ricreato un admin dalla password nota.
+        // La creazione del primo admin appartiene al bootstrap lato server
+        // (GET /api/init, protetto dal secret INIT_SECRET), non al client.
+
         // Login
         async function performLogin() {
             const username = document.getElementById('loginUsername').value.trim();
