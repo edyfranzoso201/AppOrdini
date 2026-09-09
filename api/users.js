@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { getRedis, KEYS } from './lib/redis.js';
-import { createSession, verifySession, revokeSession, requireAuth } from './lib/auth.js';
+import { createSession, verifySession, revokeSession, requireAuth, requireRole } from './lib/auth.js';
 
 const USERS_KEY = 'orderflow:users';
 const BCRYPT_ROUNDS = 10;
@@ -92,6 +92,14 @@ export default async function handler(req, res) {
 
       // Da qui in poi serve una sessione valida
       if (!(await requireAuth(req, res))) return;
+
+      // create/update/edit/delete gestiscono utenti (anche promozione a admin):
+      // riservate al ruolo admin, non basta essere autenticati. Senza questo
+      // controllo un utente con permessi limitati poteva chiamare l'API
+      // direttamente (bypassando la UI) e crearsi un account admin.
+      if (['create', 'update', 'edit', 'delete'].includes(action)) {
+        if (!(await requireRole(req, res, ['admin']))) return;
+      }
 
       if (action === 'create') {
         // Create new user

@@ -58,3 +58,22 @@ export async function requireAuth(req, res) {
   req.session = session;
   return session;
 }
+
+// Come requireAuth, ma richiede in aggiunta che il ruolo della sessione sia
+// tra quelli consentiti. Risponde 401 se non autenticato, 403 se il ruolo
+// non è autorizzato. Da usare per azioni server-side sensibili (creazione
+// utenti, cancellazioni definitive, ecc.) dove il controllo lato client
+// (UI disabilitata) non basta, perché un client malevolo può chiamare
+// l'API direttamente ignorando l'interfaccia.
+export async function requireRole(req, res, allowedRoles) {
+  const session = await requireAuth(req, res);
+  if (!session) return null;
+
+  const role = (session.role || '').toLowerCase();
+  const allowed = allowedRoles.map(r => r.toLowerCase());
+  if (!allowed.includes(role)) {
+    res.status(403).json({ success: false, error: 'Non hai i permessi per eseguire questa azione' });
+    return null;
+  }
+  return session;
+}
