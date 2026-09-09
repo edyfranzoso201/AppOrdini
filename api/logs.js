@@ -1,6 +1,6 @@
 // api/logs.js
 import { getRedis, KEYS } from './lib/redis.js';
-import { requireAuth } from './lib/auth.js';
+import { requireAuth, requireRole } from './lib/auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,6 +26,11 @@ export default async function handler(req, res) {
   const { action } = req.body;
 
   if (action === 'clear') {
+    // Cancellazione irreversibile del log attività: nella UI il pulsante è
+    // dentro il pannello Gestione Utenti, riservato al ruolo admin
+    // (permesso manageUsers). Senza questo controllo lato server chiunque
+    // autenticato poteva svuotare l'audit trail chiamando l'API diretta.
+    if (!(await requireRole(req, res, ['admin']))) return;
     await redis.set(KEYS.ACTIVITY_LOG, JSON.stringify([]));
     return res.status(200).json({ success: true, message: 'Activity log cleared' });
   }

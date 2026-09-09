@@ -1,5 +1,5 @@
 import { getRedis, KEYS } from './lib/redis.js';
-import { requireAuth } from './lib/auth.js';
+import { requireAuth, requireRole } from './lib/auth.js';
 
 const ARCHIVE_INDEX_KEY = 'orderflow:archive:index';
 const archiveDataKey = (id) => `orderflow:archive:${id}`;
@@ -36,6 +36,13 @@ export default async function handler(req, res) {
     // ─── POST ─────────────────────────────────────────────────────────────
     if (req.method === 'POST') {
       const { action } = req.body;
+
+      // Tutte le azioni di scrittura (create/restore/delete) sono riservate
+      // all'admin: nella UI il pannello Archivio è mostrato solo per
+      // currentUser.role === 'admin' (btnArchiveManager), ma senza questo
+      // controllo lato server chiunque avesse una sessione valida poteva
+      // chiamare l'API direttamente e creare/ripristinare/eliminare archivi.
+      if (!(await requireRole(req, res, ['admin']))) return;
 
       // ── Crea un nuovo archivio a partire dai prefissi ordine scelti ──────
       if (action === 'create') {
