@@ -2497,6 +2497,7 @@ function deleteOrder(id) {
             if(!confirm("Questo comando analizzerà TUTTI gli ordini.\nSe trova un articolo o un Kit con lo stesso nome ma prezzo diverso rispetto al database attuale, lo aggiornerà.\n\nSei sicuro?")) return;
             let countItems = 0;
             let countKits = 0;
+            const detailsLog = []; // { orderId, type: 'Kit'|'Articolo', oldName, newName }
             const stripPrice = (str) => str.split('(')[0].trim();
             orders.forEach(o => {
                 const oldKitName = o.kitType;
@@ -2507,7 +2508,8 @@ function deleteOrder(id) {
                     if (cleanOldKit === cleanDbKit && oldKitName !== dbKit.display) {
                         o.kitType = dbKit.display;
                         countKits++;
-                        break; 
+                        detailsLog.push({ orderId: o.displayId, type: 'Kit', oldName: oldKitName, newName: dbKit.display });
+                        break;
                     }
                 }
                 o.itemsList.forEach(item => {
@@ -2517,13 +2519,23 @@ function deleteOrder(id) {
                     if (foundInDB && foundInDB !== oldItemName) {
                         item.name = foundInDB;
                         countItems++;
+                        detailsLog.push({ orderId: o.displayId, type: 'Articolo', oldName: oldItemName, newName: foundInDB });
                     }
                 });
             });
             saveData();
             renderMatrices();
             renderChart();
-            alert(`Aggiornamento Completato!\n- Kit aggiornati: ${countKits}\n- Articoli aggiornati: ${countItems}`);
+            if (detailsLog.length > 0) {
+                console.log(`🔧 Forza Aggiornamento Prezzi - dettaglio ${detailsLog.length} correzioni:`);
+                console.table(detailsLog);
+                logActivity('FORCE_UPDATE_PRICES', `Kit aggiornati: ${countKits}, Articoli aggiornati: ${countItems}. Dettaglio: ${detailsLog.map(d => `[${d.orderId}] ${d.type} "${d.oldName}" → "${d.newName}"`).join(' | ')}`);
+                const preview = detailsLog.slice(0, 15).map(d => `• [${d.orderId}] ${d.type}: "${d.oldName}" → "${d.newName}"`).join('\n');
+                const more = detailsLog.length > 15 ? `\n\n… e altre ${detailsLog.length - 15} correzioni (vedi console, tasto F12).` : '';
+                alert(`Aggiornamento Completato!\n- Kit aggiornati: ${countKits}\n- Articoli aggiornati: ${countItems}\n\nDettaglio:\n${preview}${more}`);
+            } else {
+                alert(`Aggiornamento Completato!\n- Kit aggiornati: ${countKits}\n- Articoli aggiornati: ${countItems}\n\nNessuna discrepanza trovata: tutti gli ordini erano già allineati al catalogo attuale.`);
+            }
         }
 
         function addItemToConfig() { const input = document.getElementById('newItemName');
