@@ -1,5 +1,5 @@
 import { getRedis } from './lib/redis.js';
-import { requireAuth } from './lib/auth.js';
+import { requireAuth, requireRole } from './lib/auth.js';
 
 const PAYMENTS_KEY = 'orderflow:payments';
 
@@ -33,6 +33,15 @@ export default async function handler(req, res) {
 
     // ─── POST ─────────────────────────────────────────────────────────────
     if (req.method === 'POST') {
+      // Tutte le scritture sui pagamenti (import CSV, override manuali,
+      // configurazione quote, aggiunta/eliminazione pagamenti) sono riservate
+      // all'admin: nella UI il tab Pagamenti è mostrato solo per
+      // role === 'admin' (applyUserPermissions in public/app.js), ma senza
+      // questo controllo lato server qualsiasi utente autenticato poteva
+      // chiamare l'API direttamente e sovrascrivere l'intero archivio
+      // pagamenti o marcare come saldati importi mai versati.
+      if (!(await requireRole(req, res, ['admin']))) return;
+
       const { action } = req.body;
 
       // ── Salva pagamenti (da import CSV) ──────────────────────────────────
