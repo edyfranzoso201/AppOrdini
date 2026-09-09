@@ -2897,9 +2897,9 @@ function deleteOrder(id) {
                 const noteText = o.notes || '';
                 const notePreview = noteText.length > 30 ? noteText.substring(0, 30) + '...' : noteText;
                 
-                // Badge scalato magazzino
-                const inventoryBadge = o.inventoryScaledAt ? 
-                    `<span class="text-[9px] bg-green-100 text-green-800 px-1 py-0.5 rounded font-bold border border-green-300" title="Scalato dal magazzino il ${o.inventoryScaledAt}">📦 SCALATO</span>` : '';
+                // Badge scalato magazzino - cliccabile per annullare lo scalamento
+                const inventoryBadge = o.inventoryScaledAt ?
+                    `<span onclick="undoInventoryScale(${o.id})" class="text-[9px] bg-green-100 text-green-800 px-1 py-0.5 rounded font-bold border border-green-300 cursor-pointer hover:bg-green-200 transition" title="Scalato dal magazzino il ${o.inventoryScaledAt} - Clicca per annullare">📦 SCALATO ↩️</span>` : '';
                 
                 tr.innerHTML = `<td class="px-2 py-2 text-xs font-bold" data-payment-id-col="${o.id}" style="position:sticky; left:0; z-index:5; min-width:72px; max-width:90px; border-right:2px solid #e5e7eb;"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-center border-0 bg-transparent px-1 text-[11px] font-bold uppercase" style="min-width:68px;"></td>
                 <td class="px-2 py-1 font-medium text-xs" style="min-width:110px; max-width:150px;" data-payment-id="${o.id}"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
@@ -4645,6 +4645,14 @@ function updateUI() {
                 if (itemsScaledThisOrder.length > 0) {
                     // Aggiungi nota automatica
                     const noteText = `📦 Scalato da magazzino il ${timestamp}\n${itemsScaledThisOrder.join(', ')}`;
+                    // Salva lo stato precedente per poter annullare in modo preciso
+                    // (ripristina magazzino, rimuove SOLO la nota automatica appena aggiunta,
+                    // senza toccare eventuali note utente preesistenti)
+                    order.inventoryScaleUndo = {
+                        notesBefore: order.notes || '',
+                        noteColorBefore: order.noteColor || 'default',
+                        appendedNote: noteText
+                    };
                     order.notes = order.notes ? `${order.notes}\n\n${noteText}` : noteText;
                     order.noteColor = 'green'; // Verde = Scalato
                     order.inventoryScaledAt = timestamp;
@@ -4665,10 +4673,69 @@ function updateUI() {
             Object.values(inventoryLog).forEach(item => {
                 summary += `• ${item.name.split('(')[0].trim()} [${item.size}]: -${item.count}\n`;
             });
-            
+
             alert(summary);
         }
-        
+
+        // Annulla lo scalamento magazzino per un singolo ordine (badge 📦 SCALATO):
+        // 1) ripristina le quantità nel magazzino (tabella Inventario)
+        // 2) rimuove la nota automatica aggiunta dallo scalamento (senza toccare eventuali note utente)
+        // 3) azzera inventoryScaledAt/scaledItems così l'ordine torna "da scalare" e la tabella
+        //    NETTO (Distinta) torna a contare la richiesta piena per questo ordine
+        function undoInventoryScale(orderId) {
+            const order = orders.find(x => x.id === orderId);
+            if (!order) {
+                console.error(`❌ undoInventoryScale: ordine ${orderId} non trovato!`);
+                return;
+            }
+            if (!order.inventoryScaledAt) {
+                alert('⚠️ Questo ordine non risulta scalato dal magazzino.');
+                return;
+            }
+
+            if (!confirm(`↩️ Annullare lo scalamento magazzino per l'ordine ${order.displayId}?\n\nGli articoli scalati verranno riaccreditati in magazzino e la nota automatica rimossa.`)) {
+                return;
+            }
+
+            // 1) Ripristina il magazzino in base a quanto tracciato in scaledItems
+            let itemsRestored = 0;
+            if (order.scaledItems) {
+                Object.entries(order.scaledItems).forEach(([key, qty]) => {
+                    const current = parseInt(inventory[key]) || 0;
+                    inventory[key] = current + qty;
+                    itemsRestored += qty;
+                });
+            }
+
+            // 2) Rimuove SOLO la nota automatica aggiunta dallo scalamento
+            if (order.inventoryScaleUndo) {
+                order.notes = order.inventoryScaleUndo.notesBefore || '';
+                order.noteColor = order.inventoryScaleUndo.noteColorBefore || 'default';
+            } else if (order.notes) {
+                // Fallback per ordini scalati prima di questo fix (nessuno snapshot salvato):
+                // rimuove l'ultimo blocco "📦 Scalato da magazzino..." aggiunto in coda alla nota
+                order.notes = order.notes
+                    .replace(/\n\n📦 Scalato da magazzino il [^\n]+\n[^\n]*$/,'')
+                    .replace(/^📦 Scalato da magazzino il [^\n]+\n[^\n]*$/,'')
+                    .trim();
+                order.noteColor = order.notes ? order.noteColor : 'default';
+            }
+
+            // 3) Azzera i flag di scalamento
+            order.inventoryScaledAt = null;
+            order.scaledItems = null;
+            order.inventoryScaleUndo = null;
+
+            logActivity('UNDO_INVENTORY_SCALE', `Ordine ${order.displayId} (${order.customer}): annullato scalamento magazzino, ${itemsRestored} articoli riaccreditati`);
+
+            saveData();
+            renderMatrices(true);
+            renderTable();
+
+            alert(`✅ Scalamento annullato per l'ordine ${order.displayId}.\n${itemsRestored} articoli riaccreditati in magazzino.`);
+        }
+        window.undoInventoryScale = undoInventoryScale;
+
         function exportMatrix() { 
             const wb = XLSX.utils.book_new();
             const now = new Date().toLocaleString('it-IT');
