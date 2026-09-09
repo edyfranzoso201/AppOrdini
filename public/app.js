@@ -206,6 +206,12 @@
 
         let orders = [];
         let ordersBackup = []; // Backup locale degli ordini
+        // Versione del blob ordini su cui stiamo lavorando e copia immutata
+        // dello stato ricevuto dal server: insieme permettono al server di
+        // fondere le modifiche concorrenti invece di sovrascriverle (merge a
+        // tre vie in api/orders.js). Aggiornate a ogni load/refresh/salvataggio.
+        let ordersBaseVersion = null;
+        let ordersBaseSnapshot = [];
         let inventory = {}; 
         let globalKitTypes = {}; 
         let quickIdFilters = {}; // Filtri Quick ID condivisi su Redis
@@ -984,6 +990,7 @@
                 lastOrderId = ordersData.data.lastOrderId || 0;
                 currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                 highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                setOrdersBase(ordersData.version, orders);
             }
         }
         
@@ -1106,6 +1113,42 @@
             return `count:${arr.length}|lastId:${lid}|${stateStr}`;
         }
         
+        // Registra lo stato ricevuto dal server come "base" del nostro lavoro.
+        // Lo snapshot e' una copia profonda: se puntasse agli stessi oggetti di
+        // `orders`, ogni modifica locale lo altererebbe e il server non
+        // riuscirebbe piu' a distinguere cosa abbiamo cambiato davvero.
+        function setOrdersBase(version, ordersArray) {
+            ordersBaseVersion = (version !== undefined && version !== null) ? version : null;
+            try {
+                ordersBaseSnapshot = JSON.parse(JSON.stringify(ordersArray || []));
+            } catch (e) {
+                console.warn('⚠️ Snapshot base non riuscito, merge concorrente disattivato:', e);
+                ordersBaseSnapshot = [];
+                ordersBaseVersion = null;
+            }
+        }
+
+        // Dopo un merge lato server la nostra vista e' incompleta: contiene le
+        // nostre modifiche ma non quelle dei colleghi che il server ha appena
+        // fuso. Si rilegge quindi il risultato reale.
+        async function reloadOrdersAfterMerge() {
+            try {
+                const res = await fetch('/api/orders');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.success || !data.data) return;
+                orders = data.data.orders || [];
+                lastOrderId = data.data.lastOrderId || 0;
+                currentPrefix = data.data.currentPrefix || DEFAULT_ID_PREFIX;
+                highlightedSizeCells = data.data.highlightedSizeCells || {};
+                setOrdersBase(data.version, orders);
+                lastDataHash = getDataHash();
+                updateUI();
+            } catch (e) {
+                console.warn('⚠️ Ricarica dopo merge non riuscita:', e);
+            }
+        }
+
         // Funzione di auto-refresh silenziosa
         async function autoRefreshData() {
             try {
@@ -1131,6 +1174,8 @@
                     lastOrderId = remoteLastId;
                     currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                     highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                    // Adottiamo i dati remoti: diventano la nuova base.
+                    setOrdersBase(ordersData.version, remoteOrders);
                     updateUI();
                     showQuickNotification('🔄 Dati aggiornati', 'info');
                     loadPaymentsData(); // ✅ Ricarica anche i pagamenti
@@ -1302,44 +1347,25 @@
   console.log(`Ordini IDs:`, orders.map(o => o.displayId).join(', '));
   
   try {
-    // ✅ CONTROLLO CONFLITTI: Verifica se ci sono modifiche più recenti su Redis
-    const checkRes = await fetch('/api/orders');
-    if (checkRes.ok) {
-      const checkData = await checkRes.json();
-      if (checkData.success && checkData.data) {
-        const remoteOrders = checkData.data.orders || [];
-        const remoteHash = getDataHash(remoteOrders, checkData.data.lastOrderId);
-        
-        // Se l'hash è diverso, significa che qualcun altro ha salvato nel frattempo
-        if (lastDataHash !== null && remoteHash !== lastDataHash) {
-          console.warn(`⚠️ CONFLITTO RILEVATO! Altri utenti hanno modificato i dati.`);
-          console.log(`  Ordini locali: ${orders.length}, Ordini remoti: ${remoteOrders.length}`);
-          
-          // ✅ MERGE INTELLIGENTE: Aggiungi solo gli ordini che non esistono su Redis
-          const remoteIds = new Set(remoteOrders.map(o => o.displayId));
-          const newOrders = orders.filter(o => !remoteIds.has(o.displayId));
-          
-          if (newOrders.length > 0) {
-            console.log(`✅ Trovati ${newOrders.length} ordini nuovi da aggiungere:`, newOrders.map(o => o.displayId));
-            // Merge: ordini remoti + ordini nuovi locali
-            const mergedOrders = [...remoteOrders, ...newOrders];
-            orders = mergedOrders;
-            lastOrderId = Math.max(checkData.data.lastOrderId, lastOrderId);
-            console.log(`🔀 MERGE completato: ${mergedOrders.length} ordini totali`);
-          } else {
-            console.log(`❌ Nessun ordine nuovo da aggiungere. Uso dati remoti.`);
-            orders = remoteOrders;
-            lastOrderId = checkData.data.lastOrderId;
-            currentPrefix = checkData.data.currentPrefix || DEFAULT_ID_PREFIX;
-            lastDataHash = remoteHash; // allinea l'hash locale per evitare di rilevare lo stesso "conflitto" ad ogni salvataggio successivo
-            updateUI();
-            return; // Non salvare se non ci sono modifiche
-          }
-        }
-      }
-    }
-    
+    // NOTA: qui c'era un controllo conflitti lato client che rileggeva Redis
+    // e confrontava getDataHash(). Non poteva funzionare, per due motivi:
+    //
+    // 1. l'hash include SOLO id, status, notes e partialDeliveryNote: le
+    //    modifiche di un collega a taglie, articoli, cliente o pagamento non
+    //    venivano rilevate e sparivano al salvataggio successivo;
+    // 2. quando il conflitto veniva rilevato, il ramo senza ordini nuovi
+    //    scartava le modifiche locali e usciva senza salvare, facendo perdere
+    //    all'utente il lavoro appena fatto senza dirglielo.
+    //
+    // Il merge e' ora lato server (mergeOrdersThreeWay in api/orders.js), che
+    // confronta base/corrente/inviato campo per campo: vede TUTTI i campi ed e'
+    // l'unico punto in cui la scrittura avviene davvero.
+
     // Save orders
+    // baseVersion + baseOrders dicono al server su quale stato abbiamo
+    // lavorato: se nel frattempo qualcun altro ha salvato, il server fonde le
+    // due versioni campo per campo invece di lasciare che l'ultimo sovrascriva
+    // il lavoro dell'altro (mergeOrdersThreeWay in api/orders.js).
     const ordersRes = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1348,7 +1374,9 @@
         orders,
         lastOrderId,
         currentPrefix,
-        highlightedSizeCells
+        highlightedSizeCells,
+        baseVersion: ordersBaseVersion,
+        baseOrders: ordersBaseSnapshot
       })
     });
     if (!ordersRes.ok) {
@@ -1360,7 +1388,30 @@
     }
     
     console.log(`✅ Ordini salvati su Redis: ${orders.length} ordini`);
-    
+
+    // Allinea la base alla versione appena scritta dal server.
+    try {
+      const savedInfo = await ordersRes.json();
+      if (savedInfo && savedInfo.version !== undefined) {
+        setOrdersBase(savedInfo.version, orders);
+      }
+      // Il server ha dovuto fondere modifiche fatte da altri nel frattempo:
+      // ricarichiamo per mostrare il risultato reale del merge, altrimenti
+      // resteremmo con una vista parziale (senza le modifiche altrui).
+      if (savedInfo && savedInfo.merged) {
+        const m = savedInfo.merged;
+        console.warn('🔀 Merge concorrente eseguito dal server:', m);
+        if (m.conflicts > 0) {
+          showQuickNotification(`🔀 ${m.conflicts} modific${m.conflicts === 1 ? 'a' : 'he'} in conflitto con un altro utente`, 'info');
+        } else if (m.merged > 0 || m.preservedOrders > 0) {
+          showQuickNotification('🔀 Modifiche unite con quelle di un altro utente', 'info');
+        }
+        await reloadOrdersAfterMerge();
+      }
+    } catch (e) {
+      console.warn('⚠️ Risposta salvataggio non interpretabile:', e);
+    }
+
     // ✅ Salva backup locale dopo salvataggio riuscito
     saveOrdersBackup();
 
