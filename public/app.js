@@ -3269,17 +3269,13 @@ function deleteOrder(id) {
             document.getElementById(mode === 'INV' ? 'headerSockSpolfBlue' : 'headerSockNetSpolfBlue').innerHTML = formatHeaderName(SOCKS_SPOLF_BLUE);
             document.getElementById(mode === 'INV' ? 'headerSockSpolfRed' : 'headerSockNetSpolfRed').innerHTML = formatHeaderName(SOCKS_SPOLF_RED);
             
-            let sizes = new Set(); 
-            filteredOrders.forEach(o => o.itemsList.forEach(i => { if(isSockItem(i.name)) sizes.add(i.size) }));
-            Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isSockItem(item)) sizes.add(size); });
-            
-            // Aggiungi tutte le 6 taglie standard per calze
-            sizes.add("23/26");
-            sizes.add("27/30");
-            sizes.add("31/34");
-            sizes.add("35/38");
-            sizes.add("39/42");
-            sizes.add("43/46");
+            // Taglie valide per le calze: solo queste 6. Qualsiasi altra taglia
+            // (es. "14 ANNI") associata per errore a un articolo calze in un
+            // ordine/inventario viene ignorata qui, per non generare righe fantasma.
+            const VALID_SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            let sizes = new Set(VALID_SOCK_SIZES);
+            filteredOrders.forEach(o => o.itemsList.forEach(i => { if(isSockItem(i.name) && VALID_SOCK_SIZES.includes(i.size)) sizes.add(i.size) }));
+            Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isSockItem(item) && VALID_SOCK_SIZES.includes(size)) sizes.add(size); });
 
             let sorted = Array.from(sizes).filter(s=>s);
             sorted.sort((a, b) => {
