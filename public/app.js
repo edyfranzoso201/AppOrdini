@@ -9,6 +9,22 @@
         function isSockItem(itemName) {
             return itemName.includes("Calzettoni") || itemName.includes("Calzettone");
         }
+
+        // Esegue l'escape dei caratteri speciali HTML prima di inserire testo
+        // proveniente dall'utente (es. nome Cliente) dentro markup con
+        // template string. Senza questo, un nome cliente contenente <script>
+        // o simili verrebbe eseguito nel browser di chi apre la tabella
+        // (stored XSS): il campo Cliente è testo libero, importabile anche
+        // dal modulo Google pubblico.
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
+        }
         const PANT_NAME = "Pantalone Allen. GASTON Blu Marine 193 (20€)";
         const OLD_JACKET_NAME = "Giaccone Invernale BURAN Blue Marine 901 (55€)";
         const NEW_JACKET_NAME = "Giaccone Invernale BURAN Blue Marine 901 (35€)";
@@ -641,7 +657,7 @@
                 
                 let html = `
                     <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}</td>
-                    <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${order.customer}</td>
+                    <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${escapeHtml(order.customer)}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanMainSize}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">UNICA</td>
@@ -2896,10 +2912,10 @@ function deleteOrder(id) {
                 
                 // Dividi nome e cognome su due righe
                 const customerParts = o.customer.trim().split(' ');
-                let customerDisplay = o.customer;
+                let customerDisplay = escapeHtml(o.customer);
                 if (customerParts.length >= 2) {
-                    const firstName = customerParts[0];
-                    const lastName = customerParts.slice(1).join(' ');
+                    const firstName = escapeHtml(customerParts[0]);
+                    const lastName = escapeHtml(customerParts.slice(1).join(' '));
                     customerDisplay = `${firstName}\n${lastName}`;
                 }
                 
@@ -6962,7 +6978,7 @@ async function viewSeasonArchive(id) {
         archive.orders.forEach(o => {
             html += `<tr class="hover:bg-gray-50">
                 <td class="px-3 py-2 font-mono text-xs">${o.displayId || ''}</td>
-                <td class="px-3 py-2">${o.customer || ''}</td>
+                <td class="px-3 py-2">${escapeHtml(o.customer || '')}</td>
                 <td class="px-3 py-2">${(o.kitType || '').split('(')[0].trim()}</td>
                 <td class="px-3 py-2">${o.mainSize || ''}</td>
                 <td class="px-3 py-2">${o.status || ''}</td>
@@ -8057,7 +8073,7 @@ async function saveQuickIdConfig() {
 
                 return `<tr class="border-b hover:bg-gray-50">
                     <td class="px-3 py-2 font-mono text-xs font-bold text-blue-800">${o.displayId}</td>
-                    <td class="px-3 py-2 font-bold text-xs">${o.customer || '-'}</td>
+                    <td class="px-3 py-2 font-bold text-xs">${escapeHtml(o.customer || '-')}</td>
                     <td class="px-3 py-2 text-xs text-gray-600">${o.roleOrYear || '-'}</td>
                     <td class="px-3 py-2 text-xs text-gray-600">${(o.kitType||'-').split('(')[0].trim()}</td>
                     <td class="px-3 py-2 text-right font-bold text-xs">${s.dovuto > 0 ? s.dovuto+'€' : '<span class="text-green-600">Gratis</span>'}</td>
@@ -8074,7 +8090,7 @@ async function saveQuickIdConfig() {
                             <button onclick="showPaymentDetail('${o.id}')" class="text-blue-500 hover:text-blue-700 text-xs" title="Dettaglio pagamenti">
                                 <i class="fas fa-search"></i>
                             </button>
-                            <button onclick="openOverrideModal('${o.customer}')" class="text-orange-500 hover:text-orange-700 text-xs" title="Override manuale">
+                            <button onclick="openOverrideModal(this.dataset.customer)" data-customer="${escapeHtml(o.customer)}" class="text-orange-500 hover:text-orange-700 text-xs" title="Override manuale">
                                 <i class="fas fa-user-edit"></i>
                             </button>
                         </div>
