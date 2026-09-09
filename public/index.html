@@ -488,7 +488,10 @@
                             <option value="desc">ID Decrescente (10..1)</option>
                         </select>
                         <select id="filterStatus" onchange="renderTable()" class="text-sm border rounded px-2">
-                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Pagato">Pagato</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegna Parziale">Consegna Parziale</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
+                             <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegna Parziale">Consegna Parziale</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
+                        </select>
+                        <select id="filterPaymentMark" onchange="renderTable()" class="text-sm border rounded px-2">
+                             <option value="all">Pagamento: Tutti</option><option value="Pagato">Pagato</option><option value="NonPagato">Non Pagato</option>
                         </select>
                         <input type="text" id="filterRoleYear" onkeyup="renderTable()" placeholder="Anno/Ruolo..." class="text-sm border rounded px-3 py-1 w-32">
                         <select id="filterSize" onchange="renderTable()" class="text-sm border rounded px-2">
@@ -538,6 +541,7 @@
                                 <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-20">Bag/Zaino</th>
                                 <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-24">Totale €</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-32">Stato</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-28">Pagamento</th>
                                 <th class="px-4 py-3 text-center w-8"><i class="fas fa-download"></i></th>
                                 <th class="px-4 py-3 text-center w-8"><i class="fas fa-cog"></i></th>
                                 <th class="px-4 py-3 text-center w-8"><i class="fas fa-trash"></i></th>

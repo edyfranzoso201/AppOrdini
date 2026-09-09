@@ -129,8 +129,7 @@
 
         const STATUSES = [ 
             { value: 'Nuovo', label: 'Nuovo', color: 'bg-yellow-100 text-yellow-800' }, 
-            { value: 'In Lavorazione', label: 'In Lavorazione', color: 'bg-blue-100 text-blue-800' }, 
-            { value: 'Pagato', label: 'Pagato', color: 'bg-green-700 text-white' }, 
+            { value: 'In Lavorazione', label: 'In Lavorazione', color: 'bg-blue-100 text-blue-800' },
             { value: 'Ordine Arrivato', label: 'Arrivato', color: 'bg-orange-100 text-orange-800' },
             { value: 'Consegna Parziale', label: 'Consegna Parziale', color: 'bg-amber-100 text-amber-800' },
             { value: 'Consegnato', label: 'Consegnato', color: 'bg-gray-700 text-white' },
@@ -2329,13 +2328,6 @@ function handleStatusChange(id, newStatus) {
         openPartialDeliveryPopup(id);
         return; // Il salvataggio verrà fatto dal popup
     } else {
-        // Memorizza lo stato precedente quando si passa a "Pagato", per poter tornare indietro
-        // (usato dal ruolo "Gestione Stato", che vede solo il toggle stato-attuale<->Pagato)
-        if (newStatus === 'Pagato' && oldStatus !== 'Pagato') {
-            o.statusBeforePagato = oldStatus;
-        } else if (newStatus !== 'Pagato') {
-            o.statusBeforePagato = null;
-        }
         o.status = newStatus;
         o.linkedId = null;
         o.partialDeliveryNote = null;
@@ -2346,7 +2338,7 @@ function handleStatusChange(id, newStatus) {
         logActivity('CHANGE_STATUS', `Ordine ${o.displayId} (${o.customer}): Stato cambiato da "${oldStatus}" a "${newStatus}"`);
         console.log(`📝 LOG salvato: CHANGE_STATUS per ${o.displayId}`);
     }
-    
+
     console.log(`💾 Chiamata updateUI() per salvare cambio stato ${o.displayId}`);
     // updateUI già chiama saveData()
     updateUI();
@@ -2355,6 +2347,29 @@ function handleStatusChange(id, newStatus) {
 
 // Rendi la funzione disponibile globalmente
 window.handleStatusChange = handleStatusChange;
+
+// Funzione per gestire il cambio della colonna "Pagamento" (indipendente dallo STATO)
+function handlePaymentMarkChange(id, newValue) {
+    const o = orders.find(x => x.id === id);
+    if (!o) {
+        console.error(`❌ handlePaymentMarkChange: ordine ${id} non trovato!`);
+        return;
+    }
+
+    const oldValue = o.paymentMark || '';
+    if (oldValue === newValue) return;
+
+    o.paymentMark = newValue === 'Pagato' ? 'Pagato' : '';
+
+    logActivity('CHANGE_PAYMENT_MARK', `Ordine ${o.displayId} (${o.customer}): Pagamento cambiato da "${oldValue || 'Non Pagato'}" a "${o.paymentMark || 'Non Pagato'}"`);
+    console.log(`📝 LOG salvato: CHANGE_PAYMENT_MARK per ${o.displayId}`);
+
+    updateUI();
+    renderMatrices();
+}
+
+// Rendi la funzione disponibile globalmente
+window.handlePaymentMarkChange = handlePaymentMarkChange;
 
 // Nasconde/mostra un ordine specifico al ruolo "Gestione Stato" (solo admin può usarlo)
 function toggleHiddenFromLimited(id, hidden) {
@@ -2608,6 +2623,7 @@ function deleteOrder(id) {
                     searchInput: document.getElementById('searchInput')?.value || '',
                     sortOrder: document.getElementById('sortOrder')?.value || 'asc',
                     filterStatus: document.getElementById('filterStatus')?.value || 'all',
+                    filterPaymentMark: document.getElementById('filterPaymentMark')?.value || 'all',
                     filterRoleYear: document.getElementById('filterRoleYear')?.value || '',
                     filterSize: document.getElementById('filterSize')?.value || 'all',
                     filterKitType: document.getElementById('filterKitType')?.value || 'all',
@@ -2691,8 +2707,9 @@ function deleteOrder(id) {
             
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
-            const filterStatus = document.getElementById('filterStatus').value; 
-            const filterKitType = document.getElementById('filterKitType').value; 
+            const filterStatus = document.getElementById('filterStatus').value;
+            const filterPaymentMark = document.getElementById('filterPaymentMark')?.value || 'all';
+            const filterKitType = document.getElementById('filterKitType').value;
             const filterSize = document.getElementById('filterSize').value;
             const filterItem = document.getElementById('filterItem').value;
             const filterRoleYear = document.getElementById('filterRoleYear').value.toLowerCase().trim();
@@ -2756,7 +2773,12 @@ function deleteOrder(id) {
                 if (filterMaxId && compareIds(o.displayId, filterMaxId) > 0) return false;
 
                 if(filterStatus !== 'all' && o.status !== filterStatus) return false;
-                if(filterSize !== 'all' && o.mainSize !== filterSize) return false; 
+                if(filterPaymentMark !== 'all') {
+                    const isPaidRow = o.paymentMark === 'Pagato';
+                    if(filterPaymentMark === 'Pagato' && !isPaidRow) return false;
+                    if(filterPaymentMark === 'NonPagato' && isPaidRow) return false;
+                }
+                if(filterSize !== 'all' && o.mainSize !== filterSize) return false;
                 
                 // Filtro Anno/Ruolo
                 if(filterRoleYear && o.roleOrYear) {
@@ -2793,7 +2815,16 @@ function deleteOrder(id) {
                 
                 let statusInfo;
                 const linkedFrom = orders.find(x => x.linkedId === o.displayId);
-                
+
+                // Colonna "Pagamento": indipendente dallo STATO, sempre modificabile
+                // (anche con ordine "Nuovo") per chi ha il permesso editPaymentMark
+                const isPaid = o.paymentMark === 'Pagato';
+                const paymentMarkInfo = `
+                    <select onchange="handlePaymentMarkChange(${o.id}, this.value)" class="payment-mark-select text-xs border rounded p-1 w-full font-bold ${isPaid ? 'bg-green-700 text-white' : 'bg-white text-gray-700'}">
+                        <option value="" ${!isPaid ? 'selected' : ''}>Non Pagato</option>
+                        <option value="Pagato" ${isPaid ? 'selected' : ''}>Pagato</option>
+                    </select>`;
+
                 if (linkedFrom) {
                     statusInfo = `
                     <div class="flex flex-col">
@@ -2803,10 +2834,9 @@ function deleteOrder(id) {
                         <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full font-bold bg-gray-100">
                             <option value="In Lavorazione" ${o.status==='In Lavorazione'?'selected':''}>In Lavorazione</option>
                             <option value="Ordine Arrivato" ${o.status==='Ordine Arrivato'?'selected':''}>Arrivato</option>
-                            <option value="Pagato" ${o.status==='Pagato'?'selected':''}>Pagato</option>
                             <option value="Consegna Parziale" ${o.status==='Consegna Parziale'?'selected':''}>Consegna Parziale</option>
                             <option value="Consegnato" ${o.status==='Consegnato'?'selected':''}>Consegnato</option>
-                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Pagato' && o.status !== 'Consegna Parziale' && o.status !== 'Consegnato') ?
+                             ${(o.status !== 'In Lavorazione' && o.status !== 'Ordine Arrivato' && o.status !== 'Consegna Parziale' && o.status !== 'Consegnato') ?
                             `<option value="${o.status}" selected disabled>${o.status}</option>` : ''}
                         </select>
                     </div>`;
@@ -2826,28 +2856,8 @@ function deleteOrder(id) {
                     } else {
                         // Controlla se c'è una nota di consegna parziale
                         const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
-                        
-                        const currentRolePerms = (currentUser && USER_ROLES[currentUser.role.toUpperCase()]?.permissions) || {};
-                        let statusOptionsHTML;
-                        if (currentRolePerms.statusToggleOnly) {
-                            // Ruolo "Gestione Stato": il select mostra solo lo stato attuale <-> "Pagato"
-                            if (o.status === 'Pagato') {
-                                statusOptionsHTML = `<option value="Pagato" selected>Pagato</option>`;
-                                // Se esiste uno stato precedente salvato, permette di tornare indietro
-                                if (o.statusBeforePagato) {
-                                    const prevLabel = STATUSES.find(s => s.value === o.statusBeforePagato)?.label || o.statusBeforePagato;
-                                    statusOptionsHTML += `<option value="${o.statusBeforePagato}">${prevLabel}</option>`;
-                                }
-                            } else if (o.status === 'Nuovo') {
-                                // Da "Nuovo" non può ancora marcare Pagato: deve prima passare da un altro stato
-                                statusOptionsHTML = `<option value="Nuovo" selected disabled>Nuovo</option>`;
-                            } else {
-                                const currentLabel = STATUSES.find(s => s.value === o.status)?.label || o.status;
-                                statusOptionsHTML = `<option value="${o.status}" selected>${currentLabel}</option><option value="Pagato">Pagato</option>`;
-                            }
-                        } else {
-                            statusOptionsHTML = STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('');
-                        }
+
+                        const statusOptionsHTML = STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('');
                         statusInfo = `
                         <div class="flex flex-col gap-1">
                             <select onchange="handleStatusChange(${o.id}, this.value)" class="status-select text-xs border rounded p-1 w-full ${STATUSES.find(s=>s.value===o.status)?.color || ''}">
@@ -2900,7 +2910,7 @@ function deleteOrder(id) {
                         ${notePreview || '<span class="text-gray-400 italic">Aggiungi nota...</span>'}
                     </div>
                 </td>
-                <td class="px-4 py-3"><button onclick="openItemModal(${o.id})" class="edit-order-btn bg-white border border-gray-200 text-gray-700 text-xs px-3 py-2 rounded shadow-sm w-full text-left flex justify-between"><span>${o.itemsList.length} Capi</span><i class="fas fa-edit"></i></button></td><td class="px-4 py-3 text-center"><input value="${o.mainSize}" onchange="updateSizes(${o.id}, 'main', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold"></td><td class="px-4 py-3 text-center"><input value="${o.sockSize}" onchange="updateSizes(${o.id}, 'sock', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold text-gray-600"></td><td class="px-4 py-3 text-center text-xs font-bold text-blue-800">${bagType}</td><td class="px-4 py-3 text-center"><div class="flex flex-col items-end"><span class="price-display">${finalTotal}€</span><div class="flex items-center gap-1"><span class="text-[9px] text-gray-400">Sconto:</span><input type="number" value="${o.discount||0}" onchange="updateDiscount(${o.id}, this.value)" class="edit-order-btn discount-input"></div></div></td><td class="px-4 py-3 w-40"><div class="flex flex-col gap-1">${statusInfo}${inventoryBadge}</div></td><td class="px-4 py-3 text-center"><button onclick="downloadOrderToGoogleForm(${o.id})" class="download-google-form-btn text-green-600 hover:text-green-800" title="Scarica ordine tramite Google Form"><i class="fas fa-download"></i></button></td><td class="px-4 py-3 text-center"><button onclick="openItemModal(${o.id})" class="edit-order-btn text-blue-600 hover:text-blue-800"><i class="fas fa-cog"></i></button></td><td class="px-4 py-3 text-center"><button onclick="deleteOrder(${o.id})" class="delete-order-btn text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></td><td class="px-2 py-3 text-center admin-only-col"><input type="checkbox" onchange="toggleHiddenFromLimited(${o.id}, this.checked)" ${o.hiddenFromLimited ? 'checked' : ''} title="Nascondi questo ordine al ruolo 'Gestione Stato'" class="w-4 h-4 cursor-pointer"></td>`; tbody.appendChild(tr);
+                <td class="px-4 py-3"><button onclick="openItemModal(${o.id})" class="edit-order-btn bg-white border border-gray-200 text-gray-700 text-xs px-3 py-2 rounded shadow-sm w-full text-left flex justify-between"><span>${o.itemsList.length} Capi</span><i class="fas fa-edit"></i></button></td><td class="px-4 py-3 text-center"><input value="${o.mainSize}" onchange="updateSizes(${o.id}, 'main', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold"></td><td class="px-4 py-3 text-center"><input value="${o.sockSize}" onchange="updateSizes(${o.id}, 'sock', this.value)" class="edit-order-btn w-12 text-center border rounded text-xs font-bold text-gray-600"></td><td class="px-4 py-3 text-center text-xs font-bold text-blue-800">${bagType}</td><td class="px-4 py-3 text-center"><div class="flex flex-col items-end"><span class="price-display">${finalTotal}€</span><div class="flex items-center gap-1"><span class="text-[9px] text-gray-400">Sconto:</span><input type="number" value="${o.discount||0}" onchange="updateDiscount(${o.id}, this.value)" class="edit-order-btn discount-input"></div></div></td><td class="px-4 py-3 w-40"><div class="flex flex-col gap-1">${statusInfo}${inventoryBadge}</div></td><td class="px-4 py-3 w-28">${paymentMarkInfo}</td><td class="px-4 py-3 text-center"><button onclick="downloadOrderToGoogleForm(${o.id})" class="download-google-form-btn text-green-600 hover:text-green-800" title="Scarica ordine tramite Google Form"><i class="fas fa-download"></i></button></td><td class="px-4 py-3 text-center"><button onclick="openItemModal(${o.id})" class="edit-order-btn text-blue-600 hover:text-blue-800"><i class="fas fa-cog"></i></button></td><td class="px-4 py-3 text-center"><button onclick="deleteOrder(${o.id})" class="delete-order-btn text-red-500 hover:text-red-700"><i class="fas fa-trash-alt"></i></button></td><td class="px-2 py-3 text-center admin-only-col"><input type="checkbox" onchange="toggleHiddenFromLimited(${o.id}, this.checked)" ${o.hiddenFromLimited ? 'checked' : ''} title="Nascondi questo ordine al ruolo 'Gestione Stato'" class="w-4 h-4 cursor-pointer"></td>`; tbody.appendChild(tr);
             });
             // Applica colori pagamento dopo il render
             setTimeout(() => applyPaymentColorsToOrders(), 0);
@@ -3354,7 +3364,7 @@ function deleteOrder(id) {
 
         function renderChart() { 
             const validOrders = orders.filter(o => o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID');
-            const ctx = document.getElementById('chartStatus').getContext('2d'); if(chartStatus) chartStatus.destroy(); chartStatus = new Chart(ctx, { type: 'doughnut', data: { labels: ['Nuovo', 'In Lav.', 'Pagato', 'Finito'], datasets: [{ data: [validOrders.filter(o=>o.status==='Nuovo').length, validOrders.filter(o=>o.status==='In Lavorazione').length, validOrders.filter(o=>o.status==='Pagato').length, validOrders.filter(o=>o.status==='Consegnato').length], backgroundColor: ['#fbbf24', '#3b82f6', '#15803d', '#374151'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+            const ctx = document.getElementById('chartStatus').getContext('2d'); if(chartStatus) chartStatus.destroy(); chartStatus = new Chart(ctx, { type: 'doughnut', data: { labels: ['Nuovo', 'In Lav.', 'Pagato', 'Finito'], datasets: [{ data: [validOrders.filter(o=>o.status==='Nuovo').length, validOrders.filter(o=>o.status==='In Lavorazione').length, validOrders.filter(o=>o.paymentMark==='Pagato').length, validOrders.filter(o=>o.status==='Consegnato').length], backgroundColor: ['#fbbf24', '#3b82f6', '#15803d', '#374151'] }] }, options: { responsive: true, maintainAspectRatio: false } });
             
             // Calcola totali GENERALI per il grafico (tutti gli ordini attivi)
             let totalGross = 0; 
@@ -5177,8 +5187,10 @@ function updateUI() {
                     viewDistinta: false,
                     viewTabella: false,
                     downloadGoogleForm: false,
-                    editStatus: true, // Può modificare SOLO lo stato, e solo verso/da "Pagato"
-                    statusToggleOnly: true, // Il select stato mostra solo stato-attuale <-> "Pagato"
+                    editStatus: false, // Non può più modificare la colonna STATO
+                    statusToggleOnly: true, // Nasconde ordini annullati/nascosti in Gestione (vedi renderTable)
+                    editPaymentMark: true, // Può modificare SOLO la colonna "Pagamento" (Pagato/Non Pagato),
+                                            // anche quando l'ordine è ancora in stato "Nuovo"
                     useQuickIdFilters: true
                 }
             },
@@ -5577,7 +5589,7 @@ function resetFiltersToDefault() {
                 // Disabilita input campi quando non ha permessi editOrders
                 if (!perms.editOrders && !perms.editTabella) {
                     // Lista completa ID filtri da NON disabilitare
-                    const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterRoleYear', 
+                    const filterIds = ['searchInput', 'sortOrder', 'filterStatus', 'filterPaymentMark', 'filterRoleYear',
                                       'filterSize', 'filterKitType', 'filterItem', 'filterMinId', 'filterMaxId',
                                       // Filtri Distinta & Magazzino
                                       'matrixMinId', 'matrixMaxId',
@@ -5613,6 +5625,9 @@ function resetFiltersToDefault() {
                             if (el.closest('.no-print')) return;
                             // NON disabilitare select STATO se l'utente ha editStatus
                             if (perms.editStatus && el.classList.contains('status-select')) return;
+                            // NON disabilitare select PAGAMENTO se l'utente ha editPaymentMark
+                            // (modificabile anche se l'ordine è in stato "Nuovo")
+                            if (perms.editPaymentMark && el.classList.contains('payment-mark-select')) return;
                             // NON disabilitare Quick ID buttons
                             if (el.closest('#quickIdButtons') || el.closest('#quickIdButtonsMatrix') || el.closest('#quickIdButtonsTabella')) return;
                             
