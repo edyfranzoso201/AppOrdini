@@ -21,8 +21,27 @@ export default async function handler(req, res) {
   try {
     // Controlla se esistono già utenti
     const existingUsers = await redis.get(KEYS.USERS);
-    
-    if (!existingUsers || existingUsers.length === 0) {
+    const noUsersYet = !existingUsers || existingUsers.length === 0;
+
+    if (noUsersYet) {
+      // Questo endpoint è pubblico per costruzione (serve a creare il primo
+      // admin quando il database è vuoto, prima che esista qualunque
+      // sessione con cui autenticarsi). Senza controllo, chiunque poteva
+      // chiamarlo e ricreare un account admin/admin123 con password nota
+      // (è nel sorgente, pubblico su GitHub) ogni volta che la chiave utenti
+      // fosse vuota, anche non per un vero primo avvio. Richiede quindi un
+      // secret separato (env INIT_SECRET), noto solo a chi amministra il
+      // deploy, per poter effettivamente creare l'admin di bootstrap.
+      const providedSecret = req.query.secret || req.headers['x-init-secret'];
+      const initSecret = process.env.INIT_SECRET;
+
+      if (!initSecret || providedSecret !== initSecret) {
+        return res.status(403).json({
+          success: false,
+          error: 'Inizializzazione utenti non autorizzata: richiesto secret valido (INIT_SECRET)'
+        });
+      }
+
       // Crea utente admin di default
       const defaultUsers = [{
         username: 'admin',
@@ -31,7 +50,7 @@ export default async function handler(req, res) {
         name: 'Amministratore',
         createdAt: new Date().toISOString()
       }];
-      
+
       await redis.set(KEYS.USERS, JSON.stringify(defaultUsers));
     }
 
@@ -57,7 +76,9 @@ export default async function handler(req, res) {
       success: true,
       message: 'Database inizializzato con successo',
       info: {
-        admin: existingUsers ? 'Già esistente' : 'Creato (username: admin, password: admin123)'
+        // Non si espone più la password nella risposta: chi ha fornito il
+        // secret sa già quali credenziali di default vengono create.
+        admin: noUsersYet ? 'Creato account admin di bootstrap' : 'Già esistente'
       }
     });
   } catch (error) {
