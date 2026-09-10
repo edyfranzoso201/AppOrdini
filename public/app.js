@@ -1533,6 +1533,33 @@
         const match = input.match(/^(.*?)\s*\(/); return (match && match[1].trim()) ? match[1].trim() : input.trim(); }
         function updateSizes(id, t, v) { const o = orders.find(x=>x.id===id); if (!o) return; v = v.toUpperCase().trim(); if (t === 'sock') { if (v === 'UNICA') return alert('Taglia non valida'); o.sockSize = v; o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); } if(t==='main') { o.mainSize = v; o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); } updateUI(); }
         function updateInventory(itemName, size, value) { const key = `${itemName}_${size}`; if(value === "" || value === null) delete inventory[key]; else inventory[key] = parseInt(value); saveData(); renderMatrices(true); }
+        // Allinea un nome articolo al catalogo corrente (globalItems), che e' la
+        // sola fonte autorevole dei prezzi.
+        //
+        // Il prezzo di un articolo non e' un campo a se': vive DENTRO la stringa
+        // del nome, es. "Zaino BACKPACK Blue Marine 901 (25€)". Le costanti
+        // DEFAULT_ITEMS_LIST e EXCEL_ITEM_MAPPING in testa al file portano quindi
+        // un listino scritto a mano che invecchia a ogni modifica del Catalogo:
+        // l'import da Google Form costruiva itemsList da quelle costanti e
+        // congelava nell'ordine un prezzo gia' vecchio il giorno stesso.
+        //
+        // Il confronto e' sul nome SENZA prezzo, cosi' "Zaino ... (25€)" trova
+        // "Zaino ... (30€)" a catalogo e adotta il prezzo giusto. Se l'articolo
+        // non e' a catalogo si restituisce il nome originale invariato: meglio un
+        // prezzo vecchio che perdere la riga d'ordine.
+        //
+        // Da usare SOLO al momento dell'import: da li' in poi il prezzo resta
+        // congelato nell'ordine, perche' un ordine gia' arrivato non deve seguire
+        // le variazioni di listino successive.
+        function resolveItemNameFromCatalog(itemName) {
+            if (!itemName || typeof itemName !== 'string') return itemName;
+            if (!Array.isArray(globalItems) || globalItems.length === 0) return itemName;
+            const clean = (s) => s.split('(')[0].trim().toLowerCase();
+            const target = clean(itemName);
+            const found = globalItems.find(dbItem => typeof dbItem === 'string' && clean(dbItem) === target);
+            return found || itemName;
+        }
+
         function getPriceFromString(str) { if (!str || typeof str !== 'string') return 0; const match = str.match(/\((\d+)€\)/); return match ? parseInt(match[1]) : 0; }
         function getBagType(items) { const bag = items.find(i => i.name.includes('Borsone') || i.name.includes('Zaino'));
         if (!bag) return ''; return bag.name.includes('Zaino') ? 'Zaino' : 'Borsone'; }
@@ -2054,15 +2081,17 @@
                                 }
                                 if (itemName.includes("Borsone") || itemName.includes("Zaino")) { 
                                     size = 'UNICA'; 
+                                    // I nomi di borsone/zaino erano scritti a mano col prezzo dentro:
+                                    // si passano dal catalogo per adottare il prezzo corrente.
                                     let explicitBagName = null;
                                     if (bagChoice) {
                                          if (bagChoice.includes('zaino')) explicitBagName = "Zaino BACKPACK Blue Marine 901 (25€)";
                                         else if (bagChoice.includes('borsone')) explicitBagName = "Borsone HARDBASE Blue Marine 901 (25€)";
                                     }
-                                    if (explicitBagName === "Zaino BACKPACK Blue Marine 901 (25€)") return { name: explicitBagName, size: 'UNICA' };
-                                    return { name: "Borsone HARDBASE Blue Marine 901 (25€)", size: 'UNICA' };
+                                    if (explicitBagName && explicitBagName.includes("Zaino")) return { name: resolveItemNameFromCatalog(explicitBagName), size: 'UNICA' };
+                                    return { name: resolveItemNameFromCatalog("Borsone HARDBASE Blue Marine 901 (25€)"), size: 'UNICA' };
                                 } 
-                                return { name: itemName, size: size };
+                                return { name: resolveItemNameFromCatalog(itemName), size: size };
                             }); 
                             itemsList = itemsList.filter(item => !item.name.includes("Zaino") || item.name.includes("BACKPACK")); 
                         } else { 
@@ -2078,8 +2107,11 @@
                                         if (v.includes("Calzettoni")) s = sockSize; 
                                         if (v.includes("Cappellino") || v.includes("Scaldacollo") || v.includes("Guanti")) s = accessorySize; 
                                         if (v.includes("Borsone") || v.includes("Zaino")) s = 'UNICA'; 
-                                        if (!itemsList.find(i => i.name === v)) { 
-                                            itemsList.push({ name: v, size: s }); 
+                                        // v arriva da EXCEL_ITEM_MAPPING, che porta un listino
+                                        // scritto a mano: si risolve dal catalogo corrente.
+                                        const resolvedName = resolveItemNameFromCatalog(v);
+                                        if (!itemsList.find(i => i.name === resolvedName)) { 
+                                            itemsList.push({ name: resolvedName, size: s }); 
                                             if (v.includes("Staff") || v.includes("RED") || v.includes("SAPPHIRE")) type = 'Staff'; 
                                         } 
                                     } 
