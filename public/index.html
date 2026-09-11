@@ -110,6 +110,39 @@
             text-align: center !important;
             vertical-align: middle !important;
         }
+
+        /* ════════════════════════════════════ */
+        /* Griglia marcata sulle tabelle della Distinta.
+           Le righe/colonne arrivavano da divide-y/divide-x di Tailwind (1px
+           grigio chiarissimo): con tante colonne strette e celle quasi vuote
+           l'occhio perdeva la riga. Qui si disegna un bordo pieno su ogni
+           cella, piu' spesso sui separatori esterni e sulla riga TOTALE. */
+        #grossTable, #invClothingTable, #netTable,
+        #invSocksTable, #netSocksTable {
+            border-collapse: collapse !important;
+            border: 2px solid #64748b !important;
+        }
+        #grossTable th, #invClothingTable th, #netTable th,
+        #invSocksTable th, #netSocksTable th {
+            border: 1.5px solid #475569 !important;
+        }
+        #grossTable td, #invClothingTable td, #netTable td,
+        #invSocksTable td, #netSocksTable td {
+            border: 1.5px solid #94a3b8 !important;
+        }
+        /* Colonna TAGLIA: separatore piu' marcato, e' il riferimento di lettura */
+        #grossTable td:first-child, #invClothingTable td:first-child, #netTable td:first-child,
+        #invSocksTable td:first-child, #netSocksTable td:first-child,
+        #grossTable th:first-child, #invClothingTable th:first-child, #netTable th:first-child,
+        #invSocksTable th:first-child, #netSocksTable th:first-child {
+            border-right: 2.5px solid #475569 !important;
+        }
+        /* Riga TOTALE in fondo: chiude la tabella */
+        #grossTable tbody tr:last-child td, #invClothingTable tbody tr:last-child td,
+        #netTable tbody tr:last-child td, #invSocksTable tbody tr:last-child td,
+        #netSocksTable tbody tr:last-child td {
+            border-top: 2.5px solid #475569 !important;
+        }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
         .modal.active { display: flex; align-items: center; justify-content: center; }
         .inv-input { width: 100%; text-align: center; border: 1px solid #fcd34d; background-color: #fffbeb; border-radius: 4px; font-weight: bold; }

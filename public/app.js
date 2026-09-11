@@ -4377,6 +4377,7 @@ function updateUI() {
                             min-width: 100% !important;
                             max-width: 100% !important;
                             border-collapse: collapse;
+                            border: 2px solid #64748b !important;
                             margin: 0;
                             table-layout: fixed !important;
                             height: 100%;
@@ -4386,7 +4387,7 @@ function updateUI() {
                             padding: 0px !important;
                             text-align: center !important;
                             font-weight: bold !important;
-                            border: 1px solid #d1d5db !important;
+                            border: 1.5px solid #475569 !important;
                             font-size: 8px !important;
                             width: auto !important;
                             overflow: hidden !important;
@@ -4395,7 +4396,7 @@ function updateUI() {
                         td {
                             padding: 0px !important;
                             text-align: center !important;
-                            border: 1px solid #e5e7eb !important;
+                            border: 1.5px solid #94a3b8 !important;
                             font-size: 17px !important;
                             font-weight: 600 !important;
                             width: auto !important;
@@ -4409,6 +4410,12 @@ function updateUI() {
                             height: auto !important;
                             max-height: none !important;
                             line-height: 0.9 !important;
+                        }
+                        th:first-child, td:first-child {
+                            border-right: 2.5px solid #475569 !important;
+                        }
+                        tbody tr:last-child td {
+                            border-top: 2.5px solid #475569 !important;
                         }
                         .sticky-col {
                             background: #f9fafb !important;
