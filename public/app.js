@@ -103,14 +103,21 @@
         //
         // La taglia si isola con lastIndexOf('_') perche' il NOME puo'
         // contenere underscore, la taglia no.
+        // NB: qui sotto si usa stripPriceOnly, non stripItemPrice. Gli SPOLF
+        // si chiamano "Calzettone (Senza Piede) SPOLF RED 565 (8EUR)": con
+        // stripItemPrice (taglia alla prima parentesi) collassano entrambi su
+        // "calzettone", quindi la chiave/quantita' trovata per il Red era in
+        // realta' quella del Blu (o viceversa) -- l'inventario e lo scalato
+        // di un colore finivano attribuiti all'altro, e "da ordinare"
+        // (needed - scalato) poteva risultare 0 anche con needed > 0.
         function findStockKey(itemName, size) {
             const exact = `${itemName}_${size}`;
             if (inventory[exact] !== undefined) return exact;
-            const target = stripItemPrice(itemName);
+            const target = stripPriceOnly(itemName);
             const found = Object.keys(inventory).find(k => {
                 const idx = k.lastIndexOf('_');
                 if (idx === -1) return false;
-                return k.slice(idx + 1) === size && stripItemPrice(k.slice(0, idx)) === target;
+                return k.slice(idx + 1) === size && stripPriceOnly(k.slice(0, idx)) === target;
             });
             return found || exact;
         }
@@ -122,12 +129,12 @@
             if (!order.inventoryScaledAt || !order.scaledItems) return 0;
             const exact = `${itemName}_${size}`;
             if (order.scaledItems[exact]) return order.scaledItems[exact];
-            const target = stripItemPrice(itemName);
+            const target = stripPriceOnly(itemName);
             let total = 0;
             Object.entries(order.scaledItems).forEach(([k, qty]) => {
                 const idx = k.lastIndexOf('_');
                 if (idx === -1) return;
-                if (k.slice(idx + 1) === size && stripItemPrice(k.slice(0, idx)) === target) {
+                if (k.slice(idx + 1) === size && stripPriceOnly(k.slice(0, idx)) === target) {
                     total += qty;
                 }
             });
