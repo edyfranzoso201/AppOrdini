@@ -605,6 +605,23 @@
                             <select id="matrixMinId" class="text-xs border rounded px-2 py-1 w-28 text-center font-bold bg-white"></select>
                             <span class="text-xs text-gray-400">a</span>
                             <select id="matrixMaxId" class="text-xs border rounded px-2 py-1 w-28 text-center font-bold bg-white"></select>
+                            <!-- Filtro stato: si somma al range ID sopra. Serve per
+                                 verifiche mirate (es. "solo In Lavorazione" in un
+                                 range) - Lordo e Netto si aggiornano insieme, cosi'
+                                 un Netto a zero si distingue subito da un filtro
+                                 che sta escludendo tutto. -->
+                            <select id="matrixFilterStatus" onchange="renderMatrices(true)" class="text-xs border rounded px-2 py-1 text-center font-bold bg-white" title="Filtra Distinta per stato ordine">
+                                <option value="all">Stato: Tutti</option>
+                                <option value="Nuovo">Nuovo</option>
+                                <option value="In Lavorazione">In Lavorazione</option>
+                                <option value="Ordine Arrivato">Arrivato</option>
+                                <option value="Consegna Parziale">Consegna Parziale</option>
+                                <option value="Consegnato">Consegnato</option>
+                                <option value="Scomposto">Scomposto</option>
+                                <option value="Ordine annullato">Annullato</option>
+                                <option value="Ordine trasferito ad altro ID">Trasferito</option>
+                                <option value="Da piazzare">Da piazzare</option>
+                            </select>
                             <button onclick="renderMatrices(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-bold transition"><i class="fas fa-sync-alt"></i></button>
                         </div>
                         

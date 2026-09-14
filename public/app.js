@@ -3244,10 +3244,25 @@ function deleteOrder(id) {
                            compareDisplayIds(o.displayId, maxSel.value) <= 0;
                 }).map(o => `${o.displayId} (scalato: ${o.inventoryScaledAt})`));
             }
-            
+
+            // Filtro per stato, in aggiunta al range ID sopra. Serve per le
+            // verifiche mirate ("solo In Lavorazione in questo range"): senza
+            // di questo, l'unico modo per isolare uno stato nella Distinta era
+            // restringere il range ID a mano cercando gli ID giusti uno a uno.
+            // Si applica ad entrambe le tabelle cosi' Lordo e Netto restano
+            // coerenti fra loro -- un Netto a zero si spiega ancora con
+            // l'avviso "esclusi" sotto, non sembra un errore di calcolo.
+            const statusSel = document.getElementById('matrixFilterStatus');
+            const statusFilterVal = statusSel ? statusSel.value : 'all';
+            if (statusFilterVal && statusFilterVal !== 'all') {
+                filteredGross = filteredGross.filter(o => o.status === statusFilterVal);
+                filteredNet = filteredNet.filter(o => o.status === statusFilterVal);
+            }
+
             const rangeTxt = (minSel.value && maxSel.value) ? `${minSel.value} -> ${maxSel.value}` : 'Tutti';
+            const statusTxt = (statusFilterVal && statusFilterVal !== 'all') ? ` | Stato: ${statusFilterVal}` : '';
             const nowTxt = new Date().toLocaleString('it-IT');
-            const infoHtml = `<span class="supplier-info"><i class="fas fa-info-circle mr-1"></i>ID: ${rangeTxt} | ${nowTxt}</span>`;
+            const infoHtml = `<span class="supplier-info"><i class="fas fa-info-circle mr-1"></i>ID: ${rangeTxt}${statusTxt} | ${nowTxt}</span>`;
 
             // Perche' il Netto puo' essere vuoto mentre il Lordo e' pieno.
             //
@@ -7583,6 +7598,8 @@ async function clearActivityLog() {
             // 2. DISTINTA & MAGAZZINO
             const matrixMinId = document.getElementById('matrixMinId');
             const matrixMaxId = document.getElementById('matrixMaxId');
+            const matrixFilterStatus = document.getElementById('matrixFilterStatus');
+            if (matrixFilterStatus) matrixFilterStatus.value = 'all';
             if (matrixMinId && matrixMaxId && matrixMinId.options.length > 0) {
                 matrixMinId.selectedIndex = 0;
                 matrixMaxId.selectedIndex = matrixMaxId.options.length - 1;
