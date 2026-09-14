@@ -4244,10 +4244,64 @@ function deleteOrder(id) {
             document.getElementById('modalTimestamp').value += ` | Stato: ${formatted}`;
        }
             o.itemsList.forEach((item, idx) => { tb.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-2 text-xs" style="max-width: 300px; word-wrap: break-word; white-space: normal;">${item.name}</td><td class="p-2 text-center"><input type="text" value="${item.size}" ${readOnlyItems ? 'disabled' : `onchange="updateItemSize(${idx}, this.value)"`} class="border rounded w-20 text-center font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-300 outline-none${readOnlyItems ? ' opacity-60 cursor-not-allowed' : ''}"></td><td class="p-2 text-center">${readOnlyItems ? '' : `<button onclick="delItem(${idx})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>`}</td></tr>`; });
+            renderSockSizeWarning(o, readOnlyItems);
             document.getElementById('itemModal').classList.add('active');
             // Nasconde i controlli di aggiunta articolo per il ruolo in sola lettura
             const addItemContainer = document.getElementById('addItemContainer');
             if (addItemContainer) addItemContainer.style.display = readOnlyItems ? 'none' : '';
+        }
+
+        // Segnala nel modal le calze che hanno una taglia ABBIGLIAMENTO.
+        //
+        // Gli import che riconoscevano solo il plurale "Calzettoni" davano ai
+        // "Calzettone" SPOLF la taglia dei capi ("14 ANNI"). La Distinta ora
+        // conta lo stesso, ripiegando su o.sockSize, ma qui nel modal resta a
+        // video il dato salvato -- che continua a sembrare un errore, perche'
+        // lo e'. Questo avviso lo rende esplicito e offre di correggerlo.
+        //
+        // Il dato NON si riscrive da solo: la correzione parte solo da un
+        // clic, cosi' resta una decisione tua e non una modifica a sorpresa.
+        function renderSockSizeWarning(order, readOnly) {
+            const box = document.getElementById('sockSizeWarn');
+            if (!box) return;
+            const wrong = order.itemsList.filter(i =>
+                isSockItem(i.name) && !VALID_SOCK_SIZES.includes(normalizeSockSize(i.size)));
+            const target = normalizeSockSize(order.sockSize);
+            if (!wrong.length || readOnly) { box.style.display = 'none'; return; }
+            const canFix = VALID_SOCK_SIZES.includes(target);
+            box.style.display = '';
+            box.innerHTML = `
+                <div class="font-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>
+                    ${wrong.length} ${wrong.length === 1 ? 'calza ha' : 'calze hanno'} una taglia non valida</div>
+                <div class="mb-2">Taglie trovate: <b>${[...new Set(wrong.map(i => i.size))].join(', ')}</b>.
+                    Sono taglie di abbigliamento, non misure di calze.</div>
+                ${canFix
+                    ? `<div>La Distinta le conta gia' come <b>${target}</b> (la taglia calze dell'ordine).
+                        <button onclick="fixSockSizes()" class="ml-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded font-bold">
+                            Correggi in ${target}</button></div>`
+                    : `<div>L'ordine non ha una taglia calze valida (<b>${order.sockSize || 'vuota'}</b>):
+                        correggila a mano nella colonna Taglia.</div>`}
+            `;
+        }
+
+        // Applica la taglia calze dell'ordine a tutti i suoi articoli calza
+        // che ne hanno una non valida. Tocca SOLO l'ordine aperto.
+        function fixSockSizes() {
+            const o = orders.find(x => x.id === currentEditId);
+            if (!o) return;
+            const target = normalizeSockSize(o.sockSize);
+            if (!VALID_SOCK_SIZES.includes(target)) return;
+            const wrong = o.itemsList.filter(i =>
+                isSockItem(i.name) && !VALID_SOCK_SIZES.includes(normalizeSockSize(i.size)));
+            if (!wrong.length) return;
+            if (!confirm(`Imposto la taglia ${target} su ${wrong.length} ${wrong.length === 1 ? 'articolo' : 'articoli'} dell'ordine ${o.displayId}.
+
+Procedo?`)) return;
+            wrong.forEach(i => { i.size = target; });
+            logActivity('FIX_SOCKSIZE', `Ordine ${o.displayId}: taglia calze corretta in ${target} su ${wrong.length} articoli`);
+            saveData();
+            openItemModal(currentEditId);
+            renderMatrices(true);
         }
         function updateItemSize(idx, val) { const o = orders.find(x => x.id === currentEditId);
         if(o && o.itemsList[idx]) { o.itemsList[idx].size = val.toUpperCase().trim(); saveData(); renderMatrices(); } }
@@ -6954,7 +7008,8 @@ async function saveImageUrls(index) {
           'CHANGE_PASSWORD': 'bg-yellow-100 text-yellow-800',
           'LOGIN': 'bg-blue-100 text-blue-800',
           'RESET_DATA': 'bg-red-100 text-red-800',
-          'CHANGESTATUS': 'bg-indigo-100 text-indigo-800'
+          'CHANGESTATUS': 'bg-indigo-100 text-indigo-800',
+          'FIX_SOCKSIZE': 'bg-amber-100 text-amber-800'
         };
 
         html += '<div class="overflow-x-auto">';
