@@ -3190,18 +3190,32 @@ function deleteOrder(id) {
         function renderMatrices(manualUpdate = false) {
             const minSel = document.getElementById('matrixMinId');
             const maxSel = document.getElementById('matrixMaxId');
-            
-            const NET_STATUSES = ['Nuovo']; // Solo ordini nuovi per calcolo ordine fornitore
-            
+
+            // Stato scelto nel filtro (select #matrixFilterStatus), letto qui
+            // perche' decide COSA E' il Netto, non solo cosa filtrare dopo.
+            //
+            // Di default ("Tutti") il Netto resta la lista di cosa manca da
+            // ordinare: solo gli ordini "Nuovo". Ma se l'utente sceglie
+            // esplicitamente uno stato (es. "In Lavorazione" per una verifica),
+            // il Netto deve mostrare QUEL filtro -- prima restava comunque
+            // bloccato su "Nuovo" e il filtro Stato veniva applicato SOPRA,
+            // in AND: scegliendo "In Lavorazione" il Netto restava sempre
+            // vuoto (nessun ordine e' contemporaneamente Nuovo e In Lavorazione).
+            const statusSelEarly = document.getElementById('matrixFilterStatus');
+            const statusFilterValEarly = statusSelEarly ? statusSelEarly.value : 'all';
+            const NET_STATUSES = (statusFilterValEarly && statusFilterValEarly !== 'all')
+                ? [statusFilterValEarly]
+                : ['Nuovo']; // default: solo ordini nuovi per calcolo ordine fornitore
+
             // GROSS: Tutti gli ordini nel range (esclusi annullati e trasferiti)
-            let ordersGross = orders.filter(o => 
-                o.status !== 'Ordine trasferito ad altro ID' && 
+            let ordersGross = orders.filter(o =>
+                o.status !== 'Ordine trasferito ad altro ID' &&
                 o.status !== 'Ordine annullato'
             );
-            
-            // NET: Solo ordini "Nuovo" (esclusi annullati e trasferiti) - INCLUDE anche ordini scalati
-            let ordersNet = orders.filter(o => 
-                NET_STATUSES.includes(o.status) && 
+
+            // NET: Solo gli stati in NET_STATUSES (esclusi annullati e trasferiti)
+            let ordersNet = orders.filter(o =>
+                NET_STATUSES.includes(o.status) &&
                 o.status !== 'Ordine trasferito ad altro ID' &&
                 o.status !== 'Ordine annullato'
             );
@@ -3242,28 +3256,25 @@ function deleteOrder(id) {
                 });
                 
                 // DEBUG: Log per verificare filtro ordine netto
-                console.log(`📊 ORDINE NETTO - Range: ${minSel.value} → ${maxSel.value}`);
+                console.log(`📊 ORDINE NETTO - Range: ${minSel.value} → ${maxSel.value} | Stato riferimento: ${NET_STATUSES.join('/')}`);
                 console.log(`   📦 Ordini GROSS nel range: ${filteredGross.length}`);
-                console.log(`   ✨ Ordini NET nel range (Nuovo NON scalati): ${filteredNet.length}`);
+                console.log(`   ✨ Ordini NET nel range (${NET_STATUSES.join('/')} NON scalati): ${filteredNet.length}`);
                 console.log(`   🟢 Ordini scalati esclusi da NET:`, orders.filter(o => {
-                    return o.status === 'Nuovo' && o.inventoryScaledAt && 
-                           compareDisplayIds(o.displayId, minSel.value) >= 0 && 
+                    return NET_STATUSES.includes(o.status) && o.inventoryScaledAt &&
+                           compareDisplayIds(o.displayId, minSel.value) >= 0 &&
                            compareDisplayIds(o.displayId, maxSel.value) <= 0;
                 }).map(o => `${o.displayId} (scalato: ${o.inventoryScaledAt})`));
             }
 
-            // Filtro per stato, in aggiunta al range ID sopra. Serve per le
-            // verifiche mirate ("solo In Lavorazione in questo range"): senza
-            // di questo, l'unico modo per isolare uno stato nella Distinta era
-            // restringere il range ID a mano cercando gli ID giusti uno a uno.
-            // Si applica ad entrambe le tabelle cosi' Lordo e Netto restano
-            // coerenti fra loro -- un Netto a zero si spiega ancora con
-            // l'avviso "esclusi" sotto, non sembra un errore di calcolo.
-            const statusSel = document.getElementById('matrixFilterStatus');
-            const statusFilterVal = statusSel ? statusSel.value : 'all';
+            // Filtro per stato, sul Lordo soltanto. Il Netto lo ha gia'
+            // ricevuto piu' sopra (usato al posto di NET_STATUSES quando e'
+            // uno stato specifico), quindi qui rifiltrarlo sarebbe un AND
+            // col se stesso: ridondante ma non serve piu' farlo. Sul Lordo
+            // invece serve ancora: e' l'unico modo per isolare uno stato
+            // preciso nella Distinta senza restringere il range ID a mano.
+            const statusFilterVal = statusFilterValEarly;
             if (statusFilterVal && statusFilterVal !== 'all') {
                 filteredGross = filteredGross.filter(o => o.status === statusFilterVal);
-                filteredNet = filteredNet.filter(o => o.status === statusFilterVal);
             }
 
             const rangeTxt = (minSel.value && maxSel.value) ? `${minSel.value} -> ${maxSel.value}` : 'Tutti';
@@ -3273,19 +3284,23 @@ function deleteOrder(id) {
 
             // Perche' il Netto puo' essere vuoto mentre il Lordo e' pieno.
             //
-            // Il Netto tiene solo gli ordini "Nuovo": e' la lista di cosa
-            // resta da ordinare al fornitore, quindi merce gia' in
-            // lavorazione o gia' arrivata non ci deve comparire. Corretto,
-            // ma a video si vedevano due tabelle affiancate -- una piena e
-            // una vuota -- senza alcun indizio sul motivo: filtrando ordini
-            // vecchi sembrava che il Netto non si aggiornasse.
+            // Il Netto tiene solo gli ordini nello stato di riferimento
+            // (NET_STATUSES: "Nuovo" di default, oppure lo stato scelto nel
+            // filtro): e' la lista di cosa resta da ordinare al fornitore
+            // per quello stato, quindi il resto non ci deve comparire.
+            // Corretto, ma a video si vedevano due tabelle affiancate -- una
+            // piena e una vuota -- senza alcun indizio sul motivo: filtrando
+            // ordini vecchi sembrava che il Netto non si aggiornasse.
             //
             // Qui si conta quanti ordini del range il filtro ha scartato e
             // lo si scrive nell'intestazione. Solo informativo: il calcolo
-            // non cambia.
+            // non cambia. Il testo riflette lo stato di riferimento
+            // effettivo (non sempre "Nuovo" fisso, ora che puo' essere
+            // sostituito da una scelta esplicita).
             const excludedNet = filteredGross.length - filteredNet.length;
+            const netStatusLabel = NET_STATUSES.join('/');
             const excludedHtml = excludedNet > 0
-                ? `<span class="net-excluded-warn" title="Il Netto elenca solo cosa resta da ordinare, quindi considera i soli ordini in stato Nuovo"><i class="fas fa-exclamation-triangle mr-1"></i>${excludedNet} ${excludedNet === 1 ? 'ordine escluso' : 'ordini esclusi'} (non in stato &quot;Nuovo&quot;)</span>`
+                ? `<span class="net-excluded-warn" title="Il Netto elenca solo cosa resta da ordinare, quindi considera i soli ordini in stato ${netStatusLabel}"><i class="fas fa-exclamation-triangle mr-1"></i>${excludedNet} ${excludedNet === 1 ? 'ordine escluso' : 'ordini esclusi'} (non in stato &quot;${netStatusLabel}&quot;)</span>`
                 : '';
             
             const titleNet = document.getElementById('title-net-clothing'); if (titleNet) titleNet.innerHTML = `<span><i class="fas fa-shopping-cart mr-2"></i> 3. Ordine Fornitore (Netto) ${infoHtml}${excludedHtml}</span>`;
