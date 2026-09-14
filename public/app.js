@@ -38,6 +38,58 @@
             return s;
         }
 
+        // Nome articolo senza il prezzo fra parentesi, per i confronti.
+        // Il prezzo non identifica l'articolo, lo qualifica: "Zaino ... (25EUR)"
+        // e "Zaino ... (30EUR)" sono lo stesso articolo a listino diverso.
+        function stripItemPrice(str) {
+            return String(str || '').split('(')[0].trim().toLowerCase();
+        }
+
+        // Chiave di magazzino per un articolo: si RISOLVE, non si costruisce.
+        //
+        // Le giacenze sono salvate come "<nome col prezzo>_<taglia>". Il nome
+        // nell'ordine porta pero' il prezzo del giorno di arrivo, che puo' non
+        // coincidere con quello con cui la giacenza fu registrata mesi prima
+        // (vedi il fix import fc8ba75, che allinea i nomi al Catalogo).
+        //
+        // Costruendo la chiave a mano il lookup falliva in SILENZIO: "Scala"
+        // logga "Magazzino=0, non scalato" e si finisce per riordinare merce
+        // gia' a scaffale. Qui si prova prima la corrispondenza esatta, poi si
+        // cerca la stessa taglia con lo stesso nome ignorando il prezzo.
+        //
+        // La taglia si isola con lastIndexOf('_') perche' il NOME puo'
+        // contenere underscore, la taglia no.
+        function findStockKey(itemName, size) {
+            const exact = `${itemName}_${size}`;
+            if (inventory[exact] !== undefined) return exact;
+            const target = stripItemPrice(itemName);
+            const found = Object.keys(inventory).find(k => {
+                const idx = k.lastIndexOf('_');
+                if (idx === -1) return false;
+                return k.slice(idx + 1) === size && stripItemPrice(k.slice(0, idx)) === target;
+            });
+            return found || exact;
+        }
+
+        // Somma quanto e' gia' stato scalato per un articolo/taglia, tollerando
+        // il prezzo: scaledItems e' scritto da "Scala" con la chiave risolta,
+        // che puo' differire da quella che il chiamante costruirebbe.
+        function countScaled(order, itemName, size) {
+            if (!order.inventoryScaledAt || !order.scaledItems) return 0;
+            const exact = `${itemName}_${size}`;
+            if (order.scaledItems[exact]) return order.scaledItems[exact];
+            const target = stripItemPrice(itemName);
+            let total = 0;
+            Object.entries(order.scaledItems).forEach(([k, qty]) => {
+                const idx = k.lastIndexOf('_');
+                if (idx === -1) return;
+                if (k.slice(idx + 1) === size && stripItemPrice(k.slice(0, idx)) === target) {
+                    total += qty;
+                }
+            });
+            return total;
+        }
+
         // Esegue l'escape dei caratteri speciali HTML prima di inserire testo
         // proveniente dall'utente (es. nome Cliente) dentro markup con
         // template string. Senza questo, un nome cliente contenente <script>
@@ -3354,12 +3406,7 @@ function deleteOrder(id) {
                         // Conta quanti di questi articoli sono già stati scalati dal magazzino
                         let alreadyScaledCount = 0;
                         filteredOrders.forEach(o => {
-                            if (o.inventoryScaledAt && o.scaledItems) {
-                                const scaledKey = `${col}_${size}`;
-                                if (o.scaledItems[scaledKey]) {
-                                    alreadyScaledCount += o.scaledItems[scaledKey];
-                                }
-                            }
+                            alreadyScaledCount += countScaled(o, col, size);
                         });
                         
                         // NET = Richiesta totale - Articoli già scalati
@@ -3430,10 +3477,10 @@ function deleteOrder(id) {
                 });
                 
                 // Chiavi inventario
-                const blueKey = `${SOCKS_BLUE_DEFAULT}_${s}`;
-                const redKey = `${SOCKS_RED_DEFAULT}_${s}`;
-                const spolfBlueKey = `${SOCKS_SPOLF_BLUE}_${s}`;
-                const spolfRedKey = `${SOCKS_SPOLF_RED}_${s}`;
+                const blueKey = findStockKey(SOCKS_BLUE_DEFAULT, s);
+                const redKey = findStockKey(SOCKS_RED_DEFAULT, s);
+                const spolfBlueKey = findStockKey(SOCKS_SPOLF_BLUE, s);
+                const spolfRedKey = findStockKey(SOCKS_SPOLF_RED, s);
                 
                 // Valori inventario
                 const blueStockVal = inventory[blueKey] !== undefined ? inventory[blueKey] : '';
@@ -3448,12 +3495,10 @@ function deleteOrder(id) {
                 // Conta calze già scalate
                 let blueScaled = 0, redScaled = 0, spolfBlueScaled = 0, spolfRedScaled = 0;
                 filteredOrders.forEach(o => {
-                    if (o.inventoryScaledAt && o.scaledItems) {
-                        if (o.scaledItems[blueKey]) blueScaled += o.scaledItems[blueKey];
-                        if (o.scaledItems[redKey]) redScaled += o.scaledItems[redKey];
-                        if (o.scaledItems[spolfBlueKey]) spolfBlueScaled += o.scaledItems[spolfBlueKey];
-                        if (o.scaledItems[spolfRedKey]) spolfRedScaled += o.scaledItems[spolfRedKey];
-                    }
+                    blueScaled += countScaled(o, SOCKS_BLUE_DEFAULT, s);
+                    redScaled += countScaled(o, SOCKS_RED_DEFAULT, s);
+                    spolfBlueScaled += countScaled(o, SOCKS_SPOLF_BLUE, s);
+                    spolfRedScaled += countScaled(o, SOCKS_SPOLF_RED, s);
                 });
                 
                 let valBlue = 0, valRed = 0, valSpolfBlue = 0, valSpolfRed = 0;
@@ -4756,7 +4801,9 @@ function updateUI() {
                 console.log(`\n🔄 Scalamento ordine ${order.displayId}:`);
                 
                 order.itemsList.forEach(item => {
-                    const key = `${item.name}_${item.size}`;
+                    // Risolta, non costruita: vedi findStockKey. Senza questo il
+                    // lookup fallisce in silenzio quando il prezzo e' cambiato.
+                    const key = findStockKey(item.name, item.size);
                     const stockVal = inventory[key];
                     const stockInt = parseInt(stockVal) || 0;
                     
