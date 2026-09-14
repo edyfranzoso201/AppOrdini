@@ -3517,6 +3517,69 @@ function deleteOrder(id) {
             columns.forEach(col => { if(isSockItem(col)) return; htmlTotal += `<td class="text-center border-l p-2">${colTotals[col]}</td>`; }); trTotal.innerHTML = htmlTotal; tbody.appendChild(trTotal);
         }
         
+        // Ispezione dei nomi calza SALVATI negli ordini. Solo lettura.
+        //
+        // La tabella "Calze da Ordinare" ha 4 colonne fisse e conta per nome
+        // esatto (prezzo escluso): un articolo il cui nome non coincide con
+        // nessuna delle 4 costanti non finisce in nessuna colonna e sparisce
+        // senza alcun errore a video. Qui si stampa cosa c'e' davvero nel
+        // database, per distinguere "articolo assente" da "articolo presente
+        // ma con un nome che non combacia".
+        //
+        // Si lancia a mano dalla console: ispezionaCalze()
+        // oppure ispezionaCalze('2026B_101', '2026B_109') per un intervallo.
+        function ispezionaCalze(daId, aId) {
+            const COSTANTI = [
+                ['BLU 618', SOCKS_BLUE_DEFAULT],
+                ['ROSSO 565', SOCKS_RED_DEFAULT],
+                ['SPOLF BLU 193', SOCKS_SPOLF_BLUE],
+                ['SPOLF RED 565', SOCKS_SPOLF_RED]
+            ];
+            let lista = orders;
+            if (daId && aId) {
+                const inRange = (id) => String(id) >= String(daId) && String(id) <= String(aId);
+                lista = orders.filter(o => inRange(o.displayId));
+            }
+            console.log(`🔍 Ordini esaminati: ${lista.length}${daId ? ` (${daId} → ${aId})` : ' (tutti)'}`);
+
+            const righe = [];
+            lista.forEach(o => (o.itemsList || []).forEach(i => {
+                if (!i || typeof i.name !== 'string' || !isSockItem(i.name)) return;
+                const pulito = stripPriceOnly(i.name);
+                const hit = COSTANTI.find(([, c]) => stripPriceOnly(c) === pulito);
+                righe.push({
+                    ordine: o.displayId,
+                    stato: o.status,
+                    colonna: hit ? hit[0] : '❌ NESSUNA',
+                    taglia: effectiveSockSize(i, o),
+                    nome_salvato: i.name
+                });
+            }));
+
+            if (!righe.length) {
+                console.warn('⚠️ Nessun articolo calza trovato in questi ordini. ' +
+                    'Se dovrebbero esserci, il problema e\' a monte: non sono stati importati.');
+                return righe;
+            }
+            console.table(righe);
+
+            console.log('📋 Nomi salvati distinti (per esteso):');
+            [...new Set(righe.map(r => r.nome_salvato))].forEach(n => {
+                const r = righe.find(x => x.nome_salvato === n);
+                console.log(`   ${r.colonna === '❌ NESSUNA' ? '❌' : '✅'} [${r.colonna}] "${n}"`);
+            });
+            console.log('📋 Nomi attesi dalle 4 colonne:');
+            COSTANTI.forEach(([et, c]) => console.log(`   [${et}] "${c}"`));
+
+            const orfani = righe.filter(r => r.colonna === '❌ NESSUNA');
+            if (orfani.length) {
+                console.warn(`⚠️ ${orfani.length} articoli non corrispondono a nessuna colonna: ` +
+                    'sono salvati ma la tabella non puo\' mostrarli.');
+            }
+            return righe;
+        }
+        window.ispezionaCalze = ispezionaCalze;
+
         function renderSocksTable(filteredOrders, mode) { 
             const targetBody = mode === 'INV' ? 'invSocksBody' : 'netSocksBody'; 
             const tbody = document.getElementById(targetBody); 
