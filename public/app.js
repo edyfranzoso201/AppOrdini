@@ -3396,7 +3396,7 @@ function deleteOrder(id) {
             renderSocksTable(filteredGross, 'INV');
             renderSocksTable(filteredNet, 'NET', true);
 
-            renderBallTable(filteredGross, 'GROSS');
+            renderBallTable(filteredGross, 'INV');
             renderBallTable(filteredNet, 'NET');
 
             // NON chiamare più updateDashboardCounts qui - la Dashboard ha i suoi filtri indipendenti
@@ -3823,12 +3823,15 @@ function deleteOrder(id) {
         // come per le calze. mode='GROSS' popola la tabella Accessori
         // (Lordo), mode='NET' la tabella Accessori da Ordinare (Netto).
         function renderBallTable(filteredOrders, mode) {
-            const targetBody = mode === 'NET' ? 'netBallBody' : 'ballBody';
+            // mode: 'INV' (Accessori, inventario editabile) o 'NET' (Accessori
+            // da Ordinare, needed - scalato, sola lettura) -- stesso schema
+            // di renderSocksTable, un solo articolo invece di 4.
+            const targetBody = mode === 'INV' ? 'ballBody' : 'netBallBody';
             const tbody = document.getElementById(targetBody);
             if (!tbody) return;
             tbody.innerHTML = '';
 
-            const headerId = mode === 'NET' ? 'headerBallNet' : 'headerBall';
+            const headerId = mode === 'INV' ? 'headerBall' : 'headerBallNet';
             const headerEl = document.getElementById(headerId);
             if (headerEl) headerEl.innerHTML = formatHeaderName(BALL_NAME);
 
@@ -3841,6 +3844,7 @@ function deleteOrder(id) {
                 const s = normalizeBallSize(i.size);
                 if (BALL_SIZES.includes(s)) sizes.add(s);
             }));
+            Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isBallItem(item) && BALL_SIZES.includes(size)) sizes.add(size); });
 
             const sorted = Array.from(sizes).filter(s => s).sort();
 
@@ -3853,12 +3857,27 @@ function deleteOrder(id) {
                     needed++;
                 }));
 
-                total += needed;
+                const stockKey = findStockKey(BALL_NAME, s);
+                const stockVal = inventory[stockKey] !== undefined ? inventory[stockKey] : '';
+                const stockInt = parseInt(stockVal) || 0;
+
+                let scaled = 0;
+                filteredOrders.forEach(o => { scaled += countScaled(o, BALL_NAME, s); });
+
                 const tr = document.createElement('tr');
                 tr.className = "border-b";
-                const val = needed > 0 ? needed : '-';
-                const cls = needed > 0 ? 'buy-alert' : 'buy-ok';
-                tr.innerHTML = `<td class="px-4 py-0 font-bold text-center ${mode==='NET'?'bg-gray-50':'bg-yellow-50'}">n°${s}</td><td class="text-center border-l bg-white py-0"><span class="net-val ${cls}">${val}</span></td>`;
+                let cellHtml;
+                if (mode === 'INV') {
+                    total += stockInt;
+                    cellHtml = `<td class="text-center border-l bg-white py-0"><input type="number" value="${stockVal}" onchange="updateInventory('${BALL_NAME}', '${s}', this.value)" class="inv-input" placeholder="-"></td>`;
+                } else {
+                    const toBuy = Math.max(0, needed - scaled);
+                    total += toBuy;
+                    const cls = toBuy > 0 ? 'buy-alert' : 'buy-ok';
+                    const val = toBuy > 0 ? toBuy : '-';
+                    cellHtml = `<td class="text-center border-l bg-white py-0"><span class="net-val ${cls}">${val}</span></td>`;
+                }
+                tr.innerHTML = `<td class="px-4 py-0 font-bold text-center ${mode==='INV'?'bg-yellow-50':'bg-gray-50'}">n°${s}</td>${cellHtml}`;
                 tbody.appendChild(tr);
             });
 
