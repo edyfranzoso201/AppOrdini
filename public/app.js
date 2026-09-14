@@ -70,6 +70,25 @@
             return String(str || '').split('(')[0].trim().toLowerCase();
         }
 
+        // Nome articolo senza il PREZZO, per confrontare due varianti di listino.
+        //
+        // Diverso da stripItemPrice, che taglia alla prima parentesi: va bene
+        // per articoli il cui nome contiene solo il prezzo fra parentesi, ma
+        // gli SPOLF si chiamano "Calzettone (Senza Piede) SPOLF RED 565 (8EUR)"
+        // e li' stripItemPrice restituisce "calzettone" -- identico per il blu
+        // e per il rosso. Usarlo per contarli avrebbe sommato i due colori
+        // nella stessa colonna.
+        //
+        // Qui si toglie solo un gruppo fra parentesi che contiene una cifra,
+        // cioe' il prezzo: "(Senza Piede)" non ne ha e resta al suo posto.
+        function stripPriceOnly(str) {
+            return String(str || '')
+                .replace(/\s*\([^()]*\d[^()]*\)\s*/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
         // Chiave di magazzino per un articolo: si RISOLVE, non si costruisce.
         //
         // Le giacenze sono salvate come "<nome col prezzo>_<taglia>". Il nome
@@ -3490,6 +3509,32 @@ function deleteOrder(id) {
             // per non generare righe fantasma.
             let sizes = new Set(VALID_SOCK_SIZES);
             filteredOrders.forEach(o => o.itemsList.forEach(i => { if(!isSockItem(i.name)) return; const es = effectiveSockSize(i, o); if(VALID_SOCK_SIZES.includes(es)) sizes.add(es); }));
+
+            // DIAGNOSTICA TEMPORANEA: stampa cosa vede davvero la tabella calze.
+            // Serve a capire perche' certi articoli non vengono conteggiati;
+            // da rimuovere una volta chiarito.
+            if (mode !== 'INV') {
+                const diag = [];
+                filteredOrders.forEach(o => o.itemsList.forEach(i => {
+                    if (!isSockItem(i.name)) return;
+                    diag.push({
+                        ordine: o.displayId,
+                        stato: o.status,
+                        articolo: i.name,
+                        size_articolo: i.size,
+                        sockSize_ordine: o.sockSize,
+                        size_effettiva: effectiveSockSize(i, o),
+                        match_costante: [SOCKS_BLUE_DEFAULT, SOCKS_RED_DEFAULT, SOCKS_SPOLF_BLUE, SOCKS_SPOLF_RED].indexOf(i.name)
+                    });
+                }));
+                console.log('🧦 DIAGNOSTICA CALZE — articoli calza nel range:', diag.length);
+                if (diag.length) console.table(diag);
+                const noMatch = diag.filter(d => d.match_costante === -1);
+                if (noMatch.length) {
+                    console.warn('⚠️ NOMI che non corrispondono a nessuna delle 4 costanti:',
+                        [...new Set(noMatch.map(d => d.articolo))]);
+                }
+            }
             Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isSockItem(item) && VALID_SOCK_SIZES.includes(size)) sizes.add(size); });
 
             let sorted = Array.from(sizes).filter(s=>s);
@@ -3513,10 +3558,16 @@ function deleteOrder(id) {
                         // taglia abbigliamento sugli SPOLF (vedi effectiveSockSize).
                         if(!isSockItem(i.name)) return;
                         if(effectiveSockSize(i, o) !== s) return;
-                        if(i.name === SOCKS_BLUE_DEFAULT) blueNeeded++; 
-                        if(i.name === SOCKS_RED_DEFAULT) redNeeded++;
-                        if(i.name === SOCKS_SPOLF_BLUE) spolfBlueNeeded++;
-                        if(i.name === SOCKS_SPOLF_RED) spolfRedNeeded++;
+                        // Confronto SENZA prezzo: il prezzo vive dentro la stringa
+                        // del nome, quindi "(8EUR)" contro "(9EUR)" e' lo stesso
+                        // articolo a listino diverso. Con === bastava un ritocco di
+                        // prezzo a Catalogo per far sparire una colonna intera,
+                        // senza errori a video. Stessa ragione di findStockKey.
+                        const n = stripPriceOnly(i.name);
+                        if(n === stripPriceOnly(SOCKS_BLUE_DEFAULT)) blueNeeded++;
+                        if(n === stripPriceOnly(SOCKS_RED_DEFAULT)) redNeeded++;
+                        if(n === stripPriceOnly(SOCKS_SPOLF_BLUE)) spolfBlueNeeded++;
+                        if(n === stripPriceOnly(SOCKS_SPOLF_RED)) spolfRedNeeded++;
                     }); 
                 });
                 
