@@ -100,10 +100,11 @@
         /* ════════════════════════════════════ */
         /* FORZA padding zero su tutte le celle delle tabelle */
         #grossTable td, #invClothingTable td, #netTable td,
-        #invSocksTable td, #netSocksTable td {
+        #invSocksTable td, #netSocksTable td,
+        #ballTable td, #netBallTable td {
             padding: 0 !important;
         }
-        
+
         /* FORZA centratura TAGLIA */
         #grossTable th:first-child, #invClothingTable th:first-child, #netTable th:first-child {
             padding: 0 !important;
@@ -118,29 +119,35 @@
            l'occhio perdeva la riga. Qui si disegna un bordo pieno su ogni
            cella, piu' spesso sui separatori esterni e sulla riga TOTALE. */
         #grossTable, #invClothingTable, #netTable,
-        #invSocksTable, #netSocksTable {
+        #invSocksTable, #netSocksTable,
+        #ballTable, #netBallTable {
             border-collapse: collapse !important;
             border: 2px solid #64748b !important;
         }
         #grossTable th, #invClothingTable th, #netTable th,
-        #invSocksTable th, #netSocksTable th {
+        #invSocksTable th, #netSocksTable th,
+        #ballTable th, #netBallTable th {
             border: 1.5px solid #475569 !important;
         }
         #grossTable td, #invClothingTable td, #netTable td,
-        #invSocksTable td, #netSocksTable td {
+        #invSocksTable td, #netSocksTable td,
+        #ballTable td, #netBallTable td {
             border: 1.5px solid #94a3b8 !important;
         }
         /* Colonna TAGLIA: separatore piu' marcato, e' il riferimento di lettura */
         #grossTable td:first-child, #invClothingTable td:first-child, #netTable td:first-child,
         #invSocksTable td:first-child, #netSocksTable td:first-child,
+        #ballTable td:first-child, #netBallTable td:first-child,
         #grossTable th:first-child, #invClothingTable th:first-child, #netTable th:first-child,
-        #invSocksTable th:first-child, #netSocksTable th:first-child {
+        #invSocksTable th:first-child, #netSocksTable th:first-child,
+        #ballTable th:first-child, #netBallTable th:first-child {
             border-right: 2.5px solid #475569 !important;
         }
         /* Riga TOTALE in fondo: chiude la tabella */
         #grossTable tbody tr:last-child td, #invClothingTable tbody tr:last-child td,
         #netTable tbody tr:last-child td, #invSocksTable tbody tr:last-child td,
-        #netSocksTable tbody tr:last-child td {
+        #netSocksTable tbody tr:last-child td,
+        #ballTable tbody tr:last-child td, #netBallTable tbody tr:last-child td {
             border-top: 2.5px solid #475569 !important;
         }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); animation: fadeIn 0.2s ease-out; }
@@ -724,6 +731,44 @@
                                     </tr>
                                 </thead>
                                 <tbody id="netSocksBody" class="divide-y divide-gray-200"></tbody>
+                            </table></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+                        <div class="bg-white rounded shadow p-4 border-l-4 border-yellow-400">
+                             <h3 class="font-bold text-yellow-700 mb-2 border-b pb-1 flex justify-between items-center">
+                                <span>Accessori</span>
+                                <button onclick="openTableFullscreen('ball')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Apri a schermo intero">
+                                    <i class="fas fa-expand mr-1"></i> Espandi
+                                </button>
+                             </h3>
+                            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full divide-y divide-gray-200 text-sm border" id="ballTable">
+                                <thead class="bg-yellow-50 sticky-header">
+                                     <tr>
+                                        <th class="px-2 py-2 text-center font-bold text-gray-700 w-16 bg-yellow-50">TAGLIA</th>
+                                         <th class="px-2 py-2 text-center font-bold text-orange-800 bg-orange-50 text-xs border-l" id="headerBall">PALLONE</th>
+                                     </tr>
+                                </thead>
+                                <tbody id="ballBody" class="divide-y divide-gray-200"></tbody>
+                            </table></div>
+                        </div>
+
+                        <div class="bg-white rounded shadow p-4 border-l-4 border-red-600">
+                            <h3 class="font-bold text-red-800 mb-2 border-b pb-1 flex justify-between items-center" id="title-net-ball">
+                                <span>Accessori da Ordinare (Netto)</span>
+                                <button onclick="openTableFullscreen('netBall')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Apri a schermo intero">
+                                    <i class="fas fa-expand mr-1"></i> Espandi
+                                </button>
+                            </h3>
+                            <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full divide-y divide-gray-200 text-sm border" id="netBallTable">
+                                <thead class="bg-gray-100 sticky-header">
+                                    <tr>
+                                         <th class="px-2 py-2 text-center font-bold text-gray-700 w-16 bg-gray-100">TAGLIA</th>
+                                        <th class="px-2 py-2 text-center font-bold text-orange-800 bg-orange-50 text-xs border-l" id="headerBallNet">PALLONE</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="netBallBody" class="divide-y divide-gray-200"></tbody>
                             </table></div>
                         </div>
                     </div>

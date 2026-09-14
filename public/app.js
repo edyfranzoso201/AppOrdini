@@ -4,10 +4,39 @@
         const SOCKS_RED_DEFAULT = "Calzettoni di Allen. WULGAR COL. 565 RED (7€)";
         const SOCKS_SPOLF_BLUE = "Calzettone (Senza Piede) SPOLF Blue Marine 193 (8€)";
         const SOCKS_SPOLF_RED = "Calzettone (Senza Piede) SPOLF RED 565 (8€)";
-        
+        const BALL_NAME = "Pallone (15€)";
+
         // Funzione helper per identificare se un articolo è una calza
         function isSockItem(itemName) {
             return itemName.includes("Calzettoni") || itemName.includes("Calzettone");
+        }
+
+        // Funzione helper per identificare se un articolo è un Pallone.
+        // Stesso ruolo di isSockItem: un solo articolo di catalogo ("Pallone
+        // (15€)"), ma con una taglia propria (n°4/n°5) invece della taglia
+        // abbigliamento -- vedi BALL_SIZES/normalizeBallSize sotto.
+        function isBallItem(itemName) {
+            return typeof itemName === 'string' && itemName.includes("Pallone");
+        }
+
+        // Taglie pallone ammesse. Oggi il modulo Google ha solo "n°4", ma la
+        // colonna e' gia' a scelta multipla: quando arrivera' il "n°5" basta
+        // che compaia nel testo, non serve toccare il catalogo (un solo
+        // articolo "Pallone", taglia separata -- non un articolo per taglia
+        // come i due colori di calzettoni SPOLF).
+        const BALL_SIZES = ["4", "5"];
+
+        // Riduce il testo scelto nel modulo Google ("n°4 (Categoria di base)
+        // 15€") alla sola misura ("4"). Si cerca la cifra ovunque nel testo,
+        // non solo in testa, perche' il modulo puo' anteporre/posporre altro
+        // (il prezzo, "Categoria di base"...). Se non si riconosce ne' "4" ne'
+        // "5" si ritorna stringa vuota: meglio niente pallone che indovinarne
+        // la taglia, l'import lo scarta (vedi ballSizeImport piu' sotto).
+        function normalizeBallSize(raw) {
+            const s = String(raw || '').trim();
+            if (!s) return '';
+            const m = s.match(/[45]/);
+            return m ? m[0] : '';
         }
 
         // Taglie calze ammesse. Qualsiasi altra taglia finita su un articolo
@@ -210,7 +239,10 @@
             SOCKS_BLUE_DEFAULT,
             SOCKS_RED_DEFAULT,
             SOCKS_SPOLF_BLUE,
-            SOCKS_SPOLF_RED
+            SOCKS_SPOLF_RED,
+
+            // Accessori extra (taglia propria, non abbigliamento)
+            BALL_NAME
         ];
         
         const EXCEL_ITEM_MAPPING = { 
@@ -1995,6 +2027,7 @@
                     let timestamp = null; // Dichiarazione timestamp per tutti i tipi di import
                     let rawTimestampForLog = null; // Per log debug
                     let accessorySize = 'UNICA'; // Taglia accessori (Cappellino, Scaldacollo, Guanti)
+                    let ballSizeImport = null; // Taglia Pallone (colonna U Google Form), null = nessun pallone in quest'ordine
                     let noteColorImport = 'default';
                     let inventoryScaledAtImport = null;
 
@@ -2168,7 +2201,21 @@
                                 accessorySize = '03 BIMBO';
                             }
                         }
-                        
+
+                        // Colonna U (20): Taglia Pallone. Campo separato dal
+                        // kit -- il form la chiede sempre, ma "Non Applicabile
+                        // per la tipologia di ordine" significa che quell'ordine
+                        // non comprende un pallone. Si legge qui e si aggiunge
+                        // piu' sotto a itemsList, DOPO che il kit e' stato
+                        // risolto: un pallone non e' mai parte di un kit.
+                        ballSizeImport = null;
+                        if (row[20]) {
+                            const colU = row[20].toString().trim();
+                            if (colU && !colU.toLowerCase().includes('non applicabile')) {
+                                ballSizeImport = normalizeBallSize(colU);
+                            }
+                        }
+
                         bagChoice = row[12] ? row[12].toString().trim().toLowerCase() : null;
                         inputs = [row[9], row[10], row[11]].map(x => x ? x.toString().trim().toLowerCase() : '').filter(f => f && !f.includes('non applicabile'));
                         if (row[14]) {
@@ -2271,7 +2318,17 @@
                     } 
 
                     if(!itemsList) itemsList = [];
-                    
+
+                    // Pallone: articolo extra indipendente dal kit (non fa parte
+                    // di nessun KIT_DEFINITIONS), va aggiunto qui una sola volta
+                    // se la colonna U del form ha scelto una taglia valida.
+                    if (isGoogleForm && ballSizeImport) {
+                        const resolvedBall = resolveItemNameFromCatalog(BALL_NAME);
+                        if (!itemsList.find(i => isBallItem(i.name))) {
+                            itemsList.push({ name: resolvedBall, size: ballSizeImport });
+                        }
+                    }
+
                     // CONTROLLO: Per Google Form, importa SOLO ordini più recenti dell'ultimo nel DB
                     if (isGoogleForm && latestTimestampDate && timestamp && !isBackup) {
                         try {
@@ -3318,9 +3375,12 @@ function deleteOrder(id) {
             renderGenericMatrix('invClothingTable', 'invClothingHeader', 'invClothingBody', globalItems, filteredGross, 'INV'); 
             renderGenericMatrix('netTable', 'netHeader', 'netBody', globalItems, filteredNet, 'NET'); 
             
-            renderSocksTable(filteredGross, 'INV'); 
-            renderSocksTable(filteredNet, 'NET', true); 
-            
+            renderSocksTable(filteredGross, 'INV');
+            renderSocksTable(filteredNet, 'NET', true);
+
+            renderBallTable(filteredGross, 'GROSS');
+            renderBallTable(filteredNet, 'NET');
+
             // NON chiamare più updateDashboardCounts qui - la Dashboard ha i suoi filtri indipendenti
             renderChart();
         }
@@ -3455,7 +3515,7 @@ function deleteOrder(id) {
 
         function renderGenericMatrix(tid, hid, bid, columns, filteredOrders, mode) {
             const thead = document.getElementById(hid); let bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100'); let hHTML = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow w-16 text-center align-middle text-sm font-bold" style="vertical-align: middle;"><div style="writing-mode: horizontal-tb; transform: none; height: auto; display: flex; align-items: center; justify-content: center; padding: 4px;">TAGLIA</div></th>`; 
-            columns.forEach(c => { if(isSockItem(c)) return; let bgClass = c.includes("Staff") ? "bg-red-50 text-red-900" : "bg-gray-50"; hHTML += `<th class="border-l align-bottom pb-2 ${bgClass}"><div class="vertical-header">${formatHeaderName(c)}</div></th>`; }); 
+            columns.forEach(c => { if(isSockItem(c) || isBallItem(c)) return; let bgClass = c.includes("Staff") ? "bg-red-50 text-red-900" : "bg-gray-50"; hHTML += `<th class="border-l align-bottom pb-2 ${bgClass}"><div class="vertical-header">${formatHeaderName(c)}</div></th>`; });
             thead.innerHTML = `<tr>${hHTML}</tr>`;
             const tbody = document.getElementById(bid); tbody.innerHTML = ''; 
             
@@ -3473,13 +3533,13 @@ function deleteOrder(id) {
                     if (!SOCK_SIZES.includes(s)) sizes.add(s);
                 });
                 
-                // Poi aggiungi le taglie effettivamente presenti negli ordini (escluse calze)
-                filteredOrders.forEach(o => o.itemsList.forEach(i => { 
-                    if(!isSockItem(i.name) && !SOCK_SIZES.includes(i.size)) sizes.add(i.size) 
+                // Poi aggiungi le taglie effettivamente presenti negli ordini (escluse calze e Pallone)
+                filteredOrders.forEach(o => o.itemsList.forEach(i => {
+                    if(!isSockItem(i.name) && !isBallItem(i.name) && !SOCK_SIZES.includes(i.size)) sizes.add(i.size)
                 }));
-                Object.keys(inventory).forEach(k => { 
-                    const [item, size] = k.split('_'); 
-                    if(columns.includes(item) && !isSockItem(item) && !SOCK_SIZES.includes(size)) sizes.add(size); 
+                Object.keys(inventory).forEach(k => {
+                    const [item, size] = k.split('_');
+                    if(columns.includes(item) && !isSockItem(item) && !isBallItem(item) && !SOCK_SIZES.includes(size)) sizes.add(size);
                 });
             }
             
@@ -3500,9 +3560,9 @@ function deleteOrder(id) {
                 const isSectionRow = size.includes('TAGLIA');
                 const sizeClass = isSectionRow ? 'size-section-row' : '';
                 let rHTML = `<td class="px-4 py-0 font-bold ${bgCol} sticky-col border-r shadow border-b ${sizeClass}">${size}</td>`;
-                columns.forEach(col => { 
-                    if(isSockItem(col)) return;
-                    
+                columns.forEach(col => {
+                    if(isSockItem(col) || isBallItem(col)) return;
+
                     // Conta TUTTI gli ordini filtrati (inclusi quelli con badge)
                     let countNeeded = 0; 
                     filteredOrders.forEach(o => { 
@@ -3551,7 +3611,7 @@ function deleteOrder(id) {
             });
             const trTotal = document.createElement('tr'); trTotal.className = 'total-row';
             let htmlTotal = `<td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>`;
-            columns.forEach(col => { if(isSockItem(col)) return; htmlTotal += `<td class="text-center border-l p-2">${colTotals[col]}</td>`; }); trTotal.innerHTML = htmlTotal; tbody.appendChild(trTotal);
+            columns.forEach(col => { if(isSockItem(col) || isBallItem(col)) return; htmlTotal += `<td class="text-center border-l p-2">${colTotals[col]}</td>`; }); trTotal.innerHTML = htmlTotal; tbody.appendChild(trTotal);
         }
         
         // Ispezione dei nomi calza SALVATI negli ordini. Solo lettura.
@@ -3738,7 +3798,59 @@ function deleteOrder(id) {
             tbody.appendChild(trTotal);
         }
 
-        function renderChart() { 
+        // Tabella Accessori (per ora solo il Pallone). Sul modello di
+        // renderSocksTable, ma semplificata: un solo articolo/colonna, e
+        // nessuna gestione magazzino/scalato -- la richiesta e' solo
+        // "quanti Palloni servono per taglia", non un inventario dedicato
+        // come per le calze. mode='GROSS' popola la tabella Accessori
+        // (Lordo), mode='NET' la tabella Accessori da Ordinare (Netto).
+        function renderBallTable(filteredOrders, mode) {
+            const targetBody = mode === 'NET' ? 'netBallBody' : 'ballBody';
+            const tbody = document.getElementById(targetBody);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const headerId = mode === 'NET' ? 'headerBallNet' : 'headerBall';
+            const headerEl = document.getElementById(headerId);
+            if (headerEl) headerEl.innerHTML = formatHeaderName(BALL_NAME);
+
+            // Righe fisse dalle taglie ammesse (BALL_SIZES), come le 6 taglie
+            // fisse delle calze: qualunque taglia estranea associata per
+            // errore a un Pallone viene ignorata, non genera righe fantasma.
+            let sizes = new Set(BALL_SIZES);
+            filteredOrders.forEach(o => (o.itemsList || []).forEach(i => {
+                if (!isBallItem(i.name)) return;
+                const s = normalizeBallSize(i.size);
+                if (BALL_SIZES.includes(s)) sizes.add(s);
+            }));
+
+            const sorted = Array.from(sizes).filter(s => s).sort();
+
+            let total = 0;
+            sorted.forEach(s => {
+                let needed = 0;
+                filteredOrders.forEach(o => (o.itemsList || []).forEach(i => {
+                    if (!isBallItem(i.name)) return;
+                    if (normalizeBallSize(i.size) !== s) return;
+                    needed++;
+                }));
+
+                total += needed;
+                const tr = document.createElement('tr');
+                tr.className = "border-b";
+                const val = needed > 0 ? needed : '-';
+                const cls = needed > 0 ? 'buy-alert' : 'buy-ok';
+                tr.innerHTML = `<td class="px-4 py-0 font-bold text-center ${mode==='NET'?'bg-gray-50':'bg-yellow-50'}">n°${s}</td><td class="text-center border-l bg-white py-0"><span class="net-val ${cls}">${val}</span></td>`;
+                tbody.appendChild(tr);
+            });
+
+            const trTotal = document.createElement('tr');
+            trTotal.className = 'total-row';
+            trTotal.innerHTML = `<td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td><td class="text-center border-l p-2">${total}</td>`;
+            tbody.appendChild(trTotal);
+        }
+
+        function renderChart() {
             const validOrders = orders.filter(o => o.status !== 'Ordine annullato' && o.status !== 'Ordine trasferito ad altro ID');
             const ctx = document.getElementById('chartStatus').getContext('2d'); if(chartStatus) chartStatus.destroy(); chartStatus = new Chart(ctx, { type: 'doughnut', data: { labels: ['Nuovo', 'In Lav.', 'Pagato', 'Finito'], datasets: [{ data: [validOrders.filter(o=>o.status==='Nuovo').length, validOrders.filter(o=>o.status==='In Lavorazione').length, validOrders.filter(o=>o.paymentMark==='Pagato').length, validOrders.filter(o=>o.status==='Consegnato').length], backgroundColor: ['#fbbf24', '#3b82f6', '#15803d', '#374151'] }] }, options: { responsive: true, maintainAspectRatio: false } });
             
@@ -4618,6 +4730,18 @@ function updateUI() {
                     titleColor = '#991b1b';
                     borderColor = '#dc2626';
                     break;
+                case 'ball':
+                    title = 'Accessori';
+                    tableId = 'ballTable';
+                    titleColor = '#92400e';
+                    borderColor = '#fbbf24';
+                    break;
+                case 'netBall':
+                    title = 'Accessori da Ordinare (Netto)';
+                    tableId = 'netBallTable';
+                    titleColor = '#991b1b';
+                    borderColor = '#dc2626';
+                    break;
             }
             
             const table = document.getElementById(tableId);
@@ -5245,7 +5369,7 @@ function updateUI() {
             inventorySizes.push('UNICA');
             
             const inventoryData = [];
-            const itemsWithoutSocks = globalItems.filter(item => !isSockItem(item));
+            const itemsWithoutSocks = globalItems.filter(item => !isSockItem(item) && !isBallItem(item));
             
             inventorySizes.forEach(size => {
                 const row = { 'TAGLIA': size };
@@ -5309,9 +5433,10 @@ function updateUI() {
             
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(socksInventoryData), "Inv_Calze");
             
-            addSheetWithInfo('netTable', "Ordine_Netto"); 
+            addSheetWithInfo('netTable', "Ordine_Netto");
             addSheetWithInfo('netSocksTable', "Netto_Calze");
-            
+            addSheetWithInfo('netBallTable', "Netto_Accessori");
+
             XLSX.writeFile(wb, "OrderFlow_Export_" + now.replace(/[: ]/g, '_') + ".xlsx");
         }
 
