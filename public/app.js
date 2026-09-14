@@ -697,8 +697,17 @@
             // Header riga 2 - Totali
             let header2HTML = '';
             allItems.forEach((itemName, idx) => {
+                // Il confronto deve usare lo stesso criterio con cui sono
+                // state costruite le colonne (sopra) e riempite le celle:
+                // via il prezzo, nient'altro. Con split('(') gli SPOLF --
+                // "Calzettone (Senza Piede) SPOLF RED 565 (8EUR)" -- si
+                // riducevano a "Calzettone", che non e' il nome di nessuna
+                // colonna: il totale restava 0 sotto una colonna con le
+                // celle piene.
                 const total = filteredOrders.reduce((sum, order) => {
-                    return sum + order.itemsList.filter(i => i.name.split('(')[0].trim() === itemName).length;
+                    return sum + order.itemsList.filter(i =>
+                        i && typeof i.name === 'string' &&
+                        stripPriceOnly(i.name) === stripPriceOnly(itemName)).length;
                 }, 0);
                 
                 // Stessa logica di divisione
@@ -1678,9 +1687,16 @@
         function resolveItemNameFromCatalog(itemName) {
             if (!itemName || typeof itemName !== 'string') return itemName;
             if (!Array.isArray(globalItems) || globalItems.length === 0) return itemName;
-            const clean = (s) => s.split('(')[0].trim().toLowerCase();
-            const target = clean(itemName);
-            const found = globalItems.find(dbItem => typeof dbItem === 'string' && clean(dbItem) === target);
+            // Confronto con stripPriceOnly, non tagliando alla prima parentesi.
+            //
+            // Il vecchio clean() troncava a "(", e i due Calzettone SPOLF si
+            // chiamano "Calzettone (Senza Piede) SPOLF ...": entrambi si
+            // riducevano a "calzettone". La find() restituiva quindi il PRIMO
+            // dei due, e all'import lo SPOLF RED veniva riscritto col nome
+            // dello SPOLF Blu -- il rosso spariva dal database e finiva
+            // conteggiato nella colonna del blu, senza alcun errore a video.
+            const target = stripPriceOnly(itemName);
+            const found = globalItems.find(dbItem => typeof dbItem === 'string' && stripPriceOnly(dbItem) === target);
             return found || itemName;
         }
 
@@ -2737,8 +2753,16 @@ function deleteOrder(id) {
                 }
                 o.itemsList.forEach(item => {
                     const oldItemName = item.name;
-                    const cleanOldItem = stripPrice(oldItemName);
-                    const foundInDB = globalItems.find(dbItem => stripPrice(dbItem) === cleanOldItem);
+                    // Sui KIT stripPrice va bene (i nomi non hanno altre
+                    // parentesi), sugli ARTICOLI no: tagliando alla prima
+                    // parentesi i due "Calzettone (Senza Piede) SPOLF ..."
+                    // diventano entrambi "Calzettone", la find() restituisce
+                    // il primo e questo comando RISCRIVE nel database lo
+                    // SPOLF Red col nome dello SPOLF Blu. Qui si toglie solo
+                    // il prezzo, cosi' i due restano distinti.
+                    const cleanOldItem = stripPriceOnly(oldItemName);
+                    const foundInDB = globalItems.find(dbItem =>
+                        typeof dbItem === 'string' && stripPriceOnly(dbItem) === cleanOldItem);
                     if (foundInDB && foundInDB !== oldItemName) {
                         item.name = foundInDB;
                         countItems++;
@@ -3510,31 +3534,6 @@ function deleteOrder(id) {
             let sizes = new Set(VALID_SOCK_SIZES);
             filteredOrders.forEach(o => o.itemsList.forEach(i => { if(!isSockItem(i.name)) return; const es = effectiveSockSize(i, o); if(VALID_SOCK_SIZES.includes(es)) sizes.add(es); }));
 
-            // DIAGNOSTICA TEMPORANEA: stampa cosa vede davvero la tabella calze.
-            // Serve a capire perche' certi articoli non vengono conteggiati;
-            // da rimuovere una volta chiarito.
-            if (mode !== 'INV') {
-                const diag = [];
-                filteredOrders.forEach(o => o.itemsList.forEach(i => {
-                    if (!isSockItem(i.name)) return;
-                    diag.push({
-                        ordine: o.displayId,
-                        stato: o.status,
-                        articolo: i.name,
-                        size_articolo: i.size,
-                        sockSize_ordine: o.sockSize,
-                        size_effettiva: effectiveSockSize(i, o),
-                        match_costante: [SOCKS_BLUE_DEFAULT, SOCKS_RED_DEFAULT, SOCKS_SPOLF_BLUE, SOCKS_SPOLF_RED].indexOf(i.name)
-                    });
-                }));
-                console.log('🧦 DIAGNOSTICA CALZE — articoli calza nel range:', diag.length);
-                if (diag.length) console.table(diag);
-                const noMatch = diag.filter(d => d.match_costante === -1);
-                if (noMatch.length) {
-                    console.warn('⚠️ NOMI che non corrispondono a nessuna delle 4 costanti:',
-                        [...new Set(noMatch.map(d => d.articolo))]);
-                }
-            }
             Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isSockItem(item) && VALID_SOCK_SIZES.includes(size)) sizes.add(size); });
 
             let sorted = Array.from(sizes).filter(s=>s);
