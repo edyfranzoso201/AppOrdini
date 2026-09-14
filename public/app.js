@@ -922,38 +922,56 @@
                 .then(async csvText => {
                     console.log('📄 CSV scaricato, lunghezza:', csvText.length);
                     
-                    // Converti CSV in array di righe
+                    // Converti CSV in array di righe.
+                    //
+                    // ATTENZIONE: split('\n') PRIMA del parsing (come si faceva
+                    // qui in precedenza) rompe qualunque cella che contenga un
+                    // "a capo" al suo interno tra virgolette -- tipicamente il
+                    // campo Note, dove basta un Invio premuto nel form. La riga
+                    // CSV veniva tagliata a meta': tutte le colonne dopo quel
+                    // punto (Taglia Pallone compresa) restavano fuori dalla riga
+                    // e l'ordine veniva importato senza capi/taglie/prezzo, come
+                    // se il form non li avesse mai avuti. Si scandisce quindi
+                    // l'intero testo carattere per carattere, e si va a capo
+                    // riga SOLO se non si e' dentro un campo tra virgolette.
                     const rows = [];
-                    const lines = csvText.split('\n');
-                    
-                    lines.forEach(line => {
-                        if (!line.trim()) return; // Salta righe vuote
-                        
-                        const cells = [];
-                        let cell = '';
-                        let inQuotes = false;
-                        
-                        for (let i = 0; i < line.length; i++) {
-                            const char = line[i];
-                            
-                            if (char === '"') {
-                                if (inQuotes && line[i + 1] === '"') {
-                                    // Doppia virgoletta = virgoletta letterale
-                                    cell += '"';
-                                    i++; // Salta la prossima virgoletta
-                                } else {
-                                    inQuotes = !inQuotes;
-                                }
-                            } else if (char === ',' && !inQuotes) {
-                                cells.push(cell);
-                                cell = '';
+                    let cells = [];
+                    let cell = '';
+                    let inQuotes = false;
+
+                    for (let i = 0; i < csvText.length; i++) {
+                        const char = csvText[i];
+
+                        if (char === '"') {
+                            if (inQuotes && csvText[i + 1] === '"') {
+                                // Doppia virgoletta = virgoletta letterale
+                                cell += '"';
+                                i++; // Salta la prossima virgoletta
                             } else {
-                                cell += char;
+                                inQuotes = !inQuotes;
                             }
+                        } else if (char === ',' && !inQuotes) {
+                            cells.push(cell);
+                            cell = '';
+                        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                            // \r\n conta come un solo a capo: il \r apre la riga,
+                            // il \n che segue viene ignorato (cella vuota in piu'
+                            // altrimenti). Un \n secco (nessun \r prima) chiude
+                            // la riga normalmente.
+                            if (char === '\n' && csvText[i - 1] === '\r') continue;
+                            cells.push(cell);
+                            cell = '';
+                            if (cells.some(c => c.trim() !== '')) rows.push(cells);
+                            cells = [];
+                        } else {
+                            cell += char;
                         }
-                        cells.push(cell); // Aggiungi l'ultima cella
-                        rows.push(cells);
-                    });
+                    }
+                    // Ultima riga (il file potrebbe non finire con newline)
+                    if (cell !== '' || cells.length > 0) {
+                        cells.push(cell);
+                        if (cells.some(c => c.trim() !== '')) rows.push(cells);
+                    }
                     
                     console.log('📊 Righe processate:', rows.length);
                     console.log('📋 Prima riga (header):', rows[0]);
