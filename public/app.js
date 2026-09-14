@@ -3180,12 +3180,29 @@ function deleteOrder(id) {
             const rangeTxt = (minSel.value && maxSel.value) ? `${minSel.value} -> ${maxSel.value}` : 'Tutti';
             const nowTxt = new Date().toLocaleString('it-IT');
             const infoHtml = `<span class="supplier-info"><i class="fas fa-info-circle mr-1"></i>ID: ${rangeTxt} | ${nowTxt}</span>`;
+
+            // Perche' il Netto puo' essere vuoto mentre il Lordo e' pieno.
+            //
+            // Il Netto tiene solo gli ordini "Nuovo": e' la lista di cosa
+            // resta da ordinare al fornitore, quindi merce gia' in
+            // lavorazione o gia' arrivata non ci deve comparire. Corretto,
+            // ma a video si vedevano due tabelle affiancate -- una piena e
+            // una vuota -- senza alcun indizio sul motivo: filtrando ordini
+            // vecchi sembrava che il Netto non si aggiornasse.
+            //
+            // Qui si conta quanti ordini del range il filtro ha scartato e
+            // lo si scrive nell'intestazione. Solo informativo: il calcolo
+            // non cambia.
+            const excludedNet = filteredGross.length - filteredNet.length;
+            const excludedHtml = excludedNet > 0
+                ? `<span class="net-excluded-warn" title="Il Netto elenca solo cosa resta da ordinare, quindi considera i soli ordini in stato Nuovo"><i class="fas fa-exclamation-triangle mr-1"></i>${excludedNet} ${excludedNet === 1 ? 'ordine escluso' : 'ordini esclusi'} (non in stato &quot;Nuovo&quot;)</span>`
+                : '';
             
-            const titleNet = document.getElementById('title-net-clothing'); if (titleNet) titleNet.innerHTML = `<span><i class="fas fa-shopping-cart mr-2"></i> 3. Ordine Fornitore (Netto) ${infoHtml}</span>`;
+            const titleNet = document.getElementById('title-net-clothing'); if (titleNet) titleNet.innerHTML = `<span><i class="fas fa-shopping-cart mr-2"></i> 3. Ordine Fornitore (Netto) ${infoHtml}${excludedHtml}</span>`;
             const titleSock = document.getElementById('title-net-socks'); 
             if (titleSock) {
                 titleSock.innerHTML = `
-                    <span>Calze da Ordinare (Netto) ${infoHtml}</span>
+                    <span>Calze da Ordinare (Netto) ${infoHtml}${excludedHtml}</span>
                     <button onclick="openTableFullscreen('netSocks')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Apri a schermo intero">
                         <i class="fas fa-expand mr-1"></i> Espandi
                     </button>
