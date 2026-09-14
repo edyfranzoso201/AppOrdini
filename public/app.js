@@ -10,6 +10,34 @@
             return itemName.includes("Calzettoni") || itemName.includes("Calzettone");
         }
 
+        // Taglie calze ammesse. Qualsiasi altra taglia finita su un articolo
+        // calze non viene mai conteggiata: la tabella "Calze da Ordinare"
+        // disegna SEMPRE queste 6 righe e conta con size === riga.
+        const VALID_SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+
+        // Riduce la taglia calze scritta nel modulo Google alla sola misura.
+        //
+        // Il modulo restituisce valori come "43/46 N1" o "39/42 N9": la misura
+        // piu' un codice che a noi non serve. Quel testo finiva tale e quale in
+        // itemsList[].size, non corrispondeva a nessuna delle 6 righe della
+        // tabella e le calze sparivano dal "da ordinare" SENZA alcun errore --
+        // il totale restava 0 anche con ordini nuovi a video.
+        //
+        // Si cerca la misura ovunque nella stringa (non solo in testa) perche'
+        // il modulo puo' anteporre altro testo. Se non si riconosce nulla si
+        // restituisce il valore ripulito com'era: meglio una taglia strana
+        // visibile in Gestione che una silenziosamente riscritta.
+        function normalizeSockSize(raw) {
+            const s = String(raw || '').trim().toUpperCase();
+            if (!s) return s;
+            const m = s.match(/(\d{2})\s*\/\s*(\d{2})/);
+            if (m) {
+                const candidate = `${m[1]}/${m[2]}`;
+                if (VALID_SOCK_SIZES.includes(candidate)) return candidate;
+            }
+            return s;
+        }
+
         // Esegue l'escape dei caratteri speciali HTML prima di inserire testo
         // proveniente dall'utente (es. nome Cliente) dentro markup con
         // template string. Senza questo, un nome cliente contenente <script>
@@ -1531,7 +1559,7 @@
         highlightedSizeCells = {}; lastOrderId = 0; localStorage.clear(); location.reload(); } }
         function extractKitName(input) { if (!input) return null;
         const match = input.match(/^(.*?)\s*\(/); return (match && match[1].trim()) ? match[1].trim() : input.trim(); }
-        function updateSizes(id, t, v) { const o = orders.find(x=>x.id===id); if (!o) return; v = v.toUpperCase().trim(); if (t === 'sock') { if (v === 'UNICA') return alert('Taglia non valida'); o.sockSize = v; o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); } if(t==='main') { o.mainSize = v; o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); } updateUI(); }
+        function updateSizes(id, t, v) { const o = orders.find(x=>x.id===id); if (!o) return; v = v.toUpperCase().trim(); if (t === 'sock') { if (v === 'UNICA') return alert('Taglia non valida'); v = normalizeSockSize(v); o.sockSize = v; o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); } if(t==='main') { o.mainSize = v; o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); } updateUI(); }
         function updateInventory(itemName, size, value) { const key = `${itemName}_${size}`; if(value === "" || value === null) delete inventory[key]; else inventory[key] = parseInt(value); saveData(); renderMatrices(true); }
         // Allinea un nome articolo al catalogo corrente (globalItems), che e' la
         // sola fonte autorevole dei prezzi.
@@ -1897,7 +1925,7 @@
                         phoneImport = idxTelefono !== -1 && row[idxTelefono] ? row[idxTelefono].toString().trim() : "";
                         kitDisplayName = idxKit !== -1 && row[idxKit] ? row[idxKit].toString().trim() : "Personalizzato";
                         mainSize = idxTaglia !== -1 && row[idxTaglia] ? row[idxTaglia].toString().trim() : "L";
-                        sockSize = idxCalze !== -1 && row[idxCalze] ? row[idxCalze].toString().trim() : "43/46";
+                        sockSize = normalizeSockSize(idxCalze !== -1 && row[idxCalze] ? row[idxCalze].toString() : "43/46");
                         notes = idxNote !== -1 && row[idxNote] ? row[idxNote].toString().trim() : "";
                         noteColorImport = idxColoreNota !== -1 && row[idxColoreNota] && row[idxColoreNota].toString().trim() ? row[idxColoreNota].toString().trim() : "default";
                         inventoryScaledAtImport = idxScalatoMag !== -1 && row[idxScalatoMag] && row[idxScalatoMag].toString().trim() ? row[idxScalatoMag].toString().trim() : null;
@@ -2009,7 +2037,7 @@
                         phoneImport = row[5] ? row[5].toString().trim() : "";
 
                         mainSize = row[16] ? row[16].toString().trim().toUpperCase() : "L"; 
-                        sockSize = row[17] ? row[17].toString().trim().toUpperCase() : "43/46"; 
+                        sockSize = normalizeSockSize(row[17] ? row[17].toString() : "43/46"); 
                         notes = row[19] ? row[19].toString().trim() : '';
                         
                         // Colonna S (18): Taglia accessori (Cappellino, Scaldacollo, Guanti)
@@ -2040,7 +2068,7 @@
                         notes = row[7] ? row[7].toString().trim() : ''; 
                         inputs = [row[8] ? row[8].toString().trim().toLowerCase() : '']; 
                         mainSize = row[4] ? row[4].toString().trim().toUpperCase() : "L";
-                        sockSize = row[5] ? row[5].toString().trim().toUpperCase() : "43/46"; 
+                        sockSize = normalizeSockSize(row[5] ? row[5].toString() : "43/46"); 
                     }
 
                     if (!isBackup && inputs && inputs.length > 0) {
@@ -3368,10 +3396,9 @@ function deleteOrder(id) {
             document.getElementById(mode === 'INV' ? 'headerSockSpolfBlue' : 'headerSockNetSpolfBlue').innerHTML = formatHeaderName(SOCKS_SPOLF_BLUE);
             document.getElementById(mode === 'INV' ? 'headerSockSpolfRed' : 'headerSockNetSpolfRed').innerHTML = formatHeaderName(SOCKS_SPOLF_RED);
             
-            // Taglie valide per le calze: solo queste 6. Qualsiasi altra taglia
-            // (es. "14 ANNI") associata per errore a un articolo calze in un
-            // ordine/inventario viene ignorata qui, per non generare righe fantasma.
-            const VALID_SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            // Le 6 righe sono fisse (VALID_SOCK_SIZES, in testa al file): qualsiasi
+            // altra taglia associata per errore a un articolo calze viene ignorata,
+            // per non generare righe fantasma.
             let sizes = new Set(VALID_SOCK_SIZES);
             filteredOrders.forEach(o => o.itemsList.forEach(i => { if(isSockItem(i.name) && VALID_SOCK_SIZES.includes(i.size)) sizes.add(i.size) }));
             Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isSockItem(item) && VALID_SOCK_SIZES.includes(size)) sizes.add(size); });
@@ -3392,10 +3419,13 @@ function deleteOrder(id) {
                 let blueNeeded = 0, redNeeded = 0, spolfBlueNeeded = 0, spolfRedNeeded = 0;
                 filteredOrders.forEach(o => { 
                     o.itemsList.forEach(i => { 
-                        if(i.name === SOCKS_BLUE_DEFAULT && i.size===s) blueNeeded++; 
-                        if(i.name === SOCKS_RED_DEFAULT && i.size===s) redNeeded++;
-                        if(i.name === SOCKS_SPOLF_BLUE && i.size===s) spolfBlueNeeded++;
-                        if(i.name === SOCKS_SPOLF_RED && i.size===s) spolfRedNeeded++;
+                        // Normalizzata in lettura: gli ordini importati prima di
+                        // questo fix hanno ancora "43/46 N1" salvato in size.
+                        if(normalizeSockSize(i.size) !== s) return;
+                        if(i.name === SOCKS_BLUE_DEFAULT) blueNeeded++; 
+                        if(i.name === SOCKS_RED_DEFAULT) redNeeded++;
+                        if(i.name === SOCKS_SPOLF_BLUE) spolfBlueNeeded++;
+                        if(i.name === SOCKS_SPOLF_RED) spolfRedNeeded++;
                     }); 
                 });
                 
