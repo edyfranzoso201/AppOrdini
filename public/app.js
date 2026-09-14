@@ -38,6 +38,31 @@
             return s;
         }
 
+        // Taglia effettiva di un articolo calze, con ripiego sull'ordine.
+        //
+        // Gli import che riconoscevano solo il plurale "Calzettoni" davano ai
+        // "Calzettone" (gli SPOLF senza piede) la taglia ABBIGLIAMENTO: in
+        // magazzino restava scritto "14 ANNI" al posto di "39/42". Quella
+        // taglia non e' una misura calza, quindi normalizeSockSize non ha
+        // nulla da estrarre e l'articolo sparisce dal "da ordinare".
+        //
+        // L'ordine pero' conserva la taglia calze giusta in o.sockSize: se
+        // quella dell'articolo non e' NEMMENO una misura di calze si ripiega li'.
+        // Solo in lettura -- i dati salvati non si riscrivono a sorpresa.
+        //
+        // Il ripiego scatta solo su taglie che NON sono misure, tipo "14 ANNI"
+        // o "XL": quelle sono con certezza taglie abbigliamento finite li' per
+        // errore. Una misura vera ma fuori catalogo -- "47/49", che in Gestione
+        // esiste davvero -- si lascia com'e': e' un dato voluto, va corretto a
+        // mano, non sovrascritto in silenzio con la taglia dell'ordine.
+        function effectiveSockSize(item, order) {
+            const own = normalizeSockSize(item.size);
+            if (VALID_SOCK_SIZES.includes(own)) return own;
+            if (/(\d{2})\s*\/\s*(\d{2})/.test(own)) return own;
+            const fallback = normalizeSockSize(order && order.sockSize);
+            return VALID_SOCK_SIZES.includes(fallback) ? fallback : own;
+        }
+
         // Nome articolo senza il prezzo fra parentesi, per i confronti.
         // Il prezzo non identifica l'articolo, lo qualifica: "Zaino ... (25EUR)"
         // e "Zaino ... (30EUR)" sono lo stesso articolo a listino diverso.
@@ -2009,7 +2034,7 @@
                                         itemsList.push({ name: match[1].trim(), size: match[2].trim() });
                                     } else {
                                         let s = mainSize;
-                                        if(clean.includes("Calzettoni")) s = sockSize;
+                                        if(isSockItem(clean)) s = sockSize;
                                         if(clean.includes("Borsone")||clean.includes("Zaino")) s = "UNICA";
                                         itemsList.push({name: clean, size: s});
                                     }
@@ -2019,7 +2044,7 @@
                              for(let k in globalKitTypes) {
                                  if(kitDisplayName === globalKitTypes[k].display) {
                                      const kitInfo = globalKitTypes[k];
-                                     itemsList = kitInfo.items.map(n => ({ name: n, size: n.includes("Calzettoni")?sockSize:(n.includes("Borsone")||n.includes("Zaino")?"UNICA":mainSize) }));
+                                     itemsList = kitInfo.items.map(n => ({ name: n, size: isSockItem(n)?sockSize:(n.includes("Borsone")||n.includes("Zaino")?"UNICA":mainSize) }));
                                  }
                              }
                         }
@@ -2155,7 +2180,7 @@
                             kitDisplayName = globalKitTypes[kitKey].display;
                             itemsList = globalKitTypes[kitKey].items.map(itemName => { 
                                 let size = mainSize; 
-                                if (itemName.includes("Calzettoni")) size = sockSize; 
+                                if (isSockItem(itemName)) size = sockSize; 
                                 if (itemName.includes("Cappellino") || itemName.includes("Scaldacollo") || itemName.includes("Guanti")) { 
                                     size = accessorySize; 
                                 }
@@ -2184,7 +2209,7 @@
                                 for (const [k, v] of Object.entries(EXCEL_ITEM_MAPPING)) { 
                                     if (field.includes(k)) { 
                                         let s = mainSize; 
-                                        if (v.includes("Calzettoni")) s = sockSize; 
+                                        if (isSockItem(v)) s = sockSize; 
                                         if (v.includes("Cappellino") || v.includes("Scaldacollo") || v.includes("Guanti")) s = accessorySize; 
                                         if (v.includes("Borsone") || v.includes("Zaino")) s = 'UNICA'; 
                                         // v arriva da EXCEL_ITEM_MAPPING, che porta un listino
@@ -3446,7 +3471,7 @@ function deleteOrder(id) {
             });
             const trTotal = document.createElement('tr'); trTotal.className = 'total-row';
             let htmlTotal = `<td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>`;
-            columns.forEach(col => { if(col.includes("Calzettoni")) return; htmlTotal += `<td class="text-center border-l p-2">${colTotals[col]}</td>`; }); trTotal.innerHTML = htmlTotal; tbody.appendChild(trTotal);
+            columns.forEach(col => { if(isSockItem(col)) return; htmlTotal += `<td class="text-center border-l p-2">${colTotals[col]}</td>`; }); trTotal.innerHTML = htmlTotal; tbody.appendChild(trTotal);
         }
         
         function renderSocksTable(filteredOrders, mode) { 
@@ -3464,7 +3489,7 @@ function deleteOrder(id) {
             // altra taglia associata per errore a un articolo calze viene ignorata,
             // per non generare righe fantasma.
             let sizes = new Set(VALID_SOCK_SIZES);
-            filteredOrders.forEach(o => o.itemsList.forEach(i => { if(isSockItem(i.name) && VALID_SOCK_SIZES.includes(i.size)) sizes.add(i.size) }));
+            filteredOrders.forEach(o => o.itemsList.forEach(i => { if(!isSockItem(i.name)) return; const es = effectiveSockSize(i, o); if(VALID_SOCK_SIZES.includes(es)) sizes.add(es); }));
             Object.keys(inventory).forEach(k => { const [item, size] = k.split('_'); if(isSockItem(item) && VALID_SOCK_SIZES.includes(size)) sizes.add(size); });
 
             let sorted = Array.from(sizes).filter(s=>s);
@@ -3483,9 +3508,11 @@ function deleteOrder(id) {
                 let blueNeeded = 0, redNeeded = 0, spolfBlueNeeded = 0, spolfRedNeeded = 0;
                 filteredOrders.forEach(o => { 
                     o.itemsList.forEach(i => { 
-                        // Normalizzata in lettura: gli ordini importati prima di
-                        // questo fix hanno ancora "43/46 N1" salvato in size.
-                        if(normalizeSockSize(i.size) !== s) return;
+                        // Normalizzata in lettura: gli ordini importati prima dei
+                        // fix hanno ancora "43/46 N1" salvato in size, oppure la
+                        // taglia abbigliamento sugli SPOLF (vedi effectiveSockSize).
+                        if(!isSockItem(i.name)) return;
+                        if(effectiveSockSize(i, o) !== s) return;
                         if(i.name === SOCKS_BLUE_DEFAULT) blueNeeded++; 
                         if(i.name === SOCKS_RED_DEFAULT) redNeeded++;
                         if(i.name === SOCKS_SPOLF_BLUE) spolfBlueNeeded++;
@@ -5014,7 +5041,7 @@ function updateUI() {
             inventorySizes.push('UNICA');
             
             const inventoryData = [];
-            const itemsWithoutSocks = globalItems.filter(item => !item.includes("Calzettoni"));
+            const itemsWithoutSocks = globalItems.filter(item => !isSockItem(item));
             
             inventorySizes.forEach(size => {
                 const row = { 'TAGLIA': size };
