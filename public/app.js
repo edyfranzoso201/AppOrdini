@@ -1780,15 +1780,26 @@
                 } 
             }
             
-            if (kitPrice === 0 && o.itemsList && Array.isArray(o.itemsList)) { 
+            if (kitPrice === 0 && o.itemsList && Array.isArray(o.itemsList)) {
                 o.itemsList.forEach(i => {
                     if (i && i.name) {
                         kitPrice += getPriceFromString(i.name);
                     }
-                }); 
+                });
+            } else if (kitPrice > 0 && o.itemsList && Array.isArray(o.itemsList)) {
+                // Il Pallone non fa parte di nessun kit (non e' incluso nel
+                // prezzo fisso del kit): se e' presente in itemsList va
+                // sommato a parte, altrimenti un ordine con KIT Giocatore
+                // (250€) + Pallone (15€) mostrava solo 250€, il pallone
+                // "spariva" dal totale pur comparendo nella riga articoli.
+                o.itemsList.forEach(i => {
+                    if (i && i.name && isBallItem(i.name)) {
+                        kitPrice += getPriceFromString(i.name);
+                    }
+                });
             }
-            
-            const discount = o.discount || 0; 
+
+            const discount = o.discount || 0;
             return Math.max(0, kitPrice - discount);
         }
 
