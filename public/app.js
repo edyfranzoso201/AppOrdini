@@ -2231,17 +2231,27 @@
                             }
                         }
 
-                        // Colonna U (20): Taglia Pallone. Campo separato dal
-                        // kit -- il form la chiede sempre, ma "Non Applicabile
-                        // per la tipologia di ordine" significa che quell'ordine
-                        // non comprende un pallone. Si legge qui e si aggiunge
-                        // piu' sotto a itemsList, DOPO che il kit e' stato
-                        // risolto: un pallone non e' mai parte di un kit.
+                        // Colonna U (20): Taglia Pallone. Colonna V (21):
+                        // Accessori (es. "Pallone Kappa 15€"). Il form chiede
+                        // sempre la taglia in U anche quando poi l'utente non
+                        // seleziona il pallone come accessorio in V -- una
+                        // taglia valorizzata in U da sola NON significa che
+                        // l'ordine comprende un pallone (segnalato dall'utente
+                        // con un caso reale, riga con "n°4 (Scuola Calcio)" in
+                        // U ma V vuota). Il segnale di ordine valido e' V:
+                        // solo se V contiene il nome dell'accessorio pallone
+                        // si aggiunge il pallone, prendendo la taglia da U.
+                        // Si legge qui e si aggiunge piu' sotto a itemsList,
+                        // DOPO che il kit e' stato risolto: un pallone non e'
+                        // mai parte di un kit.
                         ballSizeImport = null;
-                        if (row[20]) {
-                            const colU = row[20].toString().trim();
-                            if (colU && !colU.toLowerCase().includes('non applicabile')) {
-                                ballSizeImport = normalizeBallSize(colU);
+                        if (row[21]) {
+                            const colV = row[21].toString().trim();
+                            if (colV && isBallItem(colV) && row[20]) {
+                                const colU = row[20].toString().trim();
+                                if (colU && !colU.toLowerCase().includes('non applicabile')) {
+                                    ballSizeImport = normalizeBallSize(colU);
+                                }
                             }
                         }
 
