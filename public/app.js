@@ -315,7 +315,8 @@
             { value: 'Scomposto', label: 'Scomposto', color: 'bg-teal-100 text-teal-800' },
             { value: 'Ordine annullato', label: 'Annullato', color: 'bg-red-100 text-red-800' }, 
             { value: 'Ordine trasferito ad altro ID', label: 'Trasferito', color: 'bg-purple-100 text-purple-800' },
-	    { value: 'Da piazzare', label: 'Da piazzare', color: 'bg-indigo-100 text-indigo-800' }
+	    { value: 'Da piazzare', label: 'Da piazzare', color: 'bg-indigo-100 text-indigo-800' },
+            { value: 'In sospeso', label: 'In sospeso', color: 'bg-slate-200 text-slate-700' }
         ];
         
         // === FUNZIONI GLOBALI PER ORDINAMENTO ID ===
@@ -3303,17 +3304,19 @@ function deleteOrder(id) {
                 ? [statusFilterValEarly]
                 : ['Nuovo']; // default: solo ordini nuovi per calcolo ordine fornitore
 
-            // GROSS: Tutti gli ordini nel range (esclusi annullati e trasferiti)
+            // GROSS: Tutti gli ordini nel range (esclusi annullati, trasferiti e in sospeso)
             let ordersGross = orders.filter(o =>
                 o.status !== 'Ordine trasferito ad altro ID' &&
-                o.status !== 'Ordine annullato'
+                o.status !== 'Ordine annullato' &&
+                o.status !== 'In sospeso'
             );
 
-            // NET: Solo gli stati in NET_STATUSES (esclusi annullati e trasferiti)
+            // NET: Solo gli stati in NET_STATUSES (esclusi annullati, trasferiti e in sospeso)
             let ordersNet = orders.filter(o =>
                 NET_STATUSES.includes(o.status) &&
                 o.status !== 'Ordine trasferito ad altro ID' &&
-                o.status !== 'Ordine annullato'
+                o.status !== 'Ordine annullato' &&
+                o.status !== 'In sospeso'
             );
             
             // Ordina usando la funzione globale
