@@ -1732,6 +1732,43 @@
         </div>
     </div>
 
+    <!-- Popup Pronto - Manca Qualcosa -->
+    <div id="readyMissingPopup" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-box-open text-green-600"></i>
+                    Pronto - Manca Qualcosa?
+                </h2>
+                <button onclick="closeReadyMissingPopup()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="bg-green-50 border border-green-200 rounded p-3 mb-4">
+                <p class="text-sm text-green-800">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Nota:</strong> Se manca qualcosa nonostante l'ordine sia pronto, indicalo qui.
+                    Lascia vuoto se non manca nulla.
+                </p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">📝 Cosa Manca (facoltativo)</label>
+                <textarea id="readyMissingNote" rows="5" class="w-full border rounded p-3 text-sm focus:ring-2 focus:ring-green-300 outline-none resize-none" placeholder="Es: Maglia M, Pantaloncini L, Calze 39/42..."></textarea>
+            </div>
+
+            <div class="flex gap-2 justify-end">
+                <button onclick="closeReadyMissingPopup()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 font-bold transition">
+                    Annulla
+                </button>
+                <button onclick="saveReadyMissingNote()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold transition">
+                    <i class="fas fa-save mr-2"></i>Salva
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
     <!-- Copyright Footer - Fisso in basso -->
     <footer class="no-print" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 6px 15px; font-size: 9px; z-index: 9999; text-align: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.2);">

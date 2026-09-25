@@ -1301,7 +1301,7 @@
             const arr = ordersArray || orders;
             const lid = (orderIdVal !== undefined) ? orderIdVal : lastOrderId;
             // ✅ Include anche status e note per rilevare modifiche a ordini esistenti
-            const stateStr = arr.map(o => `${o.id}:${o.status || ''}:${o.notes || ''}:${o.partialDeliveryNote || ''}`).sort().join('|');
+            const stateStr = arr.map(o => `${o.id}:${o.status || ''}:${o.notes || ''}:${o.partialDeliveryNote || ''}:${o.readyMissingNote || ''}`).sort().join('|');
             return `count:${arr.length}|lastId:${lid}|${stateStr}`;
         }
         
@@ -2671,6 +2671,10 @@ function handleStatusChange(id, newStatus) {
         // Apri popup per inserire cosa manca
         openPartialDeliveryPopup(id);
         return; // Il salvataggio verrà fatto dal popup
+    } else if (newStatus === 'Pronto') {
+        // Apri popup per inserire se manca qualcosa
+        openReadyMissingPopup(id);
+        return; // Il salvataggio verrà fatto dal popup
     } else {
         o.status = newStatus;
         o.linkedId = null;
@@ -2802,6 +2806,50 @@ function deleteOrder(id) {
                 
                 showQuickNotification('✅ Nota consegna parziale salvata', 'success');
                 closePartialDeliveryPopup();
+                updateUI();
+            }
+        }
+
+        // Popup Pronto - Manca Qualcosa?
+        let currentReadyMissingOrderId = null;
+
+        function openReadyMissingPopup(orderId) {
+            currentReadyMissingOrderId = orderId;
+            const order = orders.find(o => o.id === orderId);
+
+            if (order) {
+                // Aggiorna stato immediatamente
+                order.status = 'Pronto';
+
+                // Mostra nota esistente se presente
+                document.getElementById('readyMissingNote').value = order.readyMissingNote || '';
+                document.getElementById('readyMissingPopup').classList.add('active');
+            }
+        }
+
+        function closeReadyMissingPopup() {
+            document.getElementById('readyMissingPopup').classList.remove('active');
+            currentReadyMissingOrderId = null;
+        }
+
+        function saveReadyMissingNote() {
+            if (!currentReadyMissingOrderId) return;
+
+            const note = document.getElementById('readyMissingNote').value.trim();
+            const order = orders.find(o => o.id === currentReadyMissingOrderId);
+
+            if (order) {
+                order.readyMissingNote = note || null;
+                order.status = 'Pronto';
+
+                // Log della modifica
+                logActivity('CHANGE_STATUS', `Ordine ${order.displayId} (${order.customer}): Stato cambiato a "Pronto"${note ? ' - Manca: ' + note : ''}`);
+
+                // Salva su Redis
+                saveData();
+
+                showQuickNotification('✅ Stato "Pronto" salvato', 'success');
+                closeReadyMissingPopup();
                 updateUI();
             }
         }
@@ -3220,6 +3268,8 @@ function deleteOrder(id) {
                     } else {
                         // Controlla se c'è una nota di consegna parziale
                         const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
+                        // Controlla se c'è una nota "manca qualcosa" per lo stato Pronto
+                        const hasReadyMissingNote = o.status === 'Pronto' && o.readyMissingNote;
 
                         const statusOptionsHTML = STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('');
                         statusInfo = `
@@ -3234,6 +3284,14 @@ function deleteOrder(id) {
                                     <span>Manca:</span>
                                 </div>
                                 <div class="text-[10px] text-amber-700 mt-0.5 line-clamp-2">${o.partialDeliveryNote}</div>
+                            </div>` : ''}
+                            ${hasReadyMissingNote ? `
+                            <div class="bg-green-50 border border-green-300 rounded p-1.5 cursor-pointer hover:bg-green-100 transition" onclick="openReadyMissingPopup(${o.id})" title="Clicca per modificare">
+                                <div class="text-[10px] font-bold text-green-800 flex items-center gap-1">
+                                    <i class="fas fa-box-open"></i>
+                                    <span>Manca:</span>
+                                </div>
+                                <div class="text-[10px] text-green-700 mt-0.5 line-clamp-2">${o.readyMissingNote}</div>
                             </div>` : ''}
                         </div>`;
                     }
