@@ -316,7 +316,8 @@
             { value: 'Ordine annullato', label: 'Annullato', color: 'bg-red-100 text-red-800' }, 
             { value: 'Ordine trasferito ad altro ID', label: 'Trasferito', color: 'bg-purple-100 text-purple-800' },
 	    { value: 'Da piazzare', label: 'Da piazzare', color: 'bg-indigo-100 text-indigo-800' },
-            { value: 'In sospeso', label: 'In sospeso', color: 'bg-slate-200 text-slate-700' }
+            { value: 'In sospeso', label: 'In sospeso', color: 'bg-slate-200 text-slate-700' },
+            { value: 'Pronto', label: 'Pronto', color: 'bg-green-100 text-green-800' }
         ];
         
         // === FUNZIONI GLOBALI PER ORDINAMENTO ID ===
