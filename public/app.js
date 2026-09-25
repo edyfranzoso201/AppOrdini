@@ -2671,9 +2671,9 @@ function handleStatusChange(id, newStatus) {
         // Apri popup per inserire cosa manca
         openPartialDeliveryPopup(id);
         return; // Il salvataggio verrà fatto dal popup
-    } else if (newStatus === 'Pronto') {
-        // Apri popup per inserire se manca qualcosa
-        openReadyMissingPopup(id);
+    } else if (newStatus === 'Pronto' || newStatus === 'In Lavorazione') {
+        // Apri popup per inserire una nota facoltativa (es. cosa manca)
+        openReadyMissingPopup(id, newStatus);
         return; // Il salvataggio verrà fatto dal popup
     } else {
         o.status = newStatus;
@@ -2810,19 +2810,22 @@ function deleteOrder(id) {
             }
         }
 
-        // Popup Pronto - Manca Qualcosa?
+        // Popup nota facoltativa (Pronto / In Lavorazione) - Manca Qualcosa?
         let currentReadyMissingOrderId = null;
+        let currentReadyMissingStatus = null;
 
-        function openReadyMissingPopup(orderId) {
+        function openReadyMissingPopup(orderId, targetStatus) {
             currentReadyMissingOrderId = orderId;
+            currentReadyMissingStatus = targetStatus;
             const order = orders.find(o => o.id === orderId);
 
             if (order) {
                 // Aggiorna stato immediatamente
-                order.status = 'Pronto';
+                order.status = targetStatus;
 
                 // Mostra nota esistente se presente
                 document.getElementById('readyMissingNote').value = order.readyMissingNote || '';
+                document.getElementById('readyMissingPopupTitle').textContent = `${targetStatus} - Manca Qualcosa?`;
                 document.getElementById('readyMissingPopup').classList.add('active');
             }
         }
@@ -2830,6 +2833,7 @@ function deleteOrder(id) {
         function closeReadyMissingPopup() {
             document.getElementById('readyMissingPopup').classList.remove('active');
             currentReadyMissingOrderId = null;
+            currentReadyMissingStatus = null;
         }
 
         function saveReadyMissingNote() {
@@ -2837,18 +2841,19 @@ function deleteOrder(id) {
 
             const note = document.getElementById('readyMissingNote').value.trim();
             const order = orders.find(o => o.id === currentReadyMissingOrderId);
+            const targetStatus = currentReadyMissingStatus || order?.status;
 
             if (order) {
                 order.readyMissingNote = note || null;
-                order.status = 'Pronto';
+                order.status = targetStatus;
 
                 // Log della modifica
-                logActivity('CHANGE_STATUS', `Ordine ${order.displayId} (${order.customer}): Stato cambiato a "Pronto"${note ? ' - Manca: ' + note : ''}`);
+                logActivity('CHANGE_STATUS', `Ordine ${order.displayId} (${order.customer}): Stato cambiato a "${targetStatus}"${note ? ' - Manca: ' + note : ''}`);
 
                 // Salva su Redis
                 saveData();
 
-                showQuickNotification('✅ Stato "Pronto" salvato', 'success');
+                showQuickNotification(`✅ Stato "${targetStatus}" salvato`, 'success');
                 closeReadyMissingPopup();
                 updateUI();
             }
@@ -3268,8 +3273,8 @@ function deleteOrder(id) {
                     } else {
                         // Controlla se c'è una nota di consegna parziale
                         const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
-                        // Controlla se c'è una nota "manca qualcosa" per lo stato Pronto
-                        const hasReadyMissingNote = o.status === 'Pronto' && o.readyMissingNote;
+                        // Controlla se c'è una nota "manca qualcosa" per gli stati Pronto / In Lavorazione
+                        const hasReadyMissingNote = (o.status === 'Pronto' || o.status === 'In Lavorazione') && o.readyMissingNote;
 
                         const statusOptionsHTML = STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('');
                         statusInfo = `
@@ -3286,7 +3291,7 @@ function deleteOrder(id) {
                                 <div class="text-[10px] text-amber-700 mt-0.5 line-clamp-2">${o.partialDeliveryNote}</div>
                             </div>` : ''}
                             ${hasReadyMissingNote ? `
-                            <div class="bg-green-50 border border-green-300 rounded p-1.5 cursor-pointer hover:bg-green-100 transition" onclick="openReadyMissingPopup(${o.id})" title="Clicca per modificare">
+                            <div class="bg-green-50 border border-green-300 rounded p-1.5 cursor-pointer hover:bg-green-100 transition" onclick="openReadyMissingPopup(${o.id}, '${o.status}')" title="Clicca per modificare">
                                 <div class="text-[10px] font-bold text-green-800 flex items-center gap-1">
                                     <i class="fas fa-box-open"></i>
                                     <span>Manca:</span>
