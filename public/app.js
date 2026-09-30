@@ -3286,7 +3286,7 @@ function deleteOrder(id) {
                 // (anche con ordine "Nuovo") per chi ha il permesso editPaymentMark
                 const isPaid = o.paymentMark === 'Pagato';
                 const isPartialPaid = o.paymentMark === 'Parziale';
-                const paymentSelectColor = isPaid ? 'bg-green-700 text-white' : (isPartialPaid ? 'bg-amber-400 text-amber-900' : 'bg-white text-gray-700');
+                const paymentSelectColor = isPaid ? 'bg-green-700 text-white' : (isPartialPaid ? 'bg-yellow-400 text-yellow-900' : 'bg-white text-gray-700');
                 const hasPaymentNote = isPartialPaid && o.paymentNote;
                 const paymentMarkInfo = `
                     <div class="flex flex-col gap-1">
