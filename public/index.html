@@ -535,7 +535,7 @@
                              <option value="all">Stato: Tutti</option><option value="Nuovo">Nuovo</option><option value="In Lavorazione">In Lavorazione</option><option value="Ordine Arrivato">Arrivato</option><option value="Consegna Parziale">Consegna Parziale</option><option value="Consegnato">Consegnato</option><option value="Scomposto">Scomposto</option><option value="Ordine annullato">Annullato</option><option value="Ordine trasferito ad altro ID">Trasferito</option><option value="Da piazzare">Da piazzare</option>
                         </select>
                         <select id="filterPaymentMark" onchange="renderTable()" class="text-sm border rounded px-2">
-                             <option value="all">Pagamento: Tutti</option><option value="Pagato">Pagato</option><option value="NonPagato">Non Pagato</option>
+                             <option value="all">Pagamento: Tutti</option><option value="Pagato">Pagato</option><option value="Parziale">Parziale</option><option value="NonPagato">Non Pagato</option>
                         </select>
                         <input type="text" id="filterRoleYear" onkeyup="renderTable()" placeholder="Anno/Ruolo..." class="text-sm border rounded px-3 py-1 w-32">
                         <select id="filterSize" onchange="renderTable()" class="text-sm border rounded px-2">
@@ -1763,6 +1763,43 @@
                     Annulla
                 </button>
                 <button onclick="saveReadyMissingNote()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-bold transition">
+                    <i class="fas fa-save mr-2"></i>Salva
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup Pagamento Parziale -->
+    <div id="paymentNotePopup" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-euro-sign text-amber-600"></i>
+                    Pagamento Parziale - Nota
+                </h2>
+                <button onclick="closePaymentNotePopup()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+                <p class="text-sm text-amber-800">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Nota:</strong> Indica facoltativamente l'importo versato o quanto manca.
+                    Esempio: "Acconto 50€, mancano 100€"
+                </p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">📝 Nota Pagamento (facoltativo)</label>
+                <textarea id="paymentNote" rows="5" class="w-full border rounded p-3 text-sm focus:ring-2 focus:ring-amber-300 outline-none resize-none" placeholder="Es: Acconto 50€, mancano 100€..."></textarea>
+            </div>
+
+            <div class="flex gap-2 justify-end">
+                <button onclick="closePaymentNotePopup()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 font-bold transition">
+                    Annulla
+                </button>
+                <button onclick="savePaymentNote()" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 font-bold transition">
                     <i class="fas fa-save mr-2"></i>Salva
                 </button>
             </div>

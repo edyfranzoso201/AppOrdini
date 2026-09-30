@@ -1301,7 +1301,7 @@
             const arr = ordersArray || orders;
             const lid = (orderIdVal !== undefined) ? orderIdVal : lastOrderId;
             // ✅ Include anche status e note per rilevare modifiche a ordini esistenti
-            const stateStr = arr.map(o => `${o.id}:${o.status || ''}:${o.notes || ''}:${o.partialDeliveryNote || ''}:${o.readyMissingNote || ''}`).sort().join('|');
+            const stateStr = arr.map(o => `${o.id}:${o.status || ''}:${o.notes || ''}:${o.partialDeliveryNote || ''}:${o.readyMissingNote || ''}:${o.paymentMark || ''}:${o.paymentNote || ''}`).sort().join('|');
             return `count:${arr.length}|lastId:${lid}|${stateStr}`;
         }
         
@@ -2707,7 +2707,14 @@ function handlePaymentMarkChange(id, newValue) {
     const oldValue = o.paymentMark || '';
     if (oldValue === newValue) return;
 
+    if (newValue === 'Parziale') {
+        // Apri popup per inserire una nota facoltativa (es. quanto manca)
+        openPaymentNotePopup(id);
+        return; // Il salvataggio verrà fatto dal popup
+    }
+
     o.paymentMark = newValue === 'Pagato' ? 'Pagato' : '';
+    o.paymentNote = null;
 
     logActivity('CHANGE_PAYMENT_MARK', `Ordine ${o.displayId} (${o.customer}): Pagamento cambiato da "${oldValue || 'Non Pagato'}" a "${o.paymentMark || 'Non Pagato'}"`);
     console.log(`📝 LOG salvato: CHANGE_PAYMENT_MARK per ${o.displayId}`);
@@ -2855,6 +2862,48 @@ function deleteOrder(id) {
 
                 showQuickNotification(`✅ Stato "${targetStatus}" salvato`, 'success');
                 closeReadyMissingPopup();
+                updateUI();
+            }
+        }
+
+        // Popup nota facoltativa per Pagamento "Parziale"
+        let currentPaymentNoteOrderId = null;
+
+        function openPaymentNotePopup(orderId) {
+            currentPaymentNoteOrderId = orderId;
+            const order = orders.find(o => o.id === orderId);
+
+            if (order) {
+                // Aggiorna il pagamento immediatamente
+                order.paymentMark = 'Parziale';
+
+                // Mostra nota esistente se presente
+                document.getElementById('paymentNote').value = order.paymentNote || '';
+                document.getElementById('paymentNotePopup').classList.add('active');
+            }
+        }
+
+        function closePaymentNotePopup() {
+            document.getElementById('paymentNotePopup').classList.remove('active');
+            currentPaymentNoteOrderId = null;
+        }
+
+        function savePaymentNote() {
+            if (!currentPaymentNoteOrderId) return;
+
+            const note = document.getElementById('paymentNote').value.trim();
+            const order = orders.find(o => o.id === currentPaymentNoteOrderId);
+
+            if (order) {
+                order.paymentNote = note || null;
+                order.paymentMark = 'Parziale';
+
+                logActivity('CHANGE_PAYMENT_MARK', `Ordine ${order.displayId} (${order.customer}): Pagamento cambiato a "Parziale"${note ? ' - Nota: ' + note : ''}`);
+
+                saveData();
+
+                showQuickNotification('✅ Pagamento "Parziale" salvato', 'success');
+                closePaymentNotePopup();
                 updateUI();
             }
         }
@@ -3191,9 +3240,9 @@ function deleteOrder(id) {
 
                 if(filterStatus !== 'all' && o.status !== filterStatus) return false;
                 if(filterPaymentMark !== 'all') {
-                    const isPaidRow = o.paymentMark === 'Pagato';
-                    if(filterPaymentMark === 'Pagato' && !isPaidRow) return false;
-                    if(filterPaymentMark === 'NonPagato' && isPaidRow) return false;
+                    if(filterPaymentMark === 'Pagato' && o.paymentMark !== 'Pagato') return false;
+                    if(filterPaymentMark === 'Parziale' && o.paymentMark !== 'Parziale') return false;
+                    if(filterPaymentMark === 'NonPagato' && (o.paymentMark === 'Pagato' || o.paymentMark === 'Parziale')) return false;
                 }
                 if(filterSize !== 'all' && o.mainSize !== filterSize) return false;
                 
@@ -3236,11 +3285,25 @@ function deleteOrder(id) {
                 // Colonna "Pagamento": indipendente dallo STATO, sempre modificabile
                 // (anche con ordine "Nuovo") per chi ha il permesso editPaymentMark
                 const isPaid = o.paymentMark === 'Pagato';
+                const isPartialPaid = o.paymentMark === 'Parziale';
+                const paymentSelectColor = isPaid ? 'bg-green-700 text-white' : (isPartialPaid ? 'bg-amber-400 text-amber-900' : 'bg-white text-gray-700');
+                const hasPaymentNote = isPartialPaid && o.paymentNote;
                 const paymentMarkInfo = `
-                    <select onchange="handlePaymentMarkChange(${o.id}, this.value)" class="payment-mark-select text-xs border rounded p-1 w-full font-bold ${isPaid ? 'bg-green-700 text-white' : 'bg-white text-gray-700'}">
-                        <option value="" ${!isPaid ? 'selected' : ''}>Non Pagato</option>
-                        <option value="Pagato" ${isPaid ? 'selected' : ''}>Pagato</option>
-                    </select>`;
+                    <div class="flex flex-col gap-1">
+                        <select onchange="handlePaymentMarkChange(${o.id}, this.value)" class="payment-mark-select text-xs border rounded p-1 w-full font-bold ${paymentSelectColor}">
+                            <option value="" ${!isPaid && !isPartialPaid ? 'selected' : ''}>Non Pagato</option>
+                            <option value="Parziale" ${isPartialPaid ? 'selected' : ''}>Parziale</option>
+                            <option value="Pagato" ${isPaid ? 'selected' : ''}>Pagato</option>
+                        </select>
+                        ${hasPaymentNote ? `
+                        <div class="bg-amber-50 border border-amber-300 rounded p-1.5 cursor-pointer hover:bg-amber-100 transition" onclick="openPaymentNotePopup(${o.id})" title="Clicca per modificare">
+                            <div class="text-[10px] font-bold text-amber-800 flex items-center gap-1">
+                                <i class="fas fa-euro-sign"></i>
+                                <span>Nota:</span>
+                            </div>
+                            <div class="text-[10px] text-amber-700 mt-0.5 line-clamp-2">${o.paymentNote}</div>
+                        </div>` : ''}
+                    </div>`;
 
                 if (linkedFrom) {
                     statusInfo = `
