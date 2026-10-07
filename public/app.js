@@ -1659,8 +1659,13 @@
             if(match){
                 const newPrefix=match[1].toUpperCase();
                 const newStartId=parseInt(match[2]);
-                if(newPrefix!==currentPrefix){ currentPrefix=newPrefix; lastOrderId=newStartId-1; alert(`Nuovo Prefisso: ${currentPrefix} impostato.`); }
-                else if(newStartId-1>lastOrderId){ lastOrderId=newStartId-1; alert(`ID Sequenza aggiornato.`); }
+                // Se si abbassa la sequenza (es. per riusare l'ID di un ordine cancellato),
+                // va impedito solo se quell'ID e' ancora occupato da un ordine esistente.
+                const candidateId = `${newPrefix}${newStartId.toString().padStart(3, '0')}`;
+                const idInUso = newPrefix===currentPrefix && orders.some(o => o.displayId === candidateId);
+                if(idInUso){ alert(`ERRORE: l'ID ${candidateId} è già usato da un ordine esistente.`); }
+                else if(newPrefix!==currentPrefix){ currentPrefix=newPrefix; lastOrderId=newStartId-1; alert(`Nuovo Prefisso: ${currentPrefix} impostato.`); }
+                else if(newStartId-1!==lastOrderId){ lastOrderId=newStartId-1; alert(`ID Sequenza aggiornato.`); }
                 else { alert(`Nessuna modifica.`); }
                 saveData(); inputEl.value = ''; refreshNextIdPlaceholder();
             } else { alert('ERRORE: Formato ID non valido.'); }
