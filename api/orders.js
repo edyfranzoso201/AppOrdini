@@ -217,7 +217,7 @@ export default async function handler(req, res) {
       // version identifica la revisione servita: il client la rimanda al
       // salvataggio come baseVersion, così il server sa su quale stato ha
       // lavorato e può fondere le modifiche altrui invece di sovrascriverle.
-      const payload = data || { orders: [], lastOrderId: 0, currentPrefix: `${new Date().getFullYear()}_`, highlightedSizeCells: {} };
+      const payload = data || { orders: [], lastOrderId: 0, currentPrefix: `${new Date().getFullYear()}_`, highlightedSizeCells: {}, deletedImportKeys: [] };
 
       return res.status(200).json({
         success: true,
@@ -226,7 +226,7 @@ export default async function handler(req, res) {
       });
 
     } else if (req.method === 'POST') {
-      const { action, orders, lastOrderId, currentPrefix, highlightedSizeCells, baseVersion, baseOrders } = req.body;
+      const { action, orders, lastOrderId, currentPrefix, highlightedSizeCells, deletedImportKeys, baseVersion, baseOrders } = req.body;
       
       if (action === 'save') {
         const role = (session.role || '').toLowerCase();
@@ -264,11 +264,21 @@ export default async function handler(req, res) {
             );
           }
 
+          // Unione, non sovrascrittura: due dispositivi potrebbero cancellare
+          // ordini diversi nello stesso intervallo, e nessuna delle due
+          // cancellazioni va persa (un Set qui sarebbe solo in-memory per
+          // questa richiesta, ma basta per deduplicare prima di salvare).
+          const mergedDeletedImportKeys = Array.from(new Set([
+            ...(current.deletedImportKeys || []),
+            ...(Array.isArray(deletedImportKeys) ? deletedImportKeys : [])
+          ]));
+
           const dataToSave = {
             orders: finalOrders,
             lastOrderId: Math.max(lastOrderId || 0, current.lastOrderId || 0),
             currentPrefix: currentPrefix || `${new Date().getFullYear()}_`,
             highlightedSizeCells: highlightedSizeCells || {},
+            deletedImportKeys: mergedDeletedImportKeys,
             version: currentVersion + 1,
             updatedAt: new Date().toISOString()
           };
@@ -314,6 +324,11 @@ export default async function handler(req, res) {
           highlightedSizeCells: rules.canHighlight
             ? (highlightedSizeCells || {})
             : (current.highlightedSizeCells || {}),
+          // deletedImportKeys cresce solo per unione: chi può cancellare ordini
+          // aggiunge le proprie chiavi senza perdere quelle già registrate da altri.
+          deletedImportKeys: rules.canDelete
+            ? Array.from(new Set([...(current.deletedImportKeys || []), ...(Array.isArray(deletedImportKeys) ? deletedImportKeys : [])]))
+            : (current.deletedImportKeys || []),
           // Anche le scritture dei ruoli limitati fanno avanzare la versione,
           // altrimenti un admin non si accorgerebbe della loro modifica.
           // Qui non serve il merge a tre vie: applyRoleWriteRules rilegge già

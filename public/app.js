@@ -406,7 +406,8 @@
         let chartKitItems = null; // Grafico capi per kit filtrato
         let lastOrderId = 0; const DEFAULT_ID_PREFIX = `${new Date().getFullYear()}A_`;
         let currentPrefix = DEFAULT_ID_PREFIX; 
-        let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true} 
+        let highlightedSizeCells = {}; // Nuovo: salva lo stato delle celle evidenziate {orderId_itemName_size: true}
+        let deletedImportKeys = []; // importKey (timestamp Google Form) degli ordini cancellati volontariamente: non vanno reimportati
    
         function startClock() {
             const updateClock = () => {
@@ -1185,6 +1186,7 @@
                 lastOrderId = ordersData.data.lastOrderId || 0;
                 currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                 highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                deletedImportKeys = ordersData.data.deletedImportKeys || [];
                 setOrdersBase(ordersData.version, orders);
             }
         }
@@ -1336,6 +1338,7 @@
                 lastOrderId = data.data.lastOrderId || 0;
                 currentPrefix = data.data.currentPrefix || DEFAULT_ID_PREFIX;
                 highlightedSizeCells = data.data.highlightedSizeCells || {};
+                deletedImportKeys = data.data.deletedImportKeys || [];
                 setOrdersBase(data.version, orders);
                 lastDataHash = getDataHash();
                 updateUI();
@@ -1369,6 +1372,7 @@
                     lastOrderId = remoteLastId;
                     currentPrefix = ordersData.data.currentPrefix || DEFAULT_ID_PREFIX;
                     highlightedSizeCells = ordersData.data.highlightedSizeCells || {};
+                    deletedImportKeys = ordersData.data.deletedImportKeys || [];
                     // Adottiamo i dati remoti: diventano la nuova base.
                     setOrdersBase(ordersData.version, remoteOrders);
                     updateUI();
@@ -1570,6 +1574,7 @@
         lastOrderId,
         currentPrefix,
         highlightedSizeCells,
+        deletedImportKeys,
         baseVersion: ordersBaseVersion,
         baseOrders: ordersBaseSnapshot
       })
@@ -1728,7 +1733,7 @@
                 logActivity('RESET_DATA', `Reset completo sistema - Eliminati ${orderCount} ordini`);
                 
                 updateUI();
-        highlightedSizeCells = {}; lastOrderId = 0; localStorage.clear(); location.reload(); } }
+        highlightedSizeCells = {}; deletedImportKeys = []; lastOrderId = 0; localStorage.clear(); location.reload(); } }
         function extractKitName(input) { if (!input) return null;
         const match = input.match(/^(.*?)\s*\(/); return (match && match[1].trim()) ? match[1].trim() : input.trim(); }
         function updateSizes(id, t, v) { const o = orders.find(x=>x.id===id); if (!o) return; v = v.toUpperCase().trim(); if (t === 'sock') { if (v === 'UNICA') return alert('Taglia non valida'); v = normalizeSockSize(v); o.sockSize = v; o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); } if(t==='main') { o.mainSize = v; o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); } updateUI(); }
@@ -2428,6 +2433,16 @@
                         return;
                     }
 
+                    // CONTROLLO CANCELLAZIONE VOLONTARIA: l'ordine era stato importato
+                    // ed e' stato poi eliminato con deleteOrder() — la riga del Google
+                    // Form resta invariata (stesso timestamp), quindi senza questo
+                    // controllo verrebbe reimportata come "nuovo ordine" a ogni check.
+                    if (!existingOrder && deletedImportKeys.includes(importKey)) {
+                        if (i < 15) console.log(`   🗑️ ELIMINATO VOLONTARIAMENTE: "${importKey}" — salto (non va reimportato)`);
+                        duplicateCount++;
+                        return;
+                    }
+
                     // LOG DETTAGLIATO per primi 15 ordini
                     if (i < 15) {
                         console.log(`\n🔍 RIGA ${i+2}: ${customer}`);
@@ -2761,9 +2776,16 @@ function deleteOrder(id) {
         console.log('Ordine eliminato:', order);
         
         orders = orders.filter(x => x.id !== id);
+        // L'importKey (timestamp della riga Google Form) non cambia mai: senza
+        // registrarlo qui, il prossimo "check" dal form reimporta l'ordine
+        // appena cancellato, perche' non e' piu' in existingOrdersMap e non e'
+        // negli archivi stagionali (archivedImportKeys).
+        if (order.importKey && !deletedImportKeys.includes(order.importKey)) {
+            deletedImportKeys.push(order.importKey);
+        }
         logActivity('DELETE_ORDER', `Eliminato ordine: ${orderId} - ${order.customer}`);
         updateUI();
-        
+
         showQuickNotification(`🗑️ Ordine ${orderId} eliminato`, 'warning');
     } else {
         console.log(`❌ Eliminazione annullata per ordine ${orderId}`);
@@ -7640,6 +7662,7 @@ async function createSeasonArchive() {
             lastOrderId = ordersData.data.lastOrderId || 0;
             currentPrefix = ordersData.data.currentPrefix || currentPrefix;
             highlightedSizeCells = ordersData.data.highlightedSizeCells || highlightedSizeCells;
+            deletedImportKeys = ordersData.data.deletedImportKeys || deletedImportKeys;
             lastDataHash = getDataHash(); // evita che autoRefresh/saveData veda un falso conflitto e re-inserisca gli ordini appena archiviati
             updateUI();
         }
@@ -7729,6 +7752,7 @@ async function restoreSeasonArchive(id, label) {
             lastOrderId = ordersData.data.lastOrderId || 0;
             currentPrefix = ordersData.data.currentPrefix || currentPrefix;
             highlightedSizeCells = ordersData.data.highlightedSizeCells || highlightedSizeCells;
+            deletedImportKeys = ordersData.data.deletedImportKeys || deletedImportKeys;
             lastDataHash = getDataHash(); // evita che autoRefresh/saveData veda un falso conflitto e rimuova gli ordini appena ripristinati
             updateUI();
         }
