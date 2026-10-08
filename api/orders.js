@@ -273,9 +273,20 @@ export default async function handler(req, res) {
             ...(Array.isArray(deletedImportKeys) ? deletedImportKeys : [])
           ]));
 
+          // Se il client non e' stale (ha lavorato sull'ultima versione nota),
+          // il suo lastOrderId e' affidabile anche quando e' PIU' BASSO di
+          // quello su Redis: e' il caso del box ID sequenza, con cui si corregge
+          // apposta il contatore all'ingiu' dopo aver cancellato un ordine. Il
+          // Math.max andava bene solo per proteggersi da un client stale che
+          // non ha ancora visto gli import fatti da altri — altrimenti
+          // sovrascriveva silenziosamente ogni correzione manuale verso il basso.
+          const nextLastOrderId = isStale
+            ? Math.max(lastOrderId || 0, current.lastOrderId || 0)
+            : (lastOrderId ?? current.lastOrderId ?? 0);
+
           const dataToSave = {
             orders: finalOrders,
-            lastOrderId: Math.max(lastOrderId || 0, current.lastOrderId || 0),
+            lastOrderId: nextLastOrderId,
             currentPrefix: currentPrefix || `${new Date().getFullYear()}_`,
             highlightedSizeCells: highlightedSizeCells || {},
             deletedImportKeys: mergedDeletedImportKeys,
