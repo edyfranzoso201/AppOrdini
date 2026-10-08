@@ -2701,7 +2701,10 @@ function handleStatusChange(id, newStatus) {
     } else {
         o.status = newStatus;
         o.linkedId = null;
-        o.partialDeliveryNote = null;
+        // partialDeliveryNote NON si azzera: resta salvata anche uscendo da
+        // "Consegna Parziale", cosi' se si torna su quello stato la nota e'
+        // ancora li'. Si aggiorna solo quando l'utente riapre il popup e
+        // salva esplicitamente (savePartialDeliveryNote).
     }
 
     // Log della modifica
@@ -2737,7 +2740,9 @@ function handlePaymentMarkChange(id, newValue) {
     }
 
     o.paymentMark = newValue === 'Pagato' ? 'Pagato' : '';
-    o.paymentNote = null;
+    // paymentNote NON si azzera: resta salvata anche uscendo da "Parziale",
+    // cosi' se si torna su quello stato la nota e' ancora li' (si aggiorna
+    // solo riaprendo il popup e salvando esplicitamente).
 
     logActivity('CHANGE_PAYMENT_MARK', `Ordine ${o.displayId} (${o.customer}): Pagamento cambiato da "${oldValue || 'Non Pagato'}" a "${o.paymentMark || 'Non Pagato'}"`);
     console.log(`📝 LOG salvato: CHANGE_PAYMENT_MARK per ${o.displayId}`);
