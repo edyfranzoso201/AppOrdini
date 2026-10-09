@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { getRedis } from './redis.js';
 
 const SESSION_PREFIX = 'orderflow:session:';
-const SESSION_TTL_SECONDS = 8 * 60 * 60; // 8 ore, scorrevole
+const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 giorni di inattivita', scorrevole
 
 function sessionKey(token) {
   return `${SESSION_PREFIX}${token}`;

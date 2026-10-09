@@ -467,7 +467,33 @@
             if (tabName === 'pagamenti') renderPaymentsTab();
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
-        
+
+        // Menu hamburger mobile: sposta la toolbar reale (stessi pulsanti/ID)
+        // dentro l'overlay quando apre, e la rimette nell'header quando chiude.
+        // Niente cloni: cosi' onclick/getElementById restano unici.
+        function toggleHeaderActionsMenu(forceOpen) {
+            const overlay = document.getElementById('headerActionsOverlay');
+            const overlayContent = document.getElementById('headerActionsOverlayContent');
+            const toolbar = document.getElementById('headerActionsToolbar');
+            const header = document.querySelector('header');
+            if (!overlay || !overlayContent || !toolbar || !header) return;
+
+            const isOpen = !overlay.classList.contains('hidden');
+            const shouldOpen = forceOpen === undefined ? !isOpen : forceOpen;
+
+            if (shouldOpen) {
+                overlayContent.appendChild(toolbar);
+                toolbar.classList.remove('hidden');
+                toolbar.classList.add('flex');
+                overlay.classList.remove('hidden');
+            } else {
+                header.appendChild(toolbar);
+                toolbar.classList.remove('flex');
+                toolbar.classList.add('hidden');
+                overlay.classList.add('hidden');
+            }
+        }
+
         function populateTabellaOrdiniFilters() {
             const minSelect = document.getElementById('tabellaOrdiniMinId');
             const maxSelect = document.getElementById('tabellaOrdiniMaxId');
@@ -5835,15 +5861,24 @@ function updateUI() {
         let currentUser = null;
 
         // ===== SESSIONE: token allegato automaticamente a tutte le fetch verso /api/ =====
+        // Token in localStorage: resta memorizzato alla chiusura del browser. Scade
+        // lato server dopo 30 giorni senza collegarsi (TTL scorrevole).
         function getSessionToken() {
-            return sessionStorage.getItem('orderFlowSessionToken');
+            let t = localStorage.getItem('orderFlowSessionToken');
+            if (!t) {
+                // migrazione dai token salvati in sessionStorage dalla versione precedente
+                t = sessionStorage.getItem('orderFlowSessionToken');
+                if (t) localStorage.setItem('orderFlowSessionToken', t);
+            }
+            return t;
         }
 
         function setSessionToken(token) {
-            if (token) sessionStorage.setItem('orderFlowSessionToken', token);
+            if (token) localStorage.setItem('orderFlowSessionToken', token);
         }
 
         function clearSession() {
+            localStorage.removeItem('orderFlowSessionToken');
             sessionStorage.removeItem('orderFlowSessionToken');
             localStorage.removeItem('orderFlowCurrentUser');
             currentUser = null;
