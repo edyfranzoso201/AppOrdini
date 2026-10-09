@@ -878,9 +878,13 @@
                     // Crea una chiave univoca per questa cella
                     const cellKey = `${order.id}_${itemName}_${size}`;
                     const isHighlighted = highlightedSizeCells[cellKey] === true;
-                    const highlightClass = isHighlighted ? 'size-cell-highlighted' : '';
-                    
-                    html += `<td class="border p-1 text-center item-col size-cell-clickable ${partClass} ${highlightClass}" 
+                    // Capo gia' scalato dal magazzino per questo ordine: arancione,
+                    // a meno che l'utente non abbia evidenziato la cella a mano
+                    // (click manuale, verde) - quello resta prioritario.
+                    const isScaled = !isHighlighted && item && countScaled(order, itemName, size) > 0;
+                    const highlightClass = isHighlighted ? 'size-cell-highlighted' : (isScaled ? 'size-cell-scaled' : '');
+
+                    html += `<td class="border p-1 text-center item-col size-cell-clickable ${partClass} ${highlightClass}"
                                 data-col-index="${colIndex}" 
                                 data-order-id="${order.id}" 
                                 data-item-name="${itemName}" 
