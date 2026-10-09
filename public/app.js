@@ -520,6 +520,11 @@
             } else {
                 highlightedSizeCells[cellKey] = true;
                 cell.classList.add('size-cell-highlighted');
+                // Il click sostituisce l'arancione (scalato) col verde manuale:
+                // senza questo le due classi restavano entrambe sulla cella e
+                // al click successivo sarebbe ricomparsa l'arancione invece che
+                // tornare neutra.
+                cell.classList.remove('size-cell-scaled');
             }
             
             // Salva lo stato
