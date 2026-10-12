@@ -2028,8 +2028,17 @@
             if (isGoogleForm && (orders.length > 0 || archivedOrdersForCheck.length > 0)) {
                 // ✅ FIX: Trova il timestamp MÀS RECENTE tra TUTTI gli ordini con timestamp
                 // NON usare l'ordine con ID più alto (alfabetico) — potrebbe non avere timestamp
+                // Gli ordini inseriti A MANO ricevono un timestamp (ora di
+                // creazione, addNewOrder) ma non arrivano dal form: se contassero
+                // come "ultimo ordine", ogni ordine del form inviato PRIMA della
+                // creazione manuale e non ancora importato verrebbe scartato per
+                // sempre come "piu' vecchio". Solo gli ordini importati (hanno
+                // excelRowIndex) fanno da riferimento.
+                const allKnownOrders = orders.concat(archivedOrdersForCheck);
+                const fromFormOrders = allKnownOrders.filter(o => o.excelRowIndex !== undefined && o.excelRowIndex !== null);
+                const baselineOrders = fromFormOrders.length > 0 ? fromFormOrders : allKnownOrders;
                 let latestTimestampMs = 0;
-                orders.concat(archivedOrdersForCheck).forEach(o => {
+                baselineOrders.forEach(o => {
                     if (!o.timestamp) return;
                     try {
                         const ts = new Date(roundTimestampOnly(o.timestamp));
