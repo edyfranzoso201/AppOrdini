@@ -3623,7 +3623,7 @@ function deleteOrder(id) {
             }
 
             renderGenericMatrix('grossTable', 'grossHeader', 'grossBody', globalItems, filteredGross, 'GROSS');
-            renderGenericMatrix('invClothingTable', 'invClothingHeader', 'invClothingBody', globalItems, filteredGross, 'INV'); 
+            renderGenericMatrix('invClothingTable', 'invClothingHeader', 'invClothingBody', globalItems, filteredGross, 'INV', filteredNet); 
             renderGenericMatrix('netTable', 'netHeader', 'netBody', globalItems, filteredNet, 'NET'); 
             
             renderSocksTable(filteredGross, 'INV');
@@ -3764,7 +3764,7 @@ function deleteOrder(id) {
             return s;
         }
 
-        function renderGenericMatrix(tid, hid, bid, columns, filteredOrders, mode) {
+        function renderGenericMatrix(tid, hid, bid, columns, filteredOrders, mode, netOrders) {
             const thead = document.getElementById(hid); let bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100'); let hHTML = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow w-16 text-center align-middle text-sm font-bold" style="vertical-align: middle;"><div style="writing-mode: horizontal-tb; transform: none; height: auto; display: flex; align-items: center; justify-content: center; padding: 4px;">TAGLIA</div></th>`; 
             columns.forEach(c => { if(isSockItem(c) || isBallItem(c)) return; let bgClass = c.includes("Staff") ? "bg-red-50 text-red-900" : "bg-gray-50"; hHTML += `<th class="border-l align-bottom pb-2 ${bgClass}"><div class="vertical-header">${formatHeaderName(c)}</div></th>`; });
             thead.innerHTML = `<tr>${hHTML}</tr>`;
@@ -3832,7 +3832,19 @@ function deleteOrder(id) {
                         valForTotal = countNeeded; 
                     } 
                     else if (mode === 'INV') { 
-                        rHTML += `<td class="text-center border-b border-l bg-white py-0 ${sizeClass}"><input type="number" value="${stockVal}" onchange="updateInventory('${col}', '${size}', this.value)" class="inv-input" placeholder="-"></td>`;
+                        // Giallo fluo se nell'Ordine Netto c'e' ancora qualcosa da
+                        // ordinare per questo articolo/taglia (stessa formula del NET).
+                        let invToBuy = 0;
+                        if (netOrders) {
+                            let need = 0, scaled = 0;
+                            netOrders.forEach(o => {
+                                o.itemsList.forEach(i => { if (i.name === col && i.size === size) need++; });
+                                scaled += countScaled(o, col, size);
+                            });
+                            invToBuy = Math.max(0, need - scaled);
+                        }
+                        const invHl = invToBuy > 0 ? 'inv-cell-needed' : 'bg-white';
+                        rHTML += `<td class="text-center border-b border-l ${invHl} py-0 ${sizeClass}" ${invToBuy > 0 ? `title="Da ordinare (Netto): ${invToBuy}"` : ''}><input type="number" value="${stockVal}" onchange="updateInventory('${col}', '${size}', this.value)" class="inv-input" placeholder="-"></td>`;
                         valForTotal = stockInt; 
                     } 
                     else if (mode === 'NET') { 
