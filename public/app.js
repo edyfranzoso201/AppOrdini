@@ -2783,7 +2783,7 @@ function handlePaymentMarkChange(id, newValue) {
         return; // Il salvataggio verrà fatto dal popup
     }
 
-    o.paymentMark = newValue === 'Pagato' ? 'Pagato' : '';
+    o.paymentMark = newValue === 'Pagato' ? 'Pagato' : (newValue === 'NA' ? 'NA' : '');
     // paymentNote NON si azzera: resta salvata anche uscendo da "Parziale",
     // cosi' se si torna su quello stato la nota e' ancora li' (si aggiorna
     // solo riaprendo il popup e salvando esplicitamente).
@@ -3321,7 +3321,8 @@ function deleteOrder(id) {
                 if(filterPaymentMark !== 'all') {
                     if(filterPaymentMark === 'Pagato' && o.paymentMark !== 'Pagato') return false;
                     if(filterPaymentMark === 'Parziale' && o.paymentMark !== 'Parziale') return false;
-                    if(filterPaymentMark === 'NonPagato' && (o.paymentMark === 'Pagato' || o.paymentMark === 'Parziale')) return false;
+                    if(filterPaymentMark === 'NA' && o.paymentMark !== 'NA') return false;
+                    if(filterPaymentMark === 'NonPagato' && (o.paymentMark === 'Pagato' || o.paymentMark === 'Parziale' || o.paymentMark === 'NA')) return false;
                 }
                 if(filterSize !== 'all' && o.mainSize !== filterSize) return false;
                 
@@ -3365,14 +3366,16 @@ function deleteOrder(id) {
                 // (anche con ordine "Nuovo") per chi ha il permesso editPaymentMark
                 const isPaid = o.paymentMark === 'Pagato';
                 const isPartialPaid = o.paymentMark === 'Parziale';
-                const paymentSelectColor = isPaid ? 'bg-green-700 text-white' : (isPartialPaid ? 'bg-yellow-400 text-yellow-900' : 'bg-white text-gray-700');
+                const isNA = o.paymentMark === 'NA';
+                const paymentSelectColor = isPaid ? 'bg-green-700 text-white' : (isPartialPaid ? 'bg-yellow-400 text-yellow-900' : (isNA ? 'bg-gray-600 text-white' : 'bg-white text-gray-700'));
                 const hasPaymentNote = isPartialPaid && o.paymentNote;
                 const paymentMarkInfo = `
                     <div class="flex flex-col gap-1">
                         <select onchange="handlePaymentMarkChange(${o.id}, this.value)" class="payment-mark-select text-xs border rounded p-1 w-full font-bold ${paymentSelectColor}">
-                            <option value="" ${!isPaid && !isPartialPaid ? 'selected' : ''}>Non Pagato</option>
+                            <option value="" ${!isPaid && !isPartialPaid && !isNA ? 'selected' : ''}>Non Pagato</option>
                             <option value="Parziale" ${isPartialPaid ? 'selected' : ''}>Parziale</option>
                             <option value="Pagato" ${isPaid ? 'selected' : ''}>Pagato</option>
+                            <option value="NA" ${isNA ? 'selected' : ''}>NA</option>
                         </select>
                         ${hasPaymentNote ? `
                         <div class="bg-amber-50 border border-amber-300 rounded p-1.5 cursor-pointer hover:bg-amber-100 transition" onclick="openPaymentNotePopup(${o.id})" title="Clicca per modificare">
