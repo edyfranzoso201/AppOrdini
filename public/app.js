@@ -3832,8 +3832,9 @@ function deleteOrder(id) {
                         valForTotal = countNeeded; 
                     } 
                     else if (mode === 'INV') { 
-                        // Giallo fluo se nell'Ordine Netto c'e' ancora qualcosa da
-                        // ordinare per questo articolo/taglia (stessa formula del NET).
+                        // Giallo fluo se nell'Ordine Netto c'e' ancora qualcosa da ordinare
+                        // per questo articolo/taglia (stessa formula del NET) E in
+                        // magazzino ce n'e' almeno uno (altrimenti non c'e' nulla da scalare).
                         let invToBuy = 0;
                         if (netOrders) {
                             let need = 0, scaled = 0;
@@ -3843,8 +3844,9 @@ function deleteOrder(id) {
                             });
                             invToBuy = Math.max(0, need - scaled);
                         }
-                        const invHl = invToBuy > 0 ? 'inv-cell-needed' : 'bg-white';
-                        rHTML += `<td class="text-center border-b border-l ${invHl} py-0 ${sizeClass}" ${invToBuy > 0 ? `title="Da ordinare (Netto): ${invToBuy}"` : ''}><input type="number" value="${stockVal}" onchange="updateInventory('${col}', '${size}', this.value)" class="inv-input" placeholder="-"></td>`;
+                        const invHighlight = invToBuy > 0 && stockInt > 0; // giallo solo se l'articolo e' davvero in magazzino
+                        const invHl = invHighlight ? 'inv-cell-needed' : 'bg-white';
+                        rHTML += `<td class="text-center border-b border-l ${invHl} py-0 ${sizeClass}" ${invHighlight ? `title="Da ordinare (Netto): ${invToBuy}, in magazzino: ${stockInt}"` : ''}><input type="number" value="${stockVal}" onchange="updateInventory('${col}', '${size}', this.value)" class="inv-input" placeholder="-"></td>`;
                         valForTotal = stockInt; 
                     } 
                     else if (mode === 'NET') { 
