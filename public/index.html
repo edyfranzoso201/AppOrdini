@@ -260,13 +260,13 @@
         /* Prima riga (nomi articoli) - sticky top */
         #tabellaOrdiniStampabile thead tr:first-child th {
             top: 0 !important;
-            z-index: 103 !important;
+            z-index: 23 !important;
         }
         
         /* Seconda riga (totali) - sticky sotto la prima - TUTTE LE CELLE */
         #tabellaOrdiniStampabile thead tr:nth-child(2) th {
             top: 70px !important; /* Perfetto equilibrio */
-            z-index: 102 !important;
+            z-index: 22 !important;
             position: sticky !important;
             background-color: #e5e7eb !important;
         }
@@ -276,7 +276,7 @@
         #tabellaOrdiniStampabile .tabella-ordini-sticky-col-1 {
             position: sticky !important;
             left: 0 !important;
-            z-index: 50 !important;
+            z-index: 20 !important;
             background-color: #f3f4f6 !important;
             box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
             min-width: 140px !important;
@@ -299,7 +299,7 @@
             position: sticky !important;
             left: 0 !important;
             top: 0 !important;
-            z-index: 110 !important;
+            z-index: 25 !important;
         }
         
         /* HEADER Cliente - sticky TOP (si muove orizzontalmente con la tabella) */
@@ -308,7 +308,7 @@
             position: sticky !important;
             left: auto !important;   /* non sticky left */
             top: 0 !important;       /* sticky top come tutti gli altri TH */
-            z-index: 102 !important;
+            z-index: 22 !important;
         }
         
         /* Assicura che il contenitore abbia overflow */
