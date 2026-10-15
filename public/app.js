@@ -810,9 +810,9 @@
             
             // Popola tbody
             tbody.innerHTML = '';
-            filteredOrders.forEach(order => {
+            filteredOrders.forEach((order, rowIdx) => {
                 const tr = document.createElement('tr');
-                tr.className = 'border hover:bg-gray-50';
+                tr.className = 'border hover:bg-gray-50' + (rowIdx % 2 === 1 ? ' tabella-row-alt' : '');
                 
                 const borsoneZaino = order.itemsList.find(i => i.name.includes('Borsone')) ? 'Borsone' : 
                                     order.itemsList.find(i => i.name.includes('Zaino')) ? 'Zaino' : '-';

@@ -242,7 +242,11 @@
         /* Stili tabella ordini stampabile */
         #tabellaOrdiniStampabile { font-size: 10px; border: 1px solid #000; table-layout: auto; }
         #tabellaOrdiniStampabile th { font-weight: bold; text-align: center; white-space: normal; padding: 4px; border: 1px solid #333; }
-        #tabellaOrdiniStampabile td { padding: 4px 2px; text-align: center; border: 1px solid #ddd; }
+        #tabellaOrdiniStampabile td { padding: 4px 2px; text-align: center; border: 1px solid #9ca3af; }
+        /* Righe alternate bianco / grigio chiarissimo (stesso grigio del Netto). Le celle
+           evidenziate (verde/arancione) hanno !important e restano sopra. */
+        #tabellaOrdiniStampabile tbody tr.tabella-row-alt,
+        #tabellaOrdiniStampabile tbody tr.tabella-row-alt > td { background-color: #f1f3f6; }
         #tabellaOrdiniStampabile thead tr:first-child th { vertical-align: middle; }
         
         /* Header fisso per tabella ordini - TUTTO GRIGIO */
