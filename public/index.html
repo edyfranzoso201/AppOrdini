@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OrderFlow Pro - Sistema Gestione Ordini</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232563eb'/%3E%3Cpath d='M50 18 L82 34 L82 66 L50 82 L18 66 L18 34 Z' fill='none' stroke='%23ffffff' stroke-width='5'/%3E%3Cpath d='M18 34 L50 50 L82 34 M50 50 L50 82' fill='none' stroke='%23ffffff' stroke-width='5'/%3E%3C/svg%3E">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="OrderFlow">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -457,6 +462,42 @@
             }
             #ordersTable tbody > tr > td:nth-child(16) input[type="checkbox"] { width: 24px; height: 24px; }
         }
+
+        /* ── SOLO SMARTPHONE: Distinta e Tabella compatte ──
+           Le classi mx-empty-row / mx-empty-col le mette app.js (markEmptyMatrix,
+           markEmptyTabellaCols) ma hanno effetto SOLO qui: su computer e in
+           stampa righe e colonne vuote restano visibili come sempre.
+           Il pulsante "Mostra tutto" (body.mx-show-all) le rimette. */
+        .mx-toggle-btn { display: none; }
+        @media screen and (max-width: 767px) {
+            .mx-toggle-btn {
+                display: inline-flex;
+                align-items: center;
+                white-space: nowrap;
+                margin-top: 6px;
+                padding: 6px 12px;
+                min-height: 36px;
+                border-radius: 999px;
+                border: 1px solid #1e3a8a;
+                background: #eff6ff;
+                color: #1e3a8a;
+                font-size: 13px;
+                font-weight: 700;
+                vertical-align: middle;
+            }
+            body:not(.mx-show-all) .mx-empty-row,
+            body:not(.mx-show-all) .mx-empty-col { display: none !important; }
+
+            /* Tabella: titolo sopra, filtri sotto e a capo (prima uscivano dallo schermo) */
+            #tab-tabella-ordini .tabella-head {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            #tab-tabella-ordini .tabella-head h2 { font-size: 1.1rem; }
+            #tab-tabella-ordini .tabella-head select,
+            #tab-tabella-ordini .tabella-head input { font-size: 16px; }
+        }
         @media print {
             @page { size: A3 landscape; margin: 2mm !important; }
             .no-print { display: none !important; }
@@ -745,7 +786,7 @@
             <div class="flex flex-col gap-3 h-full">
                 <div class="bg-white p-2 rounded shadow border-b flex justify-between items-center gap-4 flex-wrap flex-none">
                     <div class="flex items-center gap-4">
-                        <div><h2 class="font-bold text-lg text-blue-900">Distinta & Magazzino</h2><p class="text-xs text-gray-500">Flusso: Richiesta -> Magazzino -> Ordine Fornitore</p></div>
+                        <div><h2 class="font-bold text-lg text-blue-900">Distinta & Magazzino</h2><p class="text-xs text-gray-500">Flusso: Richiesta -> Magazzino -> Ordine Fornitore</p><button type="button" onclick="toggleMobileCompact()" class="mx-toggle-btn">Mostra tutto</button></div>
                         <div id="liveClock" class="live-clock hidden md:block">--:--:--</div>
                         
                         <div class="h-6 w-px bg-gray-300"></div>
@@ -1114,8 +1155,8 @@
 
         <div id="tab-tabella-ordini" class="tab-content">
             <div class="bg-white rounded shadow p-4 h-full flex flex-col">
-                <div class="flex justify-between items-center mb-4 no-print">
-                    <h2 class="text-xl font-bold text-blue-900">Tabella Ordini Stampabile</h2>
+                <div class="tabella-head flex justify-between items-center mb-4 no-print">
+                    <h2 class="text-xl font-bold text-blue-900">Tabella Ordini Stampabile <button type="button" onclick="toggleMobileCompact()" class="mx-toggle-btn">Mostra tutto</button></h2>
                     <div class="flex items-center gap-3 flex-wrap">
                         <span class="text-sm font-bold text-gray-600">Filtra ID:</span>
                         <select id="tabellaOrdiniMinId" class="text-sm border rounded px-2 py-1 w-28 text-center font-bold bg-white"></select>

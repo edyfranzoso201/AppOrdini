@@ -943,8 +943,9 @@
                 tr.innerHTML = html;
                 tbody.appendChild(tr);
             });
+            markEmptyTabellaCols();
         }
-        
+
         function importFromGoogleSheet() {
             if (!checkPermission('importGoogle')) {
                 alert('⚠️ Non hai i permessi per importare da Google.');
@@ -3896,7 +3897,63 @@ function deleteOrder(id) {
             const trTotal = document.createElement('tr'); trTotal.className = 'total-row';
             let htmlTotal = `<td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>`;
             columns.forEach(col => { if(isSockItem(col) || isBallItem(col)) return; htmlTotal += `<td class="text-center border-l p-2">${colTotals[col]}</td>`; }); trTotal.innerHTML = htmlTotal; tbody.appendChild(trTotal);
+            // La Giacenza (INV) no: li' le celle a zero servono per inserire la merce
+            if (mode !== 'INV') markEmptyMatrix(tid);
         }
+
+        // Smartphone: segna righe (taglie) e colonne (articoli) senza quantita'.
+        // Le classi hanno effetto solo nel CSS mobile (index.html, "Distinta e
+        // Tabella compatte"): su computer e in stampa non cambia nulla.
+        function markEmptyMatrix(tableId) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const rows = [...table.querySelectorAll('tbody tr')];
+            const totalRow = rows.find(r => r.classList.contains('total-row'));
+            if (!totalRow) return;
+            const isEmptyText = (el) => { const t = el.textContent.trim(); return t === '' || t === '-' || t === '0'; };
+            const emptyCols = [];
+            [...totalRow.children].forEach((td, idx) => { if (idx > 0 && isEmptyText(td)) emptyCols.push(idx); });
+            // Tabella tutta vuota: la si lascia intera, altrimenti resterebbe solo "TOTALE"
+            if (emptyCols.length >= totalRow.children.length - 1) return;
+            const headCells = [...table.querySelectorAll('thead tr:first-child > th')];
+            emptyCols.forEach(idx => {
+                if (headCells[idx]) headCells[idx].classList.add('mx-empty-col');
+                rows.forEach(r => { if (r.children[idx]) r.children[idx].classList.add('mx-empty-col'); });
+            });
+            rows.forEach(r => {
+                if (r === totalRow) return;
+                if (r.children[0] && r.children[0].classList.contains('size-section-row')) return;
+                const cells = [...r.children].slice(1);
+                if (cells.length && cells.every(isEmptyText)) r.classList.add('mx-empty-row');
+            });
+        }
+
+        // Smartphone: nella Tabella segna le colonne articolo con totale 0
+        // (riga 2 dell'intestazione). Stessa regola di markEmptyMatrix.
+        function markEmptyTabellaCols() {
+            const table = document.getElementById('tabellaOrdiniStampabile');
+            if (!table) return;
+            const totals = [...table.querySelectorAll('thead tr:nth-child(2) th.item-col[data-col-index]')];
+            const empty = totals.filter(th => th.textContent.trim() === '0').map(th => th.dataset.colIndex);
+            if (!empty.length || empty.length === totals.length) return;
+            empty.forEach(i => table.querySelectorAll(`[data-col-index="${i}"]`).forEach(el => el.classList.add('mx-empty-col')));
+        }
+
+        // Pulsante "Mostra tutto" / "Solo con quantita'" (visibile solo su smartphone)
+        function updateMobileCompactButtons() {
+            const all = document.body.classList.contains('mx-show-all');
+            document.querySelectorAll('.mx-toggle-btn').forEach(b => { b.textContent = all ? 'Solo con quantità' : 'Mostra tutto'; });
+        }
+        function toggleMobileCompact() {
+            const all = document.body.classList.toggle('mx-show-all');
+            try { localStorage.setItem('orderflow_mx_show_all', all ? '1' : '0'); } catch (e) {}
+            updateMobileCompactButtons();
+        }
+        window.toggleMobileCompact = toggleMobileCompact;
+        try {
+            if (localStorage.getItem('orderflow_mx_show_all') === '1') document.body.classList.add('mx-show-all');
+        } catch (e) {}
+        updateMobileCompactButtons();
         
         // Ispezione dei nomi calza SALVATI negli ordini. Solo lettura.
         //
@@ -9158,3 +9215,68 @@ async function saveQuickIdConfig() {
             } catch(e) { alert('Errore: ' + e.message); }
         }
 
+
+// ===== APP INSTALLABILE + AVVISO NUOVA VERSIONE =====
+// Il service worker non mette niente in cache (vedi sw.js): serve solo a far
+// comparire "Installa app". Chi ha l'app aperta da ore pero' tiene in memoria
+// la versione vecchia: controlliamo l'impronta (ETag) di app.js e index.html
+// e, se cambia dopo un deploy, mostriamo un avviso. Niente ricarica automatica:
+// si perderebbe un ordine a meta' compilazione.
+(function setupAppUpdates() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW non registrato:', err));
+        });
+    }
+
+    const WATCHED = ['/app.js', '/'];
+    const CHECK_EVERY_MS = 5 * 60 * 1000;
+    let baseline = null;
+    let bannerShown = false;
+
+    async function fingerprint() {
+        const parts = [];
+        for (const url of WATCHED) {
+            const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+            if (!res.ok) return null;
+            const tag = res.headers.get('etag') || res.headers.get('last-modified');
+            if (!tag) return null;
+            parts.push(tag);
+        }
+        return parts.join('|');
+    }
+
+    function showUpdateBanner() {
+        if (bannerShown) return;
+        bannerShown = true;
+        const bar = document.createElement('div');
+        bar.id = 'appUpdateBanner';
+        bar.className = 'no-print';
+        bar.setAttribute('role', 'status');
+        bar.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:10000;' +
+            'display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);padding:10px 14px;' +
+            'background:#1e3a8a;color:#fff;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;';
+        bar.innerHTML = '<span style="white-space:nowrap">Nuova versione disponibile</span>' +
+            '<button type="button" style="background:#fff;color:#1e3a8a;border:0;border-radius:8px;padding:8px 14px;font-weight:700;min-height:36px;cursor:pointer">Aggiorna</button>' +
+            '<button type="button" aria-label="Chiudi" style="background:transparent;color:#fff;border:0;font-size:18px;padding:4px 6px;cursor:pointer">&times;</button>';
+        const [reloadBtn, closeBtn] = bar.querySelectorAll('button');
+        reloadBtn.onclick = () => location.reload();
+        closeBtn.onclick = () => { bar.remove(); };
+        document.body.appendChild(bar);
+    }
+
+    async function check() {
+        if (bannerShown) return;
+        try {
+            const fp = await fingerprint();
+            if (!fp) return;
+            if (baseline === null) { baseline = fp; return; }
+            if (fp !== baseline) showUpdateBanner();
+        } catch (e) { /* offline: si riprova al prossimo giro */ }
+    }
+
+    check();
+    setInterval(check, CHECK_EVERY_MS);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    window.checkAppUpdate = check;
+})();
