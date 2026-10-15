@@ -3805,12 +3805,14 @@ function deleteOrder(id) {
             if(sizes.has('UNICA')) sortedSizes.push('UNICA');
 
             const colTotals = {}; columns.forEach(c => colTotals[c] = 0);
-            sortedSizes.forEach(size => { 
+            sortedSizes.forEach((size, rowIdx) => { 
                 const tr = document.createElement('tr'); 
+                // Ordine Netto: righe alternate bianco / grigio chiarissimo per seguire i numeri
+                const netAlt = (mode === 'NET' && rowIdx % 2 === 1) ? ' net-row-alt' : '';
                 let bgCol = mode === 'INV' ? 'bg-yellow-50' : 'bg-white'; 
                 const isSectionRow = size.includes('TAGLIA');
                 const sizeClass = isSectionRow ? 'size-section-row' : '';
-                let rHTML = `<td class="px-4 py-0 font-bold ${bgCol} sticky-col border-r shadow border-b ${sizeClass}">${size}</td>`;
+                let rHTML = `<td class="px-4 py-0 font-bold ${bgCol} sticky-col border-r shadow border-b ${sizeClass}${netAlt}">${size}</td>`;
                 columns.forEach(col => {
                     if(isSockItem(col) || isBallItem(col)) return;
 
@@ -3867,7 +3869,7 @@ function deleteOrder(id) {
                         
                         const displayClass = toBuy > 0 ? 'buy-alert' : 'buy-ok'; 
                         const displayVal = toBuy > 0 ? toBuy : '-';
-                        rHTML += `<td class="text-center border-b border-l bg-white py-0 ${sizeClass}"><span class="net-val ${displayClass}">${displayVal}</span></td>`; 
+                        rHTML += `<td class="text-center border-b border-l bg-white py-0 ${sizeClass}${netAlt}"><span class="net-val ${displayClass}">${displayVal}</span></td>`; 
                         valForTotal = toBuy;
                     }
                     colTotals[col] += valForTotal;
