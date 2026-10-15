@@ -1,5 +1,5 @@
         const API_BASE = 'https://appordinigo.vercel.app/api';
-        const SIZE_ORDER = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "6 ANNI", "8 ANNI", "10 ANNI", "12 ANNI", "14 ANNI", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "03 BIMBO", "05 ADULTO", "UNICA"];
+        const SIZE_ORDER = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "47/49", "6 ANNI", "8 ANNI", "10 ANNI", "12 ANNI", "14 ANNI", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "03 BIMBO", "05 ADULTO", "UNICA"];
         const SOCKS_BLUE_DEFAULT = "Calzettoni di Allenamento WULGAR Blu Marine 618 (7€)";
         const SOCKS_RED_DEFAULT = "Calzettoni di Allen. WULGAR COL. 565 RED (7€)";
         const SOCKS_SPOLF_BLUE = "Calzettone (Senza Piede) SPOLF Blue Marine 193 (8€)";
@@ -42,7 +42,16 @@
         // Taglie calze ammesse. Qualsiasi altra taglia finita su un articolo
         // calze non viene mai conteggiata: la tabella "Calze da Ordinare"
         // disegna SEMPRE queste 6 righe e conta con size === riga.
-        const VALID_SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+        const VALID_SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "47/49"];
+
+        // Codice fornitore (N..) che il modulo Google accoda alla misura calze.
+        // Il codice e' univoco per misura (verificato sul foglio), quindi non si
+        // salva: lo si mostra soltanto nell'etichetta di riga. 23/26 non ha un
+        // esempio nel foglio: resta senza codice finche' non e' noto.
+        const SOCK_SIZE_CODES = { "27/30": "N6", "31/34": "N7", "35/38": "N8", "39/42": "N9", "43/46": "N10", "47/49": "N11" };
+        function sockSizeLabel(size) {
+            return SOCK_SIZE_CODES[size] ? `${size} <span class="text-[10px] font-semibold text-gray-500">${SOCK_SIZE_CODES[size]}</span>` : size;
+        }
 
         // Riduce la taglia calze scritta nel modulo Google alla sola misura.
         //
@@ -3772,7 +3781,7 @@ function deleteOrder(id) {
             
             let sizes = new Set(); 
             // Taglie calzettoni da escludere dalla tabella abbigliamento
-            const SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            const SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "47/49"];
             
             if (mode === 'INV') {
                  SIZE_ORDER.forEach(s => {
@@ -4026,7 +4035,7 @@ function deleteOrder(id) {
                 let valBlue = 0, valRed = 0, valSpolfBlue = 0, valSpolfRed = 0;
                 const tr = document.createElement('tr'); 
                 tr.className = "border-b"; 
-                let html = `<td class="px-4 py-0 font-bold text-center ${mode==='INV'?'bg-yellow-50':'bg-gray-50'}">${s}</td>`;
+                let html = `<td class="px-4 py-0 font-bold text-center ${mode==='INV'?'bg-yellow-50':'bg-gray-50'}">${sockSizeLabel(s)}</td>`;
                 
                 const renderCell = (needed, stockVal, stockInt, scaledCount, itemName) => { 
                     if(mode === 'INV') { 
@@ -5651,7 +5660,7 @@ function updateUI() {
             XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById('grossTable')), "Riepilogo_Lordo");
             
             // Crea manualmente la tabella Magazzino con i valori degli input
-            const SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            const SOCK_SIZES = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "47/49"];
             const inventorySizes = SIZE_ORDER.filter(s => !SOCK_SIZES.includes(s));
             inventorySizes.push('UNICA');
             
@@ -5688,7 +5697,7 @@ function updateUI() {
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(inventoryData), "Magazzino");
             
             // Crea manualmente la tabella Calze Inventario
-            const sockSizes = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46"];
+            const sockSizes = ["23/26", "27/30", "31/34", "35/38", "39/42", "43/46", "47/49"];
             const socksInventoryData = [];
             
             sockSizes.forEach(size => {
