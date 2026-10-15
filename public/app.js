@@ -46,9 +46,13 @@
 
         // Codice fornitore (N..) che il modulo Google accoda alla misura calze.
         // Il codice e' univoco per misura (verificato sul foglio), quindi non si
-        // salva: lo si mostra soltanto nell'etichetta di riga. 23/26 non ha un
-        // esempio nel foglio: resta senza codice finche' non e' noto.
-        const SOCK_SIZE_CODES = { "27/30": "N6", "31/34": "N7", "35/38": "N8", "39/42": "N9", "43/46": "N10", "47/49": "N11" };
+        // salva: lo si mostra soltanto a video (etichette di riga e Tabella).
+        // N5 per 23/26 confermato dall'utente (nel foglio non ha esempi).
+        const SOCK_SIZE_CODES = { "23/26": "N5", "27/30": "N6", "31/34": "N7", "35/38": "N8", "39/42": "N9", "43/46": "N10", "47/49": "N11" };
+        // Versione testo semplice ("43/46 N10"), per le celle della Tabella.
+        function sockSizeText(size) {
+            return SOCK_SIZE_CODES[size] ? `${size} ${SOCK_SIZE_CODES[size]}` : size;
+        }
         function sockSizeLabel(size) {
             return SOCK_SIZE_CODES[size] ? `${size} <span class="text-[10px] font-semibold text-gray-500">${SOCK_SIZE_CODES[size]}</span>` : size;
         }
@@ -883,7 +887,7 @@
                     <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}</td>
                     <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${escapeHtml(order.customer)}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanMainSize}</td>
-                    <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize}</td>
+                    <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize === '-' ? '-' : sockSizeText(normalizeSockSize(cleanSockSize))}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">UNICA</td>
                     <td class="border p-1" style="font-size: 9px;">${order.kitType || 'Personalizzato'}</td>
                     <td class="border p-1" style="font-size: 9px; max-width: 100px; overflow: hidden; text-overflow: ellipsis;">${cleanNotes(order.notes)}</td>
@@ -908,6 +912,9 @@
                         return cleanName === itemName;
                     });
                     const size = item ? item.size : '';
+                    // Solo testo a video: le calze mostrano sempre "misura + codice N"
+                    // (anche se salvate senza). Chiavi e data-size restano sul valore salvato.
+                    const sizeShown = (item && isSockItem(itemName)) ? sockSizeText(normalizeSockSize(size)) : size;
                     
                     // Stessa logica di divisione
                     const halfPoint = Math.ceil(allItems.length / 2);
@@ -930,7 +937,7 @@
                                 data-item-name="${itemName}" 
                                 data-size="${size}"
                                 onclick="toggleSizeCellHighlight(this, '${order.id}', '${itemName.replace(/'/g, "\\'")}', '${size}')" 
-                                style="font-size: 10px;">${size}</td>`;
+                                style="font-size: 10px;">${sizeShown}</td>`;
                 });
                 
                 tr.innerHTML = html;
