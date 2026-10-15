@@ -3809,10 +3809,11 @@ function deleteOrder(id) {
                 const tr = document.createElement('tr'); 
                 // Ordine Netto: righe alternate bianco / grigio chiarissimo per seguire i numeri
                 const netAlt = (mode === 'NET' && rowIdx % 2 === 1) ? ' net-row-alt' : '';
+                const invAlt = (mode === 'INV' && rowIdx % 2 === 1) ? ' inv-row-alt' : ''; // Giacenza: righe alternate giallo senape chiaro
                 let bgCol = mode === 'INV' ? 'bg-yellow-50' : 'bg-white'; 
                 const isSectionRow = size.includes('TAGLIA');
                 const sizeClass = isSectionRow ? 'size-section-row' : '';
-                let rHTML = `<td class="px-4 py-0 font-bold ${bgCol} sticky-col border-r shadow border-b ${sizeClass}${netAlt}">${size}</td>`;
+                let rHTML = `<td class="px-4 py-0 font-bold ${bgCol} sticky-col border-r shadow border-b ${sizeClass}${netAlt}${invAlt}">${size}</td>`;
                 columns.forEach(col => {
                     if(isSockItem(col) || isBallItem(col)) return;
 
@@ -3847,7 +3848,7 @@ function deleteOrder(id) {
                             invToBuy = Math.max(0, need - scaled);
                         }
                         const invHighlight = invToBuy > 0 && stockInt > 0; // giallo solo se l'articolo e' davvero in magazzino
-                        const invHl = invHighlight ? 'inv-cell-needed' : 'bg-white';
+                        const invHl = invHighlight ? 'inv-cell-needed' : ('bg-white' + invAlt);
                         rHTML += `<td class="text-center border-b border-l ${invHl} py-0 ${sizeClass}" ${invHighlight ? `title="Da ordinare (Netto): ${invToBuy}, in magazzino: ${stockInt}"` : ''}><input type="number" value="${stockVal}" onchange="updateInventory('${col}', '${size}', this.value)" class="inv-input" placeholder="-"></td>`;
                         valForTotal = stockInt; 
                     } 
