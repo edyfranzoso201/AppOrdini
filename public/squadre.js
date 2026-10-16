@@ -582,7 +582,10 @@ function teamNetToBuy(layout, inventory, col, size) {
 }
 
 function teamMatrixHtml(mode, layout, inventory) {
-    const { columns, sizes, lordo, net } = layout;
+    const { columns, lordo, net } = layout;
+    // Lordo e Netto: solo le taglie richieste; Giacenza: tutte, per l'inventario
+    const sizes = mode === 'GROSS' ? lordo.sizes : mode === 'NET' ? net.sizes : layout.sizes;
+    if (!sizes.length) return `<p class="text-xs text-gray-500 p-2">${mode === 'NET' ? 'Niente da ordinare.' : 'Nessun articolo richiesto.'}</p>`;
     const bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100');
     const head = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow text-center align-middle text-sm font-bold">TAGLIA</th>` +
         columns.map(c => `<th class="border-l align-bottom pb-2 ${c.includes('da scegliere') ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-50'}"><div class="vertical-header">${teamEsc(c)}</div></th>`).join('');
