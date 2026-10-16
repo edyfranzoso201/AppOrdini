@@ -216,7 +216,7 @@ function teamBuildRequests(rows, catalog, knownKeys) {
             importKey,
             createdAt: teamParseTimestamp(ts) || ts,
             importedAt: new Date().toISOString(),
-            status: 'in_attesa',
+            status: 'Nuovo',
             richiedente: {
                 nome: get('nome')[0] || '',
                 cognome: get('cognome')[0] || '',
@@ -277,6 +277,9 @@ async function loadTeamData() {
         // Richieste importate prima della deduzione dal colore della maglia:
         // si risolvono a video; base resta quella del server, quindi il primo
         // salvataggio le scrive su Redis.
+        // Stati della prima versione -> stati di Gestione; come sopra, il primo
+        // salvataggio li scrive su Redis
+        teamState.requests.forEach(r => { if (TEAM_LEGACY_STATUS[r.status]) r.status = TEAM_LEGACY_STATUS[r.status]; });
         teamState.requests.forEach(r => {
             if (!(r.righe || []).some(x => x.daScegliere)) return;
             r.righe = teamResolveByColor(r.righe, teamState.catalog);
@@ -446,12 +449,29 @@ async function saveTeamCatalog() {
 
 // ── Render ──────────────────────────────────────────────────────────────────
 
-const TEAM_STATUS = {
-    in_attesa: ['In attesa', 'bg-yellow-100 text-yellow-800'],
-    approvata: ['Approvata', 'bg-green-100 text-green-800'],
-    rifiutata: ['Rifiutata', 'bg-red-100 text-red-800'],
-    consegnata: ['Consegnata', 'bg-blue-100 text-blue-800']
-};
+// Stati identici a Gestione: si usa la lista di app.js (STATUSES); la copia
+// serve solo se squadre.js gira da solo (test)
+const TEAM_STATUSES = typeof STATUSES !== 'undefined' ? STATUSES : [
+    { value: 'Nuovo', label: 'Nuovo', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'In Lavorazione', label: 'In Lavorazione', color: 'bg-blue-100 text-blue-800' },
+    { value: 'Ordine Arrivato', label: 'Arrivato', color: 'bg-orange-100 text-orange-800' },
+    { value: 'Consegna Parziale', label: 'Consegna Parziale', color: 'bg-amber-100 text-amber-800' },
+    { value: 'Consegnato', label: 'Consegnato', color: 'bg-gray-700 text-white' },
+    { value: 'Scomposto', label: 'Scomposto', color: 'bg-teal-100 text-teal-800' },
+    { value: 'Ordine annullato', label: 'Annullato', color: 'bg-red-100 text-red-800' },
+    { value: 'Ordine trasferito ad altro ID', label: 'Trasferito', color: 'bg-purple-100 text-purple-800' },
+    { value: 'Da piazzare', label: 'Da piazzare', color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'In sospeso', label: 'In sospeso', color: 'bg-slate-200 text-slate-700' },
+    { value: 'Pronto', label: 'Pronto', color: 'bg-green-100 text-green-800' }
+];
+// Come in Tabella: annullati e trasferiti restano visibili ma non contano
+const TEAM_VOID_STATUSES = ['Ordine annullato', 'Ordine trasferito ad altro ID'];
+// Stati della prima versione della Distinta Squadre
+const TEAM_LEGACY_STATUS = { in_attesa: 'Nuovo', approvata: 'In Lavorazione', rifiutata: 'Ordine annullato', consegnata: 'Consegnato' };
+
+function teamIsVoid(r) {
+    return TEAM_VOID_STATUSES.includes(r.status);
+}
 
 function teamFormatDate(iso) {
     const d = new Date(iso);
@@ -479,7 +499,7 @@ function teamColumnName(x) {
 
 function teamAggregate(requests, catalog) {
     const cells = {}; // colonna -> taglia -> { qta, numeri[] }
-    requests.filter(r => r.status !== 'rifiutata').forEach(r => r.righe.forEach(x => {
+    requests.filter(r => !teamIsVoid(r)).forEach(r => r.righe.forEach(x => {
         const col = teamColumnName(x);
         const size = (!x.taglia || x.taglia === '-') ? 'UNICA' : x.taglia;
         const c = ((cells[col] = cells[col] || {})[size] = cells[col][size] || { qta: 0, numeri: [] });
@@ -519,7 +539,8 @@ function teamSortSizes(sizes) {
 
 // Taglie del modulo squadra, sempre presenti in Giacenza per poter caricare merce
 const TEAM_DEFAULT_SIZES = ['8 ANNI', '10 ANNI', '14 ANNI', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'UNICA'];
-const TEAM_OPEN_STATUSES = ['in_attesa', 'approvata'];
+// Netto come nella Distinta: di default solo i "Nuovo"
+const TEAM_NET_DEFAULT = ['Nuovo'];
 
 function teamStockKey(col, size) {
     return `${col}|${size}`;
@@ -653,11 +674,13 @@ function teamRequestsTableHtml(reqs) {
         .map(a => `<option value="${teamEsc(a.nome)}">${teamEsc(a.nome)}</option>`).join('');
     const td = 'border px-2 py-1';
     const rows = reqs.map((r, ri) => {
-        const [stLabel, stClass] = TEAM_STATUS[r.status] || [r.status, 'bg-gray-100 text-gray-700'];
+        const st = TEAM_STATUSES.find(s => s.value === r.status);
+        const stOptions = (st ? '' : `<option value="${teamEsc(r.status)}" selected>${teamEsc(r.status)}</option>`) +
+            TEAM_STATUSES.map(s => `<option value="${teamEsc(s.value)}" ${s.value === r.status ? 'selected' : ''}>${teamEsc(s.label)}</option>`).join('');
         const rich = r.richiedente || {};
         const id = teamEsc(r.id);
-        // Rifiutata: resta visibile ma grigia e barrata, come gli annullati in Tabella
-        const rowClass = r.status === 'rifiutata' ? 'team-row-void' : (ri % 2 ? 'bg-gray-50' : 'bg-white');
+        // Annullata o trasferita: resta visibile ma grigia e barrata, come in Tabella
+        const rowClass = teamIsVoid(r) ? 'team-row-void' : (ri % 2 ? 'bg-gray-50' : 'bg-white');
         const righe = r.righe.length ? r.righe : [null];
         const span = righe.length;
         return righe.map((x, i) => {
@@ -667,11 +690,11 @@ function teamRequestsTableHtml(reqs) {
                          <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${options(x.gruppo)}</select>`
                     : teamEsc(x.articolo);
             const first = i === 0 ? `
-                <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}
-                    <div class="mt-1"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${stClass}">${stLabel}</span></div></td>
+                <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}</td>
                 <td class="${td} text-left align-top" rowspan="${span}"><b>${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}</b>
                     <div class="text-[10px] text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? '<br>' + teamEsc(rich.telefono) : ''}</div></td>
                 <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></td>
+                <td class="${td} align-top" rowspan="${span}"><select class="status-select border rounded p-1 text-xs ${st ? st.color : ''}" onchange="teamUpdateField('${id}', 'status', this.value)">${stOptions}</select></td>
                 <td class="${td} align-top" rowspan="${span}"><select class="border rounded px-1 py-0.5" onchange="teamUpdateField('${id}', 'ruolo', this.value)">
                     ${['', 'Dirigente', 'Allenatore', 'Magazziniere'].map(v => `<option value="${v}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${v || '—'}</option>`).join('')}</select></td>` : '';
             const last = i === 0 ? `
@@ -686,7 +709,7 @@ function teamRequestsTableHtml(reqs) {
     }).join('');
     const th = 'border px-2 py-1 bg-gray-200 text-black font-bold';
     return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full text-xs border team-requests-table">
-        <thead><tr><th class="${th}">Data / Stato</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Ruolo</th>
+        <thead><tr><th class="${th}">Data</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Stato</th><th class="${th}">Ruolo</th>
             <th class="${th}">Articolo</th><th class="${th}">Taglia</th><th class="${th}">N°</th><th class="${th}">Q.tà</th><th class="${th}">Note</th><th class="${th}"></th></tr></thead>
         <tbody>${rows}</tbody></table></div>`;
 }
@@ -738,19 +761,26 @@ function renderTeamTab() {
     document.getElementById('teamCatalog').innerHTML = teamCatalogHtml();
 
     const sel = document.getElementById('teamFilterStatus');
-    if (sel) sel.value = teamState.filter;
+    if (sel) {
+        if (sel.options.length < 2) {
+            sel.innerHTML = '<option value="tutte">Tutte</option>' +
+                TEAM_STATUSES.map(s => `<option value="${teamEsc(s.value)}">${teamEsc(s.label)}</option>`).join('');
+        }
+        if (TEAM_LEGACY_STATUS[teamState.filter]) teamState.filter = TEAM_LEGACY_STATUS[teamState.filter];
+        sel.value = teamState.filter;
+    }
     const reqs = teamState.requests
         .filter(r => teamState.filter === 'tutte' || r.status === teamState.filter)
         .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     const counter = document.getElementById('teamCounter');
     if (counter) {
-        const attesa = teamState.requests.filter(r => r.status === 'in_attesa').length;
-        counter.textContent = `${teamState.requests.length} richieste · ${attesa} in attesa`;
+        const nuove = teamState.requests.filter(r => r.status === 'Nuovo').length;
+        counter.textContent = `${teamState.requests.length} richieste · ${nuove} nuove`;
     }
     // Netto: con "tutte" contano le richieste ancora aperte, altrimenti lo stato scelto
-    const lordoReqs = reqs.filter(r => r.status !== 'rifiutata');
+    const lordoReqs = reqs.filter(r => !teamIsVoid(r));
     const netReqs = teamState.filter === 'tutte'
-        ? reqs.filter(r => TEAM_OPEN_STATUSES.includes(r.status))
+        ? reqs.filter(r => TEAM_NET_DEFAULT.includes(r.status))
         : lordoReqs;
     const layout = teamLayout(lordoReqs, netReqs, teamState.catalog, teamState.inventory);
     const box = (title, icon, color, html) => `
@@ -758,15 +788,16 @@ function renderTeamTab() {
             <div class="section-title ${color} mb-2"><span><i class="fas ${icon} mr-2"></i> ${title}</span></div>
             ${html}
         </div>`;
-    const netLabel = teamState.filter === 'tutte' ? 'in attesa + approvate' : 'stato filtrato';
+    const netLabel = teamState.filter === 'tutte' ? 'richieste Nuovo' : 'stato filtrato';
     list.innerHTML =
-        box('1. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
-        box('2. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
-        box(`3. Da ordinare (Netto: ${netLabel} meno giacenza)`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
-        `<div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-6">
-            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-clipboard-list mr-2"></i> 4. Richieste</span></div>
+        `<div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-3">
+            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-clipboard-list mr-2"></i> 1. Richieste</span></div>
             ${reqs.length ? teamRequestsTableHtml(reqs) : '<p class="text-sm text-gray-500 p-4 text-center">Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.</p>'}
-        </div>`;
+        </div>` +
+        box('2. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
+        box('3. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
+        box(`4. Da ordinare (Netto: ${netLabel} meno giacenza)`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
+        '<div class="mb-6"></div>';
 }
 
 function setTeamFilter(v) {
