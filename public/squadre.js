@@ -493,6 +493,16 @@ function teamSizeRank(taglia) {
     return i >= 0 ? i : 999;
 }
 
+// Taglia come riga della Distinta: "39/42 n9" del modulo diventa "39/42",
+// cosi' richieste e giacenza finiscono sulla stessa riga
+function teamSizeKey(taglia) {
+    const t = String(taglia || '').trim().toUpperCase();
+    if (!t || t === '-') return 'UNICA';
+    if (TEAM_SIZE_ORDER.includes(t)) return t;
+    const head = t.split(' ')[0];
+    return TEAM_SIZE_ORDER.includes(head) ? head : String(taglia).trim();
+}
+
 function teamColumnName(x) {
     return x.daScegliere ? `${TEAM_GROUPS[x.gruppo] || x.gruppo} (modello da scegliere)` : x.articolo;
 }
@@ -501,7 +511,7 @@ function teamAggregate(requests, catalog) {
     const cells = {}; // colonna -> taglia -> { qta, numeri[] }
     requests.filter(r => !teamIsVoid(r)).forEach(r => r.righe.forEach(x => {
         const col = teamColumnName(x);
-        const size = (!x.taglia || x.taglia === '-') ? 'UNICA' : x.taglia;
+        const size = teamSizeKey(x.taglia);
         const c = ((cells[col] = cells[col] || {})[size] = cells[col][size] || { qta: 0, numeri: [] });
         c.qta += Number(x.qta) || 0;
         if (x.numero) c.numeri.push(x.numero);
@@ -537,8 +547,8 @@ function teamSortSizes(sizes) {
 //    approvate; con un filtro di stato, quello) meno la giacenza.
 // Le tre tabelle hanno le stesse colonne e righe, come nella Distinta.
 
-// Taglie del modulo squadra, sempre presenti in Giacenza per poter caricare merce
-const TEAM_DEFAULT_SIZES = ['8 ANNI', '10 ANNI', '14 ANNI', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'UNICA'];
+// Tutte le taglie della Distinta, sempre presenti in Giacenza per fare l'inventario
+const TEAM_DEFAULT_SIZES = TEAM_SIZE_ORDER;
 // Netto come nella Distinta: di default solo i "Nuovo"
 const TEAM_NET_DEFAULT = ['Nuovo'];
 
