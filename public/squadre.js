@@ -1,0 +1,545 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Materiale di squadra: secondo modulo Google ("Ordine materiale Squadra"),
+// compilato da dirigenti/allenatori/magazziniere. Le richieste vivono in un
+// blob separato dagli ordini personali (/api/orders?scope=team, solo admin).
+//
+// Il foglio si legge per TITOLO di colonna, non per posizione: aggiungere o
+// spostare una domanda nel modulo non fa slittare i dati, e una colonna che
+// non si riconosce viene segnalata nell'anteprima invece di sparire.
+//
+// Limite noto del modulo: "Divise da Gioco Calcio" e' una tendina a scelta
+// singola. Se si sceglie una maglia, il modulo prosegue anche nelle griglie
+// pantaloncini e calzettoni senza chiederne il modello: quelle righe entrano
+// come "modello da scegliere" e l'admin lo indica a mano.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TEAM_SHEET_ID = '1HN7tSFOe7ha-NzQLiDhXt9tOTBOQsM8XXTqt6ysRTfg';
+
+const TEAM_GROUPS = {
+    maglia: 'Maglia',
+    pantaloncino: 'Pantaloncino',
+    calzettone: 'Calzettone',
+    attrezzatura: 'Attrezzatura'
+};
+
+// Catalogo iniziale ricavato dal modulo; l'admin lo modifica dal tab.
+// alias = testo esatto con cui l'articolo compare nel modulo.
+const TEAM_DEFAULT_CATALOG = [
+    ['Maglia Portiere GK TEE Arancione', 'maglia', 'Maglia Portiere Calcio GK TEE (Arancione)'],
+    ['Maglia Portiere GK TEE Gialla', 'maglia', 'Maglia Portiere Calcio GK TEE (Gialla)'],
+    ['Maglia Portiere GK TEE Blue Turkis', 'maglia', 'Maglia Portiere Calcio GK TEE (Blue Turkis)'],
+    ['Maglia CASTOLO Blue Marine', 'maglia', 'Maglia Giocatore da campo Calcio CASTOLO Blue Marine'],
+    ['Maglia CASTOLO Red Chinese', 'maglia', 'Maglia Giocatore da campo Calcio CASTOLO Red Chinese'],
+    ['Pantaloncino BORGO Blu Marine', 'pantaloncino', 'Pantaloncino Calcio BORGO Blu Marine'],
+    ['Pantaloncino BORGO Rosso', 'pantaloncino', 'Pantaloncino Calcio BORGO Rosso'],
+    ['Calzettone WULGAR Blu Marine', 'calzettone', 'Calzettone Calcio WULGAR Blu Marine'],
+    ['Calzettone WULGAR Rosso', 'calzettone', 'Calzettone Calcio WULGAR Rosso'],
+    ['Cinesini', 'attrezzatura', 'Cinesini'],
+    ['Coni', 'attrezzatura', 'Coni'],
+    ['Scalette', 'attrezzatura', 'Scalette'],
+    ['Borsa medica', 'attrezzatura', 'Borsa medica'],
+    ['Pettorine Gialle', 'attrezzatura', 'Pettorine Gialle'],
+    ['Pallone Taglia 5', 'attrezzatura', 'Pallone Taglia 5']
+].map(([nome, gruppo, alias]) => ({ nome, gruppo, alias: [alias] }));
+
+// ── Funzioni pure (testabili senza DOM) ─────────────────────────────────────
+
+function teamNorm(s) {
+    return String(s ?? '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// CSV completo: le celle tra virgolette possono contenere virgole e "a capo"
+// (es. Note). Si va a capo riga SOLO fuori dalle virgolette.
+function teamParseCsv(text) {
+    const rows = [];
+    let cells = [], cell = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQuotes) {
+            if (ch === '"') {
+                if (text[i + 1] === '"') { cell += '"'; i++; }
+                else inQuotes = false;
+            } else cell += ch;
+        } else if (ch === '"') inQuotes = true;
+        else if (ch === ',') { cells.push(cell); cell = ''; }
+        else if (ch === '\n' || ch === '\r') {
+            if (ch === '\r' && text[i + 1] === '\n') i++;
+            cells.push(cell); rows.push(cells); cells = []; cell = '';
+        } else cell += ch;
+    }
+    if (cell !== '' || cells.length) { cells.push(cell); rows.push(cells); }
+    return rows.filter(r => r.some(c => c.trim() !== ''));
+}
+
+// Classifica ogni colonna dell'intestazione. Ritorna [{index, kind, extra}].
+function teamClassifyColumns(header) {
+    return header.map((raw, index) => {
+        const h = teamNorm(raw);
+        const br = String(raw).match(/^(.*)\[(.*)\]\s*$/);
+        if (br) {
+            const prefix = teamNorm(br[1]);
+            const inner = br[2].trim();
+            const num = (inner.match(/\d+/) || [])[0];
+            if (prefix.includes('maglia')) return { index, kind: 'grid', group: 'maglia', numero: num ? Number(num) : null };
+            if (prefix.includes('pantaloncin')) return { index, kind: 'grid', group: 'pantaloncino' };
+            if (prefix.includes('calzett') || (prefix === '' && /^qt/i.test(teamNorm(inner)))) return { index, kind: 'grid', group: 'calzettone' };
+            return { index, kind: 'equip', label: inner };
+        }
+        if (index === 0 || h.includes('cronologic') || h === 'timestamp') return { index, kind: 'timestamp' };
+        if (h === 'e-mail' || h === 'email' || h.includes('indirizzo email')) return { index, kind: 'email' };
+        if (h.includes('cognome')) return { index, kind: 'cognome' };
+        if (h.includes('nome')) return { index, kind: 'nome' };
+        if (h.includes('telefono')) return { index, kind: 'telefono' };
+        if (h.includes('ruolo')) return { index, kind: 'ruolo' };
+        if (h.includes('materiale richiesto')) return { index, kind: 'tipo' };
+        if (h.includes('categoria') || h.includes('annata') || h.includes('squadra')) return { index, kind: 'categoria' };
+        if (h.includes('sport')) return { index, kind: 'sport' };
+        if (h.includes('divise')) return { index, kind: 'principale' };
+        // La domanda Note del modulo non ha titolo: Fogli la chiama "Colonna N".
+        if (h.includes('note') || /^colonna \d+$/.test(h)) return { index, kind: 'note' };
+        return { index, kind: 'unknown', label: String(raw).trim() };
+    });
+}
+
+function teamFindArticle(catalog, text) {
+    const t = teamNorm(text);
+    if (!t) return null;
+    return catalog.find(a => teamNorm(a.nome) === t || (a.alias || []).some(x => teamNorm(x) === t)) || null;
+}
+
+// "15/10/2026 17.06.58" -> ISO; se il formato non e' riconosciuto, null.
+function teamParseTimestamp(s) {
+    const m = String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})[.:](\d{2})[.:](\d{2})/);
+    if (!m) return null;
+    const d = new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5], +m[6]);
+    return isNaN(d) ? null : d.toISOString();
+}
+
+function teamParseQty(s) {
+    const m = String(s).match(/\d+/);
+    return m ? Number(m[0]) : 0;
+}
+
+// Converte le righe CSV in richieste. knownKeys = importKey gia' presenti o
+// cancellati, da non reimportare.
+function teamBuildRequests(rows, catalog, knownKeys) {
+    const result = { nuove: [], giaPresenti: 0, senzaData: 0, colonneIgnote: [] };
+    if (!rows.length) return result;
+    const cols = teamClassifyColumns(rows[0]);
+    const known = new Set(knownKeys || []);
+    const ignote = new Set();
+
+    for (const row of rows.slice(1)) {
+        const get = (kind) => cols.filter(c => c.kind === kind).map(c => (row[c.index] || '').trim()).filter(Boolean);
+        const ts = get('timestamp')[0];
+        if (!ts) { result.senzaData++; continue; }
+        const email = get('email')[0] || '';
+        const importKey = `SQ-${ts}|${email.toLowerCase()}`;
+        if (known.has(importKey)) { result.giaPresenti++; continue; }
+        known.add(importKey);
+
+        const principaleTxt = get('principale')[0] || '';
+        const principale = teamFindArticle(catalog, principaleTxt);
+        const avvisi = [];
+        if (principaleTxt && !principale) avvisi.push(`"${principaleTxt}" non e' nel catalogo squadra`);
+
+        // Articolo da usare per una griglia: quello scelto in tendina se e' dello
+        // stesso gruppo, altrimenti resta da scegliere.
+        const articleFor = (group) => {
+            if (principale && principale.gruppo === group) return { articolo: principale.nome, daScegliere: false };
+            if (!principale && principaleTxt && group === 'maglia') return { articolo: principaleTxt, daScegliere: false };
+            return { articolo: '', daScegliere: true };
+        };
+
+        const righe = [];
+        const aggregate = {};
+        for (const c of cols) {
+            const val = (row[c.index] || '').trim();
+            if (!val) continue;
+            if (c.kind === 'grid') {
+                const art = articleFor(c.group);
+                if (c.group === 'maglia') {
+                    righe.push({ gruppo: 'maglia', ...art, taglia: val, numero: c.numero, qta: 1 });
+                } else {
+                    const k = `${c.group}|${val}`;
+                    if (!aggregate[k]) {
+                        aggregate[k] = { gruppo: c.group, ...art, taglia: val, numero: null, qta: 0 };
+                        righe.push(aggregate[k]);
+                    }
+                    aggregate[k].qta++;
+                }
+            } else if (c.kind === 'equip') {
+                const qta = teamParseQty(val);
+                if (!qta) continue;
+                const a = teamFindArticle(catalog, c.label);
+                if (!a) avvisi.push(`"${c.label}" non e' nel catalogo squadra`);
+                righe.push({ gruppo: 'attrezzatura', articolo: a ? a.nome : c.label, daScegliere: false, taglia: '', numero: null, qta });
+            } else if (c.kind === 'unknown') {
+                ignote.add(c.label);
+            }
+        }
+        if (righe.some(r => r.daScegliere)) avvisi.push('Modello da scegliere per alcune righe');
+        if (!righe.length) avvisi.push('Nessun articolo compilato');
+
+        const categoria = get('categoria')[0] || '';
+        result.nuove.push({
+            id: importKey,
+            importKey,
+            createdAt: teamParseTimestamp(ts) || ts,
+            importedAt: new Date().toISOString(),
+            status: 'in_attesa',
+            richiedente: {
+                nome: get('nome')[0] || '',
+                cognome: get('cognome')[0] || '',
+                email,
+                telefono: get('telefono')[0] || '',
+                ruolo: get('ruolo')[0] || ''
+            },
+            categoria,
+            squadra: categoria,
+            sport: get('sport')[0] || '',
+            tipo: get('tipo')[0] || '',
+            articoloModulo: principaleTxt,
+            righe,
+            note: get('note').join('\n'),
+            avvisi
+        });
+    }
+    result.colonneIgnote = [...ignote];
+    return result;
+}
+
+// ── Stato e salvataggio ─────────────────────────────────────────────────────
+
+const teamState = {
+    loaded: false,
+    requests: [],
+    baseRequests: [],
+    catalog: TEAM_DEFAULT_CATALOG.map(a => ({ ...a, alias: [...a.alias] })),
+    deletedImportKeys: [],
+    version: 0,
+    preview: null,
+    filter: 'tutte',
+    showCatalog: false
+};
+
+function teamClone(x) { return JSON.parse(JSON.stringify(x)); }
+
+function teamEsc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function teamNotify(msg, type) {
+    if (typeof showQuickNotification === 'function') showQuickNotification(msg, type || 'success');
+    else alert(msg);
+}
+
+async function loadTeamData() {
+    const box = document.getElementById('teamRequestsList');
+    try {
+        const res = await fetch('/api/orders?scope=team');
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+        const d = json.data || {};
+        teamState.requests = Array.isArray(d.requests) ? d.requests : [];
+        teamState.baseRequests = teamClone(teamState.requests);
+        if (Array.isArray(d.catalog) && d.catalog.length) teamState.catalog = d.catalog;
+        teamState.deletedImportKeys = d.deletedImportKeys || [];
+        teamState.version = json.version || 0;
+        teamState.loaded = true;
+        renderTeamTab();
+    } catch (e) {
+        console.error('Errore caricamento materiale squadra:', e);
+        if (box) box.innerHTML = `<p class="text-red-600 text-sm">Errore nel caricamento: ${teamEsc(e.message)}</p>`;
+    }
+}
+
+async function saveTeamRequests(newDeletedKeys) {
+    const res = await fetch('/api/orders?scope=team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'save',
+            requests: teamState.requests,
+            baseRequests: teamState.baseRequests,
+            baseVersion: teamState.version,
+            deletedImportKeys: newDeletedKeys || []
+        })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+    if (json.merged) {
+        // Un altro dispositivo aveva salvato nel frattempo: si ricarica lo stato
+        // fuso dal server, cosi' a video c'e' quello che c'e' davvero su Redis.
+        await loadTeamData();
+        return;
+    }
+    teamState.version = json.version;
+    teamState.baseRequests = teamClone(teamState.requests);
+    if (newDeletedKeys) teamState.deletedImportKeys.push(...newDeletedKeys);
+}
+
+async function teamSaveAndRender(newDeletedKeys) {
+    try {
+        await saveTeamRequests(newDeletedKeys);
+        renderTeamTab();
+    } catch (e) {
+        alert('Salvataggio non riuscito: ' + e.message);
+        await loadTeamData();
+    }
+}
+
+// ── Import ──────────────────────────────────────────────────────────────────
+
+async function importTeamFromGoogleSheet() {
+    if (currentUser?.role !== 'admin') { alert('Solo l\'amministratore puo\' importare il materiale squadra.'); return; }
+    const btn = document.getElementById('btnImportTeam');
+    if (btn) btn.disabled = true;
+    try {
+        if (!teamState.loaded) await loadTeamData();
+        const url = `https://docs.google.com/spreadsheets/d/${TEAM_SHEET_ID}/export?format=csv`;
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) throw new Error('Impossibile leggere il foglio Google. Verifica che sia condiviso con "chiunque abbia il link".');
+        const rows = teamParseCsv(await res.text());
+        const known = [...teamState.requests.map(r => r.importKey), ...teamState.deletedImportKeys];
+        teamState.preview = teamBuildRequests(rows, teamState.catalog, known);
+        renderTeamTab();
+    } catch (e) {
+        alert('Importazione non riuscita: ' + e.message);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function confirmTeamImport() {
+    const p = teamState.preview;
+    if (!p || !p.nuove.length) { teamState.preview = null; renderTeamTab(); return; }
+    teamState.requests.push(...p.nuove);
+    const n = p.nuove.length;
+    teamState.preview = null;
+    await teamSaveAndRender();
+    teamNotify(`${n} richieste materiale squadra importate`);
+}
+
+function cancelTeamImport() {
+    teamState.preview = null;
+    renderTeamTab();
+}
+
+// ── Modifiche alle richieste ────────────────────────────────────────────────
+
+function teamFind(id) { return teamState.requests.find(r => r.id === id); }
+
+async function teamUpdateField(id, field, value) {
+    const r = teamFind(id);
+    if (!r) return;
+    if (field === 'ruolo') r.richiedente = { ...r.richiedente, ruolo: value };
+    else r[field] = value;
+    await teamSaveAndRender();
+}
+
+async function teamChooseModel(id, idx, nome) {
+    const r = teamFind(id);
+    if (!r || !r.righe[idx]) return;
+    r.righe = r.righe.map((x, i) => i === idx ? { ...x, articolo: nome, daScegliere: !nome } : x);
+    r.avvisi = (r.avvisi || []).filter(a => !a.startsWith('Modello da scegliere'));
+    if (r.righe.some(x => x.daScegliere)) r.avvisi.push('Modello da scegliere per alcune righe');
+    await teamSaveAndRender();
+}
+
+async function teamDeleteRequest(id) {
+    const r = teamFind(id);
+    if (!r) return;
+    const who = `${r.richiedente.nome} ${r.richiedente.cognome}`.trim();
+    if (!confirm(`Eliminare la richiesta di ${who || 'questo richiedente'} (${r.squadra || 'senza squadra'})?\nNon verra' reimportata dal foglio.`)) return;
+    teamState.requests = teamState.requests.filter(x => x.id !== id);
+    await teamSaveAndRender([r.importKey]);
+}
+
+// ── Catalogo squadra ────────────────────────────────────────────────────────
+
+function toggleTeamCatalog() {
+    teamState.showCatalog = !teamState.showCatalog;
+    renderTeamTab();
+}
+
+function teamCatalogAdd() {
+    teamState.catalog.push({ nome: 'Nuovo articolo', gruppo: 'attrezzatura', alias: [] });
+    renderTeamTab();
+}
+
+function teamCatalogRemove(i) {
+    teamState.catalog.splice(i, 1);
+    renderTeamTab();
+}
+
+async function saveTeamCatalog() {
+    const rows = document.querySelectorAll('#teamCatalogBody tr[data-i]');
+    const catalog = [];
+    rows.forEach(tr => {
+        const nome = tr.querySelector('[data-f="nome"]').value.trim();
+        if (!nome) return;
+        catalog.push({
+            nome,
+            gruppo: tr.querySelector('[data-f="gruppo"]').value,
+            alias: tr.querySelector('[data-f="alias"]').value.split('\n').map(s => s.trim()).filter(Boolean)
+        });
+    });
+    try {
+        const res = await fetch('/api/orders?scope=team', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save-catalog', catalog })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+        teamState.catalog = catalog;
+        // save-catalog fa avanzare la versione: senza riallinearla il prossimo
+        // salvataggio delle richieste verrebbe preso per concorrente.
+        teamState.version = json.version;
+        teamNotify('Catalogo squadra salvato');
+        renderTeamTab();
+    } catch (e) {
+        alert('Salvataggio catalogo non riuscito: ' + e.message);
+    }
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
+
+const TEAM_STATUS = {
+    in_attesa: ['In attesa', 'bg-yellow-100 text-yellow-800'],
+    approvata: ['Approvata', 'bg-green-100 text-green-800'],
+    rifiutata: ['Rifiutata', 'bg-red-100 text-red-800'],
+    consegnata: ['Consegnata', 'bg-blue-100 text-blue-800']
+};
+
+function teamFormatDate(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? teamEsc(iso) : d.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function teamRigheHtml(r) {
+    if (!r.righe.length) return '<p class="text-xs text-gray-400 italic">Nessun articolo</p>';
+    const options = (gruppo, sel) => teamState.catalog
+        .filter(a => a.gruppo === gruppo)
+        .map(a => `<option value="${teamEsc(a.nome)}" ${a.nome === sel ? 'selected' : ''}>${teamEsc(a.nome)}</option>`).join('');
+    const rows = r.righe.map((x, i) => {
+        const art = x.daScegliere
+            ? `<select class="border border-yellow-500 bg-yellow-50 rounded px-1 py-0.5 text-xs max-w-full" onchange="teamChooseModel('${teamEsc(r.id)}', ${i}, this.value)">
+                 <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${options(x.gruppo, '')}</select>`
+            : teamEsc(x.articolo);
+        return `<tr class="border-t">
+            <td class="px-2 py-1">${art}</td>
+            <td class="px-2 py-1 text-center">${teamEsc(x.taglia || '-')}</td>
+            <td class="px-2 py-1 text-center">${x.numero ? 'n°' + teamEsc(x.numero) : ''}</td>
+            <td class="px-2 py-1 text-center font-bold">${teamEsc(x.qta)}</td></tr>`;
+    }).join('');
+    return `<div class="overflow-x-auto"><table class="w-full text-xs">
+        <thead class="bg-gray-100 text-gray-600"><tr><th class="px-2 py-1 text-left">Articolo</th><th class="px-2 py-1">Taglia</th><th class="px-2 py-1">N°</th><th class="px-2 py-1">Q.tà</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+}
+
+function teamRequestCard(r) {
+    const [stLabel, stClass] = TEAM_STATUS[r.status] || [r.status, 'bg-gray-100 text-gray-700'];
+    const rich = r.richiedente || {};
+    const id = teamEsc(r.id);
+    const totale = r.righe.reduce((s, x) => s + (Number(x.qta) || 0), 0);
+    const avvisi = (r.avvisi || []).length
+        ? `<div class="bg-yellow-50 border border-yellow-300 text-yellow-800 text-xs rounded px-2 py-1 mb-2">${r.avvisi.map(teamEsc).join('<br>')}</div>` : '';
+    return `<div class="bg-white rounded shadow p-3 border-l-4 ${r.status === 'in_attesa' ? 'border-yellow-400' : 'border-gray-300'}">
+        <div class="flex flex-wrap justify-between gap-2 mb-2">
+            <div class="min-w-0">
+                <div class="font-bold text-blue-900">${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}
+                    <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${stClass}">${stLabel}</span></div>
+                <div class="text-xs text-gray-500">${teamFormatDate(r.createdAt)} · ${teamEsc(r.tipo)}${r.sport ? ' · ' + teamEsc(r.sport) : ''}</div>
+                <div class="text-xs text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? ' · ' + teamEsc(rich.telefono) : ''}</div>
+            </div>
+            <button onclick="teamDeleteRequest('${id}')" class="text-red-600 hover:text-red-800 text-sm self-start" title="Elimina richiesta"><i class="fas fa-trash"></i></button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2 text-xs">
+            <label class="flex items-center gap-1">Squadra
+                <input class="border rounded px-1 py-0.5 flex-1 min-w-0" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></label>
+            <label class="flex items-center gap-1">Ruolo
+                <select class="border rounded px-1 py-0.5 flex-1 min-w-0" onchange="teamUpdateField('${id}', 'ruolo', this.value)">
+                    ${['', 'Dirigente', 'Allenatore', 'Magazziniere'].map(v => `<option value="${v}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${v || '—'}</option>`).join('')}
+                </select></label>
+        </div>
+        ${avvisi}
+        ${teamRigheHtml(r)}
+        <div class="text-right text-xs text-gray-600 mt-1">Totale pezzi: <b>${totale}</b></div>
+        ${r.note ? `<div class="text-xs mt-2 bg-gray-50 rounded px-2 py-1"><b>Note:</b> ${teamEsc(r.note).replace(/\n/g, '<br>')}</div>` : ''}
+    </div>`;
+}
+
+function teamPreviewHtml() {
+    const p = teamState.preview;
+    if (!p) return '';
+    const elenco = p.nuove.map(r => {
+        const pezzi = r.righe.reduce((s, x) => s + x.qta, 0);
+        return `<li>${teamEsc(r.richiedente.nome)} ${teamEsc(r.richiedente.cognome)} — ${teamEsc(r.squadra || 'senza squadra')} — ${pezzi} pezzi${r.avvisi.length ? ' <span class="text-yellow-700">(da controllare)</span>' : ''}</li>`;
+    }).join('');
+    return `<div class="bg-purple-50 border border-purple-300 rounded p-3 mb-3 text-sm">
+        <div class="font-bold text-purple-900 mb-1">Anteprima importazione</div>
+        <div>${p.nuove.length} nuove richieste · ${p.giaPresenti} gia' importate o eliminate${p.senzaData ? ` · ${p.senzaData} righe senza data` : ''}</div>
+        ${elenco ? `<ul class="list-disc ml-5 my-2 text-xs">${elenco}</ul>` : ''}
+        ${p.colonneIgnote.length ? `<div class="text-xs text-red-700 my-1"><b>Colonne del foglio non riconosciute</b> (non importate): ${p.colonneIgnote.map(teamEsc).join(', ')}</div>` : ''}
+        <div class="flex gap-2 mt-2">
+            ${p.nuove.length ? `<button onclick="confirmTeamImport()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded font-bold text-xs">Conferma importazione</button>` : ''}
+            <button onclick="cancelTeamImport()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-xs">${p.nuove.length ? 'Annulla' : 'Chiudi'}</button>
+        </div></div>`;
+}
+
+function teamCatalogHtml() {
+    if (!teamState.showCatalog) return '';
+    const rows = teamState.catalog.map((a, i) => `<tr data-i="${i}" class="border-t align-top">
+        <td class="p-1"><input data-f="nome" class="border rounded px-1 py-0.5 w-full" value="${teamEsc(a.nome)}"></td>
+        <td class="p-1"><select data-f="gruppo" class="border rounded px-1 py-0.5">
+            ${Object.entries(TEAM_GROUPS).map(([k, v]) => `<option value="${k}" ${k === a.gruppo ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+        <td class="p-1"><textarea data-f="alias" rows="1" class="border rounded px-1 py-0.5 w-full">${teamEsc((a.alias || []).join('\n'))}</textarea></td>
+        <td class="p-1 text-center"><button onclick="teamCatalogRemove(${i})" class="text-red-600" title="Rimuovi"><i class="fas fa-times"></i></button></td>
+    </tr>`).join('');
+    return `<div class="bg-white rounded shadow p-3 mb-3">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+            <div><div class="font-bold text-blue-900">Catalogo squadra</div>
+            <div class="text-xs text-gray-500">Testo nel modulo = come compare l'articolo nel modulo Google (uno per riga). Serve all'import per riconoscerlo.</div></div>
+            <div class="flex gap-2">
+                <button onclick="teamCatalogAdd()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-xs"><i class="fas fa-plus mr-1"></i>Articolo</button>
+                <button onclick="saveTeamCatalog()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold"><i class="fas fa-save mr-1"></i>Salva catalogo</button>
+            </div></div>
+        <div class="overflow-x-auto"><table class="w-full text-xs">
+            <thead class="bg-gray-100"><tr><th class="p-1 text-left">Articolo</th><th class="p-1">Gruppo</th><th class="p-1 text-left">Testo nel modulo</th><th></th></tr></thead>
+            <tbody id="teamCatalogBody">${rows}</tbody></table></div></div>`;
+}
+
+function renderTeamTab() {
+    const list = document.getElementById('teamRequestsList');
+    if (!list) return;
+    document.getElementById('teamPreview').innerHTML = teamPreviewHtml();
+    document.getElementById('teamCatalog').innerHTML = teamCatalogHtml();
+
+    const sel = document.getElementById('teamFilterStatus');
+    if (sel) sel.value = teamState.filter;
+    const reqs = teamState.requests
+        .filter(r => teamState.filter === 'tutte' || r.status === teamState.filter)
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    const counter = document.getElementById('teamCounter');
+    if (counter) {
+        const attesa = teamState.requests.filter(r => r.status === 'in_attesa').length;
+        counter.textContent = `${teamState.requests.length} richieste · ${attesa} in attesa`;
+    }
+    list.innerHTML = reqs.length
+        ? reqs.map(teamRequestCard).join('')
+        : '<p class="text-sm text-gray-500 bg-white rounded p-4 text-center">Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.</p>';
+}
+
+function setTeamFilter(v) {
+    teamState.filter = v;
+    renderTeamTab();
+}
+
+function openTeamTab() {
+    if (!teamState.loaded) loadTeamData();
+    else renderTeamTab();
+}

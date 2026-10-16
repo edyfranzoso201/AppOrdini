@@ -451,6 +451,12 @@
                 return;
             }
 
+            // Materiale squadra: solo admin (anche il server risponde 403 agli altri)
+            if (tabName === 'squadre' && currentUser?.role !== 'admin') {
+                alert('⚠️ Non hai i permessi per visualizzare la Distinta Squadre.');
+                return;
+            }
+
             // Verifica permessi per Pagamenti (solo admin)
             if (tabName === 'pagamenti' && currentUser?.role !== 'admin') {
                 alert('⚠️ Non hai i permessi per visualizzare i Pagamenti.');
@@ -460,7 +466,7 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             
             // Reset stili nav buttons MA rispetta i permessi
-            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-pagamenti', 'nav-catalogo'];
+            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-pagamenti', 'nav-catalogo', 'nav-squadre'];
             navButtons.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn && !btn.classList.contains('hidden')) {
@@ -478,6 +484,7 @@
             }
             if (tabName === 'catalogo') loadCatalogData();
             if (tabName === 'pagamenti') renderPaymentsTab();
+            if (tabName === 'squadre' && typeof openTeamTab === 'function') openTeamTab();
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
 
@@ -6453,6 +6460,10 @@ function resetFiltersToDefault() {
                 if (catalogoBtn) catalogoBtn.classList.add('hidden');
                 if (catalogoTab) catalogoTab.classList.add('hidden');
             }
+
+            // Mostra Distinta Squadre SOLO per admin
+            const squadreBtn = document.getElementById('nav-squadre');
+            if (squadreBtn) squadreBtn.classList.toggle('hidden', currentUser.role !== 'admin');
 
             // Mostra Pagamenti SOLO per admin
             const pagamentiBtn = document.getElementById('nav-pagamenti');

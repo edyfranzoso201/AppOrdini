@@ -192,6 +192,78 @@ function mergeOrdersThreeWay(baseOrders, currentOrders, incomingOrders) {
   return { orders: result, stats };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Materiale di squadra (?scope=team): richieste dal secondo modulo Google e il
+// loro catalogo dedicato. Blob separato dagli ordini personali, SOLO admin.
+//
+// Le richieste hanno come id l'importKey (data del modulo + email), quindi due
+// dispositivi che importano insieme generano lo stesso id per la stessa
+// risposta invece di due numeri diversi che si scavalcano.
+const TEAM_EMPTY = { requests: [], catalog: null, deletedImportKeys: [], version: 0 };
+
+async function handleTeam(req, res, session, redis) {
+  const role = (session.role || '').toLowerCase();
+  if (role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Materiale squadra riservato all\'amministratore' });
+  }
+
+  if (req.method === 'GET') {
+    const data = await redis.get(KEYS.TEAM_ORDERS) || TEAM_EMPTY;
+    return res.status(200).json({ success: true, version: data.version || 0, data: { ...TEAM_EMPTY, ...data } });
+  }
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
+  const { action, requests, baseRequests, baseVersion, deletedImportKeys, catalog } = req.body || {};
+  const current = { ...TEAM_EMPTY, ...(await redis.get(KEYS.TEAM_ORDERS) || {}) };
+  const currentVersion = current.version || 0;
+
+  if (action === 'save-catalog') {
+    if (!Array.isArray(catalog)) {
+      return res.status(400).json({ success: false, error: 'Catalogo non valido' });
+    }
+    const dataToSave = { ...current, catalog, version: currentVersion + 1, updatedAt: new Date().toISOString() };
+    await redis.set(KEYS.TEAM_ORDERS, dataToSave);
+    return res.status(200).json({ success: true, version: dataToSave.version });
+  }
+
+  if (action !== 'save') {
+    return res.status(400).json({ success: false, error: 'Invalid action' });
+  }
+  if (!Array.isArray(requests)) {
+    return res.status(400).json({ success: false, error: 'Richieste non valide' });
+  }
+
+  let finalRequests = requests;
+  let mergeStats = null;
+  const isStale = baseVersion !== undefined && baseVersion !== null && baseVersion !== currentVersion;
+  if (isStale) {
+    const base = Array.isArray(baseRequests) ? baseRequests : requests;
+    const r = mergeOrdersThreeWay(base, current.requests || [], requests);
+    // Una richiesta che il client aveva nella base ma che su Redis non c'e'
+    // piu' l'ha eliminata un altro dispositivo: non va resuscitata.
+    const baseIds = new Set(base.map(x => String(x.id)));
+    const currentIds = new Set((current.requests || []).map(x => String(x.id)));
+    finalRequests = r.orders.filter(x => !(baseIds.has(String(x.id)) && !currentIds.has(String(x.id))));
+    mergeStats = r.stats;
+    console.warn(`🔀 POST /api/orders?scope=team - merge concorrente (${session.username}): base v${baseVersion} vs v${currentVersion}`);
+  }
+
+  const dataToSave = {
+    ...current,
+    requests: finalRequests,
+    deletedImportKeys: Array.from(new Set([
+      ...(current.deletedImportKeys || []),
+      ...(Array.isArray(deletedImportKeys) ? deletedImportKeys : [])
+    ])),
+    version: currentVersion + 1,
+    updatedAt: new Date().toISOString()
+  };
+  await redis.set(KEYS.TEAM_ORDERS, dataToSave);
+  return res.status(200).json({ success: true, version: dataToSave.version, merged: mergeStats || undefined });
+}
+
 export default async function handler(req, res) {
   // ✅ CORS headers - necessari per tutte le API
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -210,6 +282,10 @@ export default async function handler(req, res) {
   const redis = getRedis();
 
   try {
+    if (req.query && req.query.scope === 'team') {
+      return await handleTeam(req, res, session, redis);
+    }
+
     if (req.method === 'GET') {
       const data = await redis.get(KEYS.ORDERS);
       console.log('📦 GET /api/orders - Dati trovati:', data ? 'SI' : 'NO');

@@ -653,6 +653,7 @@
             <button onclick="showTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200">Dashboard</button>
             <button onclick="showTab('pagamenti')" id="nav-pagamenti" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-euro-sign mr-1"></i>Pagamenti</button>
             <button onclick="showTab('catalogo'); setTimeout(() => renderKitItems(), 100);" id="nav-catalogo" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden"><i class="fas fa-book-open mr-1"></i>Catalogo</button>
+            <button onclick="showTab('squadre')" id="nav-squadre" class="px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200 hidden whitespace-nowrap"><i class="fas fa-users mr-1"></i>Distinta&nbsp;Squadre</button>
         </nav>
 
         <!-- Hamburger: solo su mobile, apre/chiude la toolbar azioni -->
@@ -1473,6 +1474,32 @@
         </div>
 
         <!-- TAB CATALOGO (solo admin) -->
+        <!-- Materiale di squadra: richieste dal secondo modulo Google (solo admin), logica in squadre.js -->
+        <div id="tab-squadre" class="tab-content">
+            <div class="bg-white p-3 rounded shadow mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="font-bold text-xl text-blue-900"><i class="fas fa-users mr-2"></i>Distinta Squadre</h2>
+                    <p class="text-xs text-gray-500" id="teamCounter">Materiale richiesto per le squadre</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="teamFilterStatus" onchange="setTeamFilter(this.value)" class="text-xs border rounded px-2 py-1 bg-white">
+                        <option value="tutte">Tutte</option>
+                        <option value="in_attesa">In attesa</option>
+                        <option value="approvata">Approvate</option>
+                        <option value="rifiutata">Rifiutate</option>
+                        <option value="consegnata">Consegnate</option>
+                    </select>
+                    <button onclick="toggleTeamCatalog()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-book-open mr-1"></i>Catalogo squadra</button>
+                    <button onclick="importTeamFromGoogleSheet()" id="btnImportTeam" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-cloud-download-alt mr-1"></i>Importa materiale squadra</button>
+                </div>
+            </div>
+            <div id="teamPreview"></div>
+            <div id="teamCatalog"></div>
+            <div id="teamRequestsList" class="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-6">
+                <p class="text-sm text-gray-500">Caricamento...</p>
+            </div>
+        </div>
+
         <div id="tab-catalogo" class="tab-content">
             <div class="bg-white p-4 rounded shadow mb-4">
                 <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -1991,6 +2018,7 @@
     </div>
 
     <script src="app.js"></script>
+    <script src="squadre.js"></script>
     <!-- Copyright Footer - Fisso in basso -->
     <footer class="no-print" style="position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 6px 15px; font-size: 9px; z-index: 9999; text-align: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.2);">
         © 2025 Edy Franzoso. Codice sorgente e contenuti protetti ai sensi della Legge sul Diritto d'Autore (L. 633/1941). Riproduzione, distribuzione o modifica vietati senza autorizzazione scritta.
