@@ -267,6 +267,11 @@
         }
         #tabellaOrdiniStampabile thead tr:first-child th { vertical-align: middle; }
         /* Distinta Squadre: bordo marcato tra una richiesta e l'altra; rifiutate grigie */
+        .team-matrix { table-layout: fixed; }
+        .team-matrix th:not(.sticky-col), .team-matrix td:not(.sticky-col) { width: 56px; min-width: 56px; max-width: 56px; text-align: center; vertical-align: middle; }
+        .team-matrix tbody td { height: 34px; }
+        .team-matrix .vertical-header { width: 100%; margin: 0 auto; }
+        .team-matrix .inv-input { width: 100%; }
         .team-requests-table tr.team-req-first > td { border-top: 2px solid #6b7280; }
         .team-requests-table tr.team-row-void > td { background-color: #d1d5db; color: #6b7280; text-decoration: line-through; }
         

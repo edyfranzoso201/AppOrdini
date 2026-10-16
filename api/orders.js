@@ -199,7 +199,7 @@ function mergeOrdersThreeWay(baseOrders, currentOrders, incomingOrders) {
 // Le richieste hanno come id l'importKey (data del modulo + email), quindi due
 // dispositivi che importano insieme generano lo stesso id per la stessa
 // risposta invece di due numeri diversi che si scavalcano.
-const TEAM_EMPTY = { requests: [], catalog: null, deletedImportKeys: [], version: 0 };
+const TEAM_EMPTY = { requests: [], catalog: null, deletedImportKeys: [], inventory: {}, version: 0 };
 
 async function handleTeam(req, res, session, redis) {
   const role = (session.role || '').toLowerCase();
@@ -215,9 +215,31 @@ async function handleTeam(req, res, session, redis) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const { action, requests, baseRequests, baseVersion, deletedImportKeys, catalog } = req.body || {};
+  const { action, requests, baseRequests, baseVersion, deletedImportKeys, catalog, key, value } = req.body || {};
   const current = { ...TEAM_EMPTY, ...(await redis.get(KEYS.TEAM_ORDERS) || {}) };
   const currentVersion = current.version || 0;
+
+  // Giacenza materiale squadra: si scrive UNA cella alla volta, cosi' due
+  // dispositivi che inseriscono merce su celle diverse non si cancellano a
+  // vicenda (inviando tutto il magazzino vincerebbe l'ultimo). Non cambia la
+  // version: quella serve al merge delle richieste, che qui non sono toccate.
+  if (action === 'set-stock') {
+    if (typeof key !== 'string' || !key || key.length > 200) {
+      return res.status(400).json({ success: false, error: 'Cella non valida' });
+    }
+    const inventory = { ...(current.inventory || {}) };
+    if (value === null || value === '' || value === undefined) {
+      delete inventory[key];
+    } else {
+      const n = Number(value);
+      if (!Number.isInteger(n) || n < 0 || n > 100000) {
+        return res.status(400).json({ success: false, error: 'Quantita\' non valida' });
+      }
+      inventory[key] = n;
+    }
+    await redis.set(KEYS.TEAM_ORDERS, { ...current, inventory, updatedAt: new Date().toISOString() });
+    return res.status(200).json({ success: true, inventory });
+  }
 
   if (action === 'save-catalog') {
     if (!Array.isArray(catalog)) {

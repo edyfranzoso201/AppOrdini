@@ -249,7 +249,8 @@ const teamState = {
     version: 0,
     preview: null,
     filter: 'tutte',
-    showCatalog: false
+    showCatalog: false,
+    inventory: {}
 };
 
 function teamClone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -283,6 +284,7 @@ async function loadTeamData() {
             if (r.righe.some(x => x.daScegliere)) r.avvisi.push('Modello da scegliere per alcune righe');
         });
         teamState.deletedImportKeys = d.deletedImportKeys || [];
+        teamState.inventory = (d.inventory && typeof d.inventory === 'object') ? d.inventory : {};
         teamState.version = json.version || 0;
         teamState.loaded = true;
         renderTeamTab();
@@ -484,41 +486,162 @@ function teamAggregate(requests, catalog) {
         c.qta += Number(x.qta) || 0;
         if (x.numero) c.numeri.push(x.numero);
     }));
-    // Colonne per gruppo (maglia, pantaloncino, calzettone, attrezzatura), poi
-    // nell'ordine del catalogo; il "modello da scegliere" chiude il suo gruppo
     const groupOf = {};
     requests.forEach(r => r.righe.forEach(x => { groupOf[teamColumnName(x)] = x.gruppo; }));
+    const columns = teamSortColumns(Object.keys(cells), groupOf, catalog);
+    const sizes = teamSortSizes(columns.flatMap(c => Object.keys(cells[c])));
+    columns.forEach(c => Object.values(cells[c]).forEach(v => v.numeri.sort((a, b) => Number(a) - Number(b))));
+    return { columns, sizes, cells };
+}
+
+// Colonne per gruppo (maglia, pantaloncino, calzettone, attrezzatura), poi
+// nell'ordine del catalogo; il "modello da scegliere" chiude il suo gruppo
+function teamSortColumns(cols, groupOf, catalog) {
     const groupOrder = Object.keys(TEAM_GROUPS);
     const rank = (col) => {
         const g = groupOrder.indexOf(groupOf[col]);
         const i = (catalog || []).findIndex(a => a.nome === col);
         return (g >= 0 ? g : groupOrder.length) * 1000 + (i >= 0 ? i : 999);
     };
-    const columns = Object.keys(cells).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
-    const sizes = [...new Set(columns.flatMap(c => Object.keys(cells[c])))]
-        .sort((a, b) => teamSizeRank(a) - teamSizeRank(b) || a.localeCompare(b));
-    columns.forEach(c => Object.values(cells[c]).forEach(v => v.numeri.sort((a, b) => Number(a) - Number(b))));
-    return { columns, sizes, cells };
+    return [...new Set(cols)].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
-function teamMatrixHtml(reqs) {
-    const { columns, sizes, cells } = teamAggregate(reqs, teamState.catalog);
-    if (!columns.length) return '';
-    const head = `<th class="px-0 py-0 bg-blue-50 sticky-col border-r shadow text-center align-middle text-sm font-bold">TAGLIA</th>` +
+function teamSortSizes(sizes) {
+    return [...new Set(sizes)].sort((a, b) => teamSizeRank(a) - teamSizeRank(b) || a.localeCompare(b));
+}
+
+// ── Giacenza e Netto: come la Distinta ordini ───────────────────────────────
+// 1. Lordo = tutte le richieste non rifiutate (o quelle dello stato filtrato)
+// 2. Giacenza = magazzino squadra, una cella per articolo/taglia, modificabile
+// 3. Netto = da ordinare al fornitore: richieste ancora aperte (in attesa o
+//    approvate; con un filtro di stato, quello) meno la giacenza.
+// Le tre tabelle hanno le stesse colonne e righe, come nella Distinta.
+
+// Taglie del modulo squadra, sempre presenti in Giacenza per poter caricare merce
+const TEAM_DEFAULT_SIZES = ['8 ANNI', '10 ANNI', '14 ANNI', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'UNICA'];
+const TEAM_OPEN_STATUSES = ['in_attesa', 'approvata'];
+
+function teamStockKey(col, size) {
+    return `${col}|${size}`;
+}
+
+function teamLayout(reqsLordo, reqsNet, catalog, inventory) {
+    const lordo = teamAggregate(reqsLordo, catalog);
+    const net = teamAggregate(reqsNet, catalog);
+    const groupOf = {};
+    (catalog || []).forEach(a => { groupOf[a.nome] = a.gruppo; });
+    [...reqsLordo, ...reqsNet].forEach(r => r.righe.forEach(x => { groupOf[teamColumnName(x)] = x.gruppo; }));
+    const stockCols = [], stockSizes = [];
+    Object.keys(inventory || {}).forEach(k => {
+        const i = k.lastIndexOf('|');
+        if (i > 0) { stockCols.push(k.slice(0, i)); stockSizes.push(k.slice(i + 1)); }
+    });
+    const columns = teamSortColumns([...(catalog || []).map(a => a.nome), ...lordo.columns, ...net.columns, ...stockCols], groupOf, catalog);
+    const sizes = teamSortSizes([...TEAM_DEFAULT_SIZES, ...lordo.sizes, ...net.sizes, ...stockSizes]);
+    return { columns, sizes, lordo, net };
+}
+
+function teamStock(inventory, col, size) {
+    return parseInt((inventory || {})[teamStockKey(col, size)]) || 0;
+}
+
+function teamNetToBuy(layout, inventory, col, size) {
+    const v = layout.net.cells[col] && layout.net.cells[col][size];
+    return v ? Math.max(0, v.qta - teamStock(inventory, col, size)) : 0;
+}
+
+function teamMatrixHtml(mode, layout, inventory) {
+    const { columns, sizes, lordo, net } = layout;
+    const bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100');
+    const head = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow text-center align-middle text-sm font-bold">TAGLIA</th>` +
         columns.map(c => `<th class="border-l align-bottom pb-2 ${c.includes('da scegliere') ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-50'}"><div class="vertical-header">${teamEsc(c)}</div></th>`).join('');
+    const nums = (v) => v && v.numeri.length ? `<div class="text-[9px] font-normal text-blue-800 leading-tight">n° ${v.numeri.map(teamEsc).join(', ')}</div>` : '';
     const totals = {};
-    const body = sizes.map(size => `<tr><td class="px-4 py-0 font-bold bg-white sticky-col border-r shadow border-b">${teamEsc(size)}</td>` +
+    const body = sizes.map((size, rowIdx) => {
+        const alt = rowIdx % 2 === 1 ? (mode === 'INV' ? ' inv-row-alt' : mode === 'NET' ? ' net-row-alt' : '') : '';
+        const bgCol = mode === 'INV' ? 'bg-yellow-50' : 'bg-white';
+        return `<tr><td class="px-4 py-0 font-bold ${bgCol} sticky-col border-r shadow border-b${alt}">${teamEsc(size)}</td>` +
         columns.map(c => {
-            const v = cells[c][size];
-            totals[c] = (totals[c] || 0) + (v ? v.qta : 0);
-            if (!v) return '<td class="text-center border-b border-l py-0">-</td>';
-            const nums = v.numeri.length ? `<div class="text-[9px] font-normal text-blue-800 leading-tight">n° ${v.numeri.map(teamEsc).join(', ')}</div>` : '';
-            return `<td class="text-center border-b border-l py-0 bg-blue-50 font-bold">${v.qta}${nums}</td>`;
-        }).join('') + '</tr>').join('');
-    const total = `<tr class="total-row"><td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>${columns.map(c => `<td class="text-center border-l p-2">${totals[c]}</td>`).join('')}</tr>`;
-    return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full divide-y divide-gray-200 text-xs border mb-0">
-        <thead class="bg-blue-50 sticky-header"><tr>${head}</tr></thead>
+            let val = 0, cell;
+            if (mode === 'GROSS') {
+                const v = lordo.cells[c] && lordo.cells[c][size];
+                val = v ? v.qta : 0;
+                cell = v ? `<td class="text-center border-b border-l py-0 bg-blue-50 font-bold">${v.qta}${nums(v)}</td>`
+                    : '<td class="text-center border-b border-l py-0">-</td>';
+            } else if (mode === 'INV') {
+                const raw = (inventory || {})[teamStockKey(c, size)];
+                val = parseInt(raw) || 0;
+                const toBuy = (net.cells[c] && net.cells[c][size]) ? net.cells[c][size].qta : 0;
+                // Giallo: c'e' richiesta aperta E merce in magazzino, come nella Distinta
+                const hl = toBuy > 0 && val > 0;
+                const disabled = c.includes('da scegliere') ? 'disabled title="Scegli prima il modello nelle richieste"' : '';
+                cell = `<td class="text-center border-b border-l py-0 ${hl ? 'inv-cell-needed' : 'bg-white' + alt}" ${hl ? `title="Richiesti (aperti): ${toBuy}, in magazzino: ${val}"` : ''}>
+                    <input type="number" min="0" step="1" value="${raw !== undefined ? teamEsc(raw) : ''}" data-col="${teamEsc(c)}" data-size="${teamEsc(size)}"
+                        onchange="teamSetStockFromInput(this)" class="inv-input" placeholder="-" ${disabled}></td>`;
+            } else {
+                val = teamNetToBuy(layout, inventory, c, size);
+                const v = net.cells[c] && net.cells[c][size];
+                cell = `<td class="text-center border-b border-l bg-white py-0${alt}"><span class="net-val ${val > 0 ? 'buy-alert' : 'buy-ok'}">${val > 0 ? val : '-'}</span>${val > 0 ? nums(v) : ''}</td>`;
+            }
+            totals[c] = (totals[c] || 0) + val;
+            return cell;
+        }).join('') + '</tr>';
+    }).join('');
+    const total = `<tr class="total-row"><td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>${columns.map(c => `<td class="text-center border-l p-2">${totals[c] || 0}</td>`).join('')}</tr>`;
+    // table-layout fixed: tutte le colonne articolo larghe uguali
+    return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="team-matrix min-w-full divide-y divide-gray-200 text-xs border mb-0" style="min-width:${55 + columns.length * 56}px">
+        <thead class="${bgHead} sticky-header"><tr>${head}</tr></thead>
         <tbody class="divide-y divide-gray-200">${body}${total}</tbody></table></div>`;
+}
+
+async function teamSetStockFromInput(input) {
+    const col = input.dataset.col, size = input.dataset.size;
+    const key = teamStockKey(col, size);
+    const raw = String(input.value).trim();
+    const n = Number(raw);
+    if (raw !== '' && (!Number.isInteger(n) || n < 0)) {
+        teamNotify('Quantita\' non valida: inserisci un numero intero da 0 in su', 'error');
+        input.value = teamState.inventory[key] ?? '';
+        return;
+    }
+    const prev = teamState.inventory[key];
+    if (raw === '') delete teamState.inventory[key]; else teamState.inventory[key] = n;
+    teamRerenderKeepFocus();
+    try {
+        const res = await fetch('/api/orders?scope=team', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'set-stock', key, value: raw === '' ? null : n })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+        // Il server rimanda tutto il magazzino: dentro ci sono anche le celle
+        // scritte nel frattempo da un altro dispositivo
+        if (json.inventory) teamState.inventory = json.inventory;
+        teamRerenderKeepFocus();
+    } catch (e) {
+        if (prev === undefined) delete teamState.inventory[key]; else teamState.inventory[key] = prev;
+        teamRerenderKeepFocus();
+        teamNotify('Giacenza non salvata: ' + e.message, 'error');
+    }
+}
+
+// Il ridisegno ricrea le caselle: senza questo, chi passa con Tab alla cella
+// successiva perderebbe il cursore a ogni numero inserito
+function teamRerenderKeepFocus() {
+    setTimeout(() => {
+        const a = document.activeElement;
+        const keep = a && a.classList && a.classList.contains('inv-input') && a.closest('#teamRequestsList')
+            ? { col: a.dataset.col, size: a.dataset.size } : null;
+        const scroll = [...document.querySelectorAll('#teamRequestsList [style*="overflow-x"]')].map(d => d.scrollLeft);
+        renderTeamTab();
+        document.querySelectorAll('#teamRequestsList [style*="overflow-x"]').forEach((d, i) => { if (scroll[i]) d.scrollLeft = scroll[i]; });
+        if (keep) {
+            const el = [...document.querySelectorAll('#teamRequestsList .inv-input')]
+                .find(x => x.dataset.col === keep.col && x.dataset.size === keep.size);
+            if (el) { el.focus(); el.select && el.select(); }
+        }
+    }, 0);
 }
 
 // ── Elenco richieste in tabella: una riga per articolo, i dati della
@@ -624,19 +747,25 @@ function renderTeamTab() {
         const attesa = teamState.requests.filter(r => r.status === 'in_attesa').length;
         counter.textContent = `${teamState.requests.length} richieste · ${attesa} in attesa`;
     }
-    if (!reqs.length) {
-        list.innerHTML = '<p class="text-sm text-gray-500 bg-white rounded p-4 text-center">Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.</p>';
-        return;
-    }
-    const matrix = teamMatrixHtml(reqs);
-    list.innerHTML = `
+    // Netto: con "tutte" contano le richieste ancora aperte, altrimenti lo stato scelto
+    const lordoReqs = reqs.filter(r => r.status !== 'rifiutata');
+    const netReqs = teamState.filter === 'tutte'
+        ? reqs.filter(r => TEAM_OPEN_STATUSES.includes(r.status))
+        : lordoReqs;
+    const layout = teamLayout(lordoReqs, netReqs, teamState.catalog, teamState.inventory);
+    const box = (title, icon, color, html) => `
         <div class="bg-white rounded shadow px-2 pt-2 pb-0 mb-3">
-            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-list-alt mr-2"></i> 1. Riepilogo Materiale Squadre</span></div>
-            ${matrix || '<p class="text-xs text-gray-500 p-2">Nessun articolo da riepilogare (le richieste rifiutate non contano).</p>'}
-        </div>
-        <div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-6">
-            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-clipboard-list mr-2"></i> 2. Richieste</span></div>
-            ${teamRequestsTableHtml(reqs)}
+            <div class="section-title ${color} mb-2"><span><i class="fas ${icon} mr-2"></i> ${title}</span></div>
+            ${html}
+        </div>`;
+    const netLabel = teamState.filter === 'tutte' ? 'in attesa + approvate' : 'stato filtrato';
+    list.innerHTML =
+        box('1. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
+        box('2. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
+        box(`3. Da ordinare (Netto: ${netLabel} meno giacenza)`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
+        `<div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-6">
+            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-clipboard-list mr-2"></i> 4. Richieste</span></div>
+            ${reqs.length ? teamRequestsTableHtml(reqs) : '<p class="text-sm text-gray-500 p-4 text-center">Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.</p>'}
         </div>`;
 }
 
