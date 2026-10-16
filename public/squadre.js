@@ -547,8 +547,11 @@ function teamSortSizes(sizes) {
 //    approvate; con un filtro di stato, quello) meno la giacenza.
 // Le tre tabelle hanno le stesse colonne e righe, come nella Distinta.
 
-// Tutte le taglie della Distinta, sempre presenti in Giacenza per fare l'inventario
-const TEAM_DEFAULT_SIZES = TEAM_SIZE_ORDER;
+// Le taglie del modulo squadra (calze, bambino, adulto) + UNICA per l'attrezzatura:
+// sempre presenti in Giacenza per fare l'inventario. Una taglia diversa compare
+// solo se c'e' in una richiesta o in magazzino.
+const TEAM_DEFAULT_SIZES = ['23/26', '27/30', '31/34', '35/38', '39/42', '43/46',
+    '8 ANNI', '10 ANNI', '14 ANNI', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'UNICA'];
 // Netto come nella Distinta: di default solo i "Nuovo"
 const TEAM_NET_DEFAULT = ['Nuovo'];
 
