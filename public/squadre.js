@@ -250,7 +250,8 @@ const teamState = {
     preview: null,
     filter: 'tutte',
     showCatalog: false,
-    inventory: {}
+    inventory: {},
+    expanded: new Set()  // richieste aperte nel dettaglio (solo a video)
 };
 
 function teamClone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -681,8 +682,49 @@ function teamRerenderKeepFocus() {
     }, 0);
 }
 
-// ── Elenco richieste in tabella: una riga per articolo, i dati della
-// richiesta (data, richiedente, squadra...) uniti sulle sue righe ──────────
+// ── Elenco richieste in tabella: chiusa = una riga col riassunto; aperta =
+// una riga per articolo, i dati della richiesta uniti sulle sue righe ──────
+
+// Numeri di maglia in breve: 1,2,3,5,7,8 -> "1-3, 5, 7-8"
+function teamCompactNumbers(nums) {
+    const n = [...new Set(nums.map(v => parseInt(v, 10)).filter(Number.isFinite))].sort((a, b) => a - b);
+    const out = [];
+    for (let i = 0; i < n.length; i++) {
+        let j = i;
+        while (j + 1 < n.length && n[j + 1] === n[j] + 1) j++;
+        out.push(j > i ? `${n[i]}-${n[j]}` : `${n[i]}`);
+        i = j;
+    }
+    return out.join(', ');
+}
+
+// Una riga per articolo: "Maglia CASTOLO Red Chinese — M ×20, L ×2 · n° 1-22"
+function teamRequestSummaryHtml(r) {
+    const byArt = new Map();
+    r.righe.forEach(x => {
+        const col = teamColumnName(x);
+        const a = byArt.get(col) || { sizes: new Map(), numeri: [], daScegliere: !!x.daScegliere };
+        const size = teamSizeKey(x.taglia);
+        a.sizes.set(size, (a.sizes.get(size) || 0) + (Number(x.qta) || 0));
+        if (x.numero) a.numeri.push(x.numero);
+        byArt.set(col, a);
+    });
+    return [...byArt.entries()].map(([col, a]) => {
+        const sizes = [...a.sizes.entries()]
+            .sort((p, q) => teamSizeRank(p[0]) - teamSizeRank(q[0]))
+            .map(([sz, q]) => sz === 'UNICA' ? `×${q}` : `${teamEsc(sz)} ×${q}`).join(', ');
+        const nums = a.numeri.length ? ` <span class="text-blue-800">· n° ${teamEsc(teamCompactNumbers(a.numeri))}</span>` : '';
+        const name = a.daScegliere
+            ? `<span class="text-yellow-800 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>${teamEsc(col)}</span>`
+            : `<b>${teamEsc(col)}</b>`;
+        return `<div>${name} <span class="text-gray-400">—</span> ${sizes}${nums}</div>`;
+    }).join('');
+}
+
+function teamToggleRequest(id) {
+    if (teamState.expanded.has(id)) teamState.expanded.delete(id); else teamState.expanded.add(id);
+    teamRerenderKeepFocus();
+}
 
 function teamRequestsTableHtml(reqs) {
     const options = (gruppo) => teamState.catalog
@@ -697,8 +739,13 @@ function teamRequestsTableHtml(reqs) {
         const id = teamEsc(r.id);
         // Annullata o trasferita: resta visibile ma grigia e barrata, come in Tabella
         const rowClass = teamIsVoid(r) ? 'team-row-void' : (ri % 2 ? 'bg-gray-50' : 'bg-white');
-        const righe = r.righe.length ? r.righe : [null];
+        const open = teamState.expanded.has(r.id);
+        const collapsed = !open && r.righe.length > 0;
+        const righe = r.righe.length && open ? r.righe : [null];
         const span = righe.length;
+        const pezzi = r.righe.reduce((n, x) => n + (Number(x.qta) || 0), 0);
+        const toggle = r.righe.length ? `<div><button onclick="teamToggleRequest('${id}')" class="mt-1 text-[10px] font-bold text-blue-700 hover:text-blue-900 whitespace-nowrap">
+            <i class="fas fa-chevron-${open ? 'up' : 'down'} mr-1"></i>${open ? 'Comprimi' : `Dettaglio (${r.righe.length})`}</button></div>` : '';
         return righe.map((x, i) => {
             const art = !x ? '<span class="italic text-gray-400">Nessun articolo</span>'
                 : x.daScegliere
@@ -706,7 +753,7 @@ function teamRequestsTableHtml(reqs) {
                          <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${options(x.gruppo)}</select>`
                     : teamEsc(x.articolo);
             const first = i === 0 ? `
-                <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}</td>
+                <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}${toggle}</td>
                 <td class="${td} text-left align-top" rowspan="${span}"><b>${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}</b>
                     <div class="text-[10px] text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? '<br>' + teamEsc(rich.telefono) : ''}</div></td>
                 <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></td>
@@ -716,6 +763,11 @@ function teamRequestsTableHtml(reqs) {
             const last = i === 0 ? `
                 <td class="${td} text-left align-top text-[10px]" rowspan="${span}" style="max-width:160px">${teamEsc(r.note || '').replace(/\n/g, '<br>')}</td>
                 <td class="${td} text-center align-top" rowspan="${span}"><button onclick="teamDeleteRequest('${id}')" class="text-red-600 hover:text-red-800" title="Elimina richiesta"><i class="fas fa-trash"></i></button></td>` : '';
+            if (collapsed) {
+                return `<tr class="${rowClass} team-req-first">${first}
+                <td class="${td} text-left cursor-pointer hover:bg-blue-50" colspan="3" onclick="teamToggleRequest('${id}')" title="Clic per il dettaglio">${teamRequestSummaryHtml(r)}</td>
+                <td class="${td} text-center font-bold">${pezzi}</td>${last}</tr>`;
+            }
             return `<tr class="${rowClass}${i === 0 ? ' team-req-first' : ''}">${first}
                 <td class="${td} text-left">${art}</td>
                 <td class="${td} text-center">${x ? teamEsc(x.taglia || '-') : ''}</td>
