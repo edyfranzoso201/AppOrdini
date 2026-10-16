@@ -109,6 +109,32 @@ function teamFindArticle(catalog, text) {
     return catalog.find(a => teamNorm(a.nome) === t || (a.alias || []).some(x => teamNorm(x) === t)) || null;
 }
 
+// Colore di un articolo, per abbinare pantaloncini e calzettoni alla maglia:
+// "CASTOLO Blue Marine" e "BORGO Blu Marine" danno entrambi 'blu'.
+function teamColorKey(nome) {
+    const t = teamNorm(nome);
+    if (/turk|turch/.test(t)) return 'turchese';
+    if (/\bblu|\bblue/.test(t)) return 'blu';
+    if (/\bred\b|ross/.test(t)) return 'rosso';
+    if (/arancio/.test(t)) return 'arancione';
+    if (/giall/.test(t)) return 'giallo';
+    return '';
+}
+
+// Il modulo ha una sola tendina: se e' una maglia, le griglie pantaloncini e
+// calzettoni arrivano senza modello. Si deduce dal colore della maglia; se il
+// colore non c'e' o non basta a scegliere un solo articolo, resta da scegliere.
+function teamResolveByColor(righe, catalog) {
+    const colori = [...new Set(righe.filter(x => x.gruppo === 'maglia' && x.articolo)
+        .map(x => teamColorKey(x.articolo)))];
+    if (colori.length !== 1 || !colori[0]) return righe;
+    return righe.map(x => {
+        if (!x.daScegliere) return x;
+        const match = catalog.filter(a => a.gruppo === x.gruppo && teamColorKey(a.nome) === colori[0]);
+        return match.length === 1 ? { ...x, articolo: match[0].nome, daScegliere: false } : x;
+    });
+}
+
 // "15/10/2026 17.06.58" -> ISO; se il formato non e' riconosciuto, null.
 function teamParseTimestamp(s) {
     const m = String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2})[.:](\d{2})[.:](\d{2})/);
@@ -153,7 +179,7 @@ function teamBuildRequests(rows, catalog, knownKeys) {
             return { articolo: '', daScegliere: true };
         };
 
-        const righe = [];
+        let righe = [];
         const aggregate = {};
         for (const c of cols) {
             const val = (row[c.index] || '').trim();
@@ -180,6 +206,7 @@ function teamBuildRequests(rows, catalog, knownKeys) {
                 ignote.add(c.label);
             }
         }
+        righe = teamResolveByColor(righe, catalog);
         if (righe.some(r => r.daScegliere)) avvisi.push('Modello da scegliere per alcune righe');
         if (!righe.length) avvisi.push('Nessun articolo compilato');
 
@@ -246,6 +273,15 @@ async function loadTeamData() {
         teamState.requests = Array.isArray(d.requests) ? d.requests : [];
         teamState.baseRequests = teamClone(teamState.requests);
         if (Array.isArray(d.catalog) && d.catalog.length) teamState.catalog = d.catalog;
+        // Richieste importate prima della deduzione dal colore della maglia:
+        // si risolvono a video; base resta quella del server, quindi il primo
+        // salvataggio le scrive su Redis.
+        teamState.requests.forEach(r => {
+            if (!(r.righe || []).some(x => x.daScegliere)) return;
+            r.righe = teamResolveByColor(r.righe, teamState.catalog);
+            r.avvisi = (r.avvisi || []).filter(a => !a.startsWith('Modello da scegliere'));
+            if (r.righe.some(x => x.daScegliere)) r.avvisi.push('Modello da scegliere per alcune righe');
+        });
         teamState.deletedImportKeys = d.deletedImportKeys || [];
         teamState.version = json.version || 0;
         teamState.loaded = true;
