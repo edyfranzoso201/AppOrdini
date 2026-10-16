@@ -266,6 +266,9 @@
             background: #6b7280; color: #fff; font-size: 8px; font-weight: bold; text-decoration: none;
         }
         #tabellaOrdiniStampabile thead tr:first-child th { vertical-align: middle; }
+        /* Distinta Squadre: bordo marcato tra una richiesta e l'altra; rifiutate grigie */
+        .team-requests-table tr.team-req-first > td { border-top: 2px solid #6b7280; }
+        .team-requests-table tr.team-row-void > td { background-color: #d1d5db; color: #6b7280; text-decoration: line-through; }
         
         /* Header fisso per tabella ordini - TUTTO GRIGIO */
         #tabellaOrdiniStampabile thead th {
@@ -1508,7 +1511,7 @@
             </div>
             <div id="teamPreview"></div>
             <div id="teamCatalog"></div>
-            <div id="teamRequestsList" class="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-6">
+            <div id="teamRequestsList">
                 <p class="text-sm text-gray-500">Caricamento...</p>
             </div>
         </div>

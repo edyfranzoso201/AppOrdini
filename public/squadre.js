@@ -420,60 +420,116 @@ function teamFormatDate(iso) {
     return isNaN(d) ? teamEsc(iso) : d.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function teamRigheHtml(r) {
-    if (!r.righe.length) return '<p class="text-xs text-gray-400 italic">Nessun articolo</p>';
-    const options = (gruppo, sel) => teamState.catalog
-        .filter(a => a.gruppo === gruppo)
-        .map(a => `<option value="${teamEsc(a.nome)}" ${a.nome === sel ? 'selected' : ''}>${teamEsc(a.nome)}</option>`).join('');
-    const rows = r.righe.map((x, i) => {
-        const art = x.daScegliere
-            ? `<select class="border border-yellow-500 bg-yellow-50 rounded px-1 py-0.5 text-xs max-w-full" onchange="teamChooseModel('${teamEsc(r.id)}', ${i}, this.value)">
-                 <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${options(x.gruppo, '')}</select>`
-            : teamEsc(x.articolo);
-        return `<tr class="border-t">
-            <td class="px-2 py-1">${art}</td>
-            <td class="px-2 py-1 text-center">${teamEsc(x.taglia || '-')}</td>
-            <td class="px-2 py-1 text-center">${x.numero ? 'n°' + teamEsc(x.numero) : ''}</td>
-            <td class="px-2 py-1 text-center font-bold">${teamEsc(x.qta)}</td></tr>`;
-    }).join('');
-    return `<div class="overflow-x-auto"><table class="w-full text-xs">
-        <thead class="bg-gray-100 text-gray-600"><tr><th class="px-2 py-1 text-left">Articolo</th><th class="px-2 py-1">Taglia</th><th class="px-2 py-1">N°</th><th class="px-2 py-1">Q.tà</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>`;
+// ── Distinta aggregata (stessa impostazione della Distinta ordini) ──────────
+// Righe = taglie, colonne = articoli, cella = pezzi. Le maglie riportano
+// anche i numeri richiesti. Le richieste rifiutate non entrano.
+
+const TEAM_SIZE_ORDER = (typeof SIZE_ORDER !== 'undefined' ? SIZE_ORDER
+    : ['23/26', '27/30', '31/34', '35/38', '39/42', '43/46', '47/49', '6 ANNI', '8 ANNI', '10 ANNI', '12 ANNI', '14 ANNI', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', 'UNICA']);
+
+function teamSizeRank(taglia) {
+    const t = String(taglia).toUpperCase();
+    // I calzettoni arrivano come "39/42 n9": conta la misura prima dello spazio
+    const i = TEAM_SIZE_ORDER.indexOf(t) >= 0 ? TEAM_SIZE_ORDER.indexOf(t) : TEAM_SIZE_ORDER.indexOf(t.split(' ')[0]);
+    if (t === 'UNICA') return 9999;
+    return i >= 0 ? i : 999;
 }
 
-function teamRequestCard(r) {
-    const [stLabel, stClass] = TEAM_STATUS[r.status] || [r.status, 'bg-gray-100 text-gray-700'];
-    const rich = r.richiedente || {};
-    const id = teamEsc(r.id);
-    const totale = r.righe.reduce((s, x) => s + (Number(x.qta) || 0), 0);
-    const avvisi = (r.avvisi || []).length
-        ? `<div class="bg-yellow-50 border border-yellow-300 text-yellow-800 text-xs rounded px-2 py-1 mb-2">${r.avvisi.map(teamEsc).join('<br>')}</div>` : '';
-    // Rifiutata: resta visibile ma in grigio, come gli ordini annullati in Tabella
-    const cardClass = r.status === 'rifiutata' ? 'bg-gray-300 text-gray-500 grayscale border-gray-500'
-        : 'bg-white ' + (r.status === 'in_attesa' ? 'border-yellow-400' : 'border-gray-300');
-    return `<div class="${cardClass} rounded shadow p-3 border-l-4">
-        <div class="flex flex-wrap justify-between gap-2 mb-2">
-            <div class="min-w-0">
-                <div class="font-bold text-blue-900">${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}
-                    <span class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${stClass}">${stLabel}</span></div>
-                <div class="text-xs text-gray-500">${teamFormatDate(r.createdAt)} · ${teamEsc(r.tipo)}${r.sport ? ' · ' + teamEsc(r.sport) : ''}</div>
-                <div class="text-xs text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? ' · ' + teamEsc(rich.telefono) : ''}</div>
-            </div>
-            <button onclick="teamDeleteRequest('${id}')" class="text-red-600 hover:text-red-800 text-sm self-start" title="Elimina richiesta"><i class="fas fa-trash"></i></button>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2 text-xs">
-            <label class="flex items-center gap-1">Squadra
-                <input class="border rounded px-1 py-0.5 flex-1 min-w-0" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></label>
-            <label class="flex items-center gap-1">Ruolo
-                <select class="border rounded px-1 py-0.5 flex-1 min-w-0" onchange="teamUpdateField('${id}', 'ruolo', this.value)">
-                    ${['', 'Dirigente', 'Allenatore', 'Magazziniere'].map(v => `<option value="${v}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${v || '—'}</option>`).join('')}
-                </select></label>
-        </div>
-        ${avvisi}
-        ${teamRigheHtml(r)}
-        <div class="text-right text-xs text-gray-600 mt-1">Totale pezzi: <b>${totale}</b></div>
-        ${r.note ? `<div class="text-xs mt-2 bg-gray-50 rounded px-2 py-1"><b>Note:</b> ${teamEsc(r.note).replace(/\n/g, '<br>')}</div>` : ''}
-    </div>`;
+function teamColumnName(x) {
+    return x.daScegliere ? `${TEAM_GROUPS[x.gruppo] || x.gruppo} (modello da scegliere)` : x.articolo;
+}
+
+function teamAggregate(requests, catalog) {
+    const cells = {}; // colonna -> taglia -> { qta, numeri[] }
+    requests.filter(r => r.status !== 'rifiutata').forEach(r => r.righe.forEach(x => {
+        const col = teamColumnName(x);
+        const size = (!x.taglia || x.taglia === '-') ? 'UNICA' : x.taglia;
+        const c = ((cells[col] = cells[col] || {})[size] = cells[col][size] || { qta: 0, numeri: [] });
+        c.qta += Number(x.qta) || 0;
+        if (x.numero) c.numeri.push(x.numero);
+    }));
+    // Colonne per gruppo (maglia, pantaloncino, calzettone, attrezzatura), poi
+    // nell'ordine del catalogo; il "modello da scegliere" chiude il suo gruppo
+    const groupOf = {};
+    requests.forEach(r => r.righe.forEach(x => { groupOf[teamColumnName(x)] = x.gruppo; }));
+    const groupOrder = Object.keys(TEAM_GROUPS);
+    const rank = (col) => {
+        const g = groupOrder.indexOf(groupOf[col]);
+        const i = (catalog || []).findIndex(a => a.nome === col);
+        return (g >= 0 ? g : groupOrder.length) * 1000 + (i >= 0 ? i : 999);
+    };
+    const columns = Object.keys(cells).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+    const sizes = [...new Set(columns.flatMap(c => Object.keys(cells[c])))]
+        .sort((a, b) => teamSizeRank(a) - teamSizeRank(b) || a.localeCompare(b));
+    columns.forEach(c => Object.values(cells[c]).forEach(v => v.numeri.sort((a, b) => Number(a) - Number(b))));
+    return { columns, sizes, cells };
+}
+
+function teamMatrixHtml(reqs) {
+    const { columns, sizes, cells } = teamAggregate(reqs, teamState.catalog);
+    if (!columns.length) return '';
+    const head = `<th class="px-0 py-0 bg-blue-50 sticky-col border-r shadow text-center align-middle text-sm font-bold">TAGLIA</th>` +
+        columns.map(c => `<th class="border-l align-bottom pb-2 ${c.includes('da scegliere') ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-50'}"><div class="vertical-header">${teamEsc(c)}</div></th>`).join('');
+    const totals = {};
+    const body = sizes.map(size => `<tr><td class="px-4 py-0 font-bold bg-white sticky-col border-r shadow border-b">${teamEsc(size)}</td>` +
+        columns.map(c => {
+            const v = cells[c][size];
+            totals[c] = (totals[c] || 0) + (v ? v.qta : 0);
+            if (!v) return '<td class="text-center border-b border-l py-0">-</td>';
+            const nums = v.numeri.length ? `<div class="text-[9px] font-normal text-blue-800 leading-tight">n° ${v.numeri.map(teamEsc).join(', ')}</div>` : '';
+            return `<td class="text-center border-b border-l py-0 bg-blue-50 font-bold">${v.qta}${nums}</td>`;
+        }).join('') + '</tr>').join('');
+    const total = `<tr class="total-row"><td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>${columns.map(c => `<td class="text-center border-l p-2">${totals[c]}</td>`).join('')}</tr>`;
+    return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full divide-y divide-gray-200 text-xs border mb-0">
+        <thead class="bg-blue-50 sticky-header"><tr>${head}</tr></thead>
+        <tbody class="divide-y divide-gray-200">${body}${total}</tbody></table></div>`;
+}
+
+// ── Elenco richieste in tabella: una riga per articolo, i dati della
+// richiesta (data, richiedente, squadra...) uniti sulle sue righe ──────────
+
+function teamRequestsTableHtml(reqs) {
+    const options = (gruppo) => teamState.catalog
+        .filter(a => a.gruppo === gruppo)
+        .map(a => `<option value="${teamEsc(a.nome)}">${teamEsc(a.nome)}</option>`).join('');
+    const td = 'border px-2 py-1';
+    const rows = reqs.map((r, ri) => {
+        const [stLabel, stClass] = TEAM_STATUS[r.status] || [r.status, 'bg-gray-100 text-gray-700'];
+        const rich = r.richiedente || {};
+        const id = teamEsc(r.id);
+        // Rifiutata: resta visibile ma grigia e barrata, come gli annullati in Tabella
+        const rowClass = r.status === 'rifiutata' ? 'team-row-void' : (ri % 2 ? 'bg-gray-50' : 'bg-white');
+        const righe = r.righe.length ? r.righe : [null];
+        const span = righe.length;
+        return righe.map((x, i) => {
+            const art = !x ? '<span class="italic text-gray-400">Nessun articolo</span>'
+                : x.daScegliere
+                    ? `<select class="border border-yellow-500 bg-yellow-50 rounded px-1 py-0.5 text-xs max-w-full" onchange="teamChooseModel('${id}', ${i}, this.value)">
+                         <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${options(x.gruppo)}</select>`
+                    : teamEsc(x.articolo);
+            const first = i === 0 ? `
+                <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}
+                    <div class="mt-1"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${stClass}">${stLabel}</span></div></td>
+                <td class="${td} text-left align-top" rowspan="${span}"><b>${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}</b>
+                    <div class="text-[10px] text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? '<br>' + teamEsc(rich.telefono) : ''}</div></td>
+                <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></td>
+                <td class="${td} align-top" rowspan="${span}"><select class="border rounded px-1 py-0.5" onchange="teamUpdateField('${id}', 'ruolo', this.value)">
+                    ${['', 'Dirigente', 'Allenatore', 'Magazziniere'].map(v => `<option value="${v}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${v || '—'}</option>`).join('')}</select></td>` : '';
+            const last = i === 0 ? `
+                <td class="${td} text-left align-top text-[10px]" rowspan="${span}" style="max-width:160px">${teamEsc(r.note || '').replace(/\n/g, '<br>')}</td>
+                <td class="${td} text-center align-top" rowspan="${span}"><button onclick="teamDeleteRequest('${id}')" class="text-red-600 hover:text-red-800" title="Elimina richiesta"><i class="fas fa-trash"></i></button></td>` : '';
+            return `<tr class="${rowClass}${i === 0 ? ' team-req-first' : ''}">${first}
+                <td class="${td} text-left">${art}</td>
+                <td class="${td} text-center">${x ? teamEsc(x.taglia || '-') : ''}</td>
+                <td class="${td} text-center">${x && x.numero ? teamEsc(x.numero) : ''}</td>
+                <td class="${td} text-center font-bold">${x ? teamEsc(x.qta) : ''}</td>${last}</tr>`;
+        }).join('');
+    }).join('');
+    const th = 'border px-2 py-1 bg-gray-200 text-black font-bold';
+    return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full text-xs border team-requests-table">
+        <thead><tr><th class="${th}">Data / Stato</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Ruolo</th>
+            <th class="${th}">Articolo</th><th class="${th}">Taglia</th><th class="${th}">N°</th><th class="${th}">Q.tà</th><th class="${th}">Note</th><th class="${th}"></th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
 }
 
 function teamPreviewHtml() {
@@ -532,9 +588,20 @@ function renderTeamTab() {
         const attesa = teamState.requests.filter(r => r.status === 'in_attesa').length;
         counter.textContent = `${teamState.requests.length} richieste · ${attesa} in attesa`;
     }
-    list.innerHTML = reqs.length
-        ? reqs.map(teamRequestCard).join('')
-        : '<p class="text-sm text-gray-500 bg-white rounded p-4 text-center">Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.</p>';
+    if (!reqs.length) {
+        list.innerHTML = '<p class="text-sm text-gray-500 bg-white rounded p-4 text-center">Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.</p>';
+        return;
+    }
+    const matrix = teamMatrixHtml(reqs);
+    list.innerHTML = `
+        <div class="bg-white rounded shadow px-2 pt-2 pb-0 mb-3">
+            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-list-alt mr-2"></i> 1. Riepilogo Materiale Squadre</span></div>
+            ${matrix || '<p class="text-xs text-gray-500 p-2">Nessun articolo da riepilogare (le richieste rifiutate non contano).</p>'}
+        </div>
+        <div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-6">
+            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-clipboard-list mr-2"></i> 2. Richieste</span></div>
+            ${teamRequestsTableHtml(reqs)}
+        </div>`;
 }
 
 function setTeamFilter(v) {
