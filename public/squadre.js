@@ -448,7 +448,10 @@ function teamRequestCard(r) {
     const totale = r.righe.reduce((s, x) => s + (Number(x.qta) || 0), 0);
     const avvisi = (r.avvisi || []).length
         ? `<div class="bg-yellow-50 border border-yellow-300 text-yellow-800 text-xs rounded px-2 py-1 mb-2">${r.avvisi.map(teamEsc).join('<br>')}</div>` : '';
-    return `<div class="bg-white rounded shadow p-3 border-l-4 ${r.status === 'in_attesa' ? 'border-yellow-400' : 'border-gray-300'}">
+    // Rifiutata: resta visibile ma in grigio, come gli ordini annullati in Tabella
+    const cardClass = r.status === 'rifiutata' ? 'bg-gray-300 text-gray-500 grayscale border-gray-500'
+        : 'bg-white ' + (r.status === 'in_attesa' ? 'border-yellow-400' : 'border-gray-300');
+    return `<div class="${cardClass} rounded shadow p-3 border-l-4">
         <div class="flex flex-wrap justify-between gap-2 mb-2">
             <div class="min-w-0">
                 <div class="font-bold text-blue-900">${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}

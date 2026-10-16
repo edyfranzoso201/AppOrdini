@@ -252,6 +252,19 @@
            evidenziate (verde/arancione) hanno !important e restano sopra. */
         #tabellaOrdiniStampabile tbody tr.tabella-row-alt,
         #tabellaOrdiniStampabile tbody tr.tabella-row-alt > td { background-color: #f1f3f6; }
+        /* Ordini annullati/trasferiti: riga grigia e barrata, anche sopra le celle
+           evidenziate (verde/arancione), e cosi' anche in stampa. */
+        #tabellaOrdiniStampabile tbody tr.tabella-row-void > td,
+        #tabellaOrdiniStampabile tbody tr.tabella-row-void > td.size-cell-highlighted,
+        #tabellaOrdiniStampabile tbody tr.tabella-row-void > td.size-cell-scaled {
+            background-color: #d1d5db !important; color: #6b7280 !important;
+            text-decoration: line-through; font-weight: normal;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        #tabellaOrdiniStampabile .tabella-void-badge {
+            display: block; width: fit-content; margin: 2px auto 0; padding: 0 4px; border-radius: 3px;
+            background: #6b7280; color: #fff; font-size: 8px; font-weight: bold; text-decoration: none;
+        }
         #tabellaOrdiniStampabile thead tr:first-child th { vertical-align: middle; }
         
         /* Header fisso per tabella ordini - TUTTO GRIGIO */

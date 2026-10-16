@@ -637,6 +637,12 @@
             });
         }
         
+        // Ordine che non va piu' ordinato al fornitore: resta visibile in Tabella
+        // (in grigio, barrato) ma non entra nei totali delle colonne ne' dell'Excel.
+        function isTabellaVoidOrder(o) {
+            return o.status === 'Ordine annullato' || o.status === 'Ordine trasferito ad altro ID';
+        }
+
         function renderTabellaOrdini() {
             const headerRow1 = document.getElementById('tabellaOrdiniHeaderRow1');
             const headerRow2 = document.getElementById('tabellaOrdiniHeaderRow2');
@@ -801,6 +807,7 @@
                 // colonna: il totale restava 0 sotto una colonna con le
                 // celle piene.
                 const total = filteredOrders.reduce((sum, order) => {
+                    if (isTabellaVoidOrder(order)) return sum; // annullati/trasferiti: in grigio, non da ordinare
                     return sum + order.itemsList.filter(i =>
                         i && typeof i.name === 'string' &&
                         stripPriceOnly(i.name) === stripPriceOnly(itemName)).length;
@@ -819,7 +826,9 @@
             tbody.innerHTML = '';
             filteredOrders.forEach((order, rowIdx) => {
                 const tr = document.createElement('tr');
-                tr.className = 'border hover:bg-gray-50' + (rowIdx % 2 === 1 ? ' tabella-row-alt' : '');
+                const isVoid = isTabellaVoidOrder(order);
+                tr.className = 'border hover:bg-gray-50' + (rowIdx % 2 === 1 ? ' tabella-row-alt' : '') + (isVoid ? ' tabella-row-void' : '');
+                if (isVoid) tr.title = order.status;
                 
                 const borsoneZaino = order.itemsList.find(i => i.name.includes('Borsone')) ? 'Borsone' : 
                                     order.itemsList.find(i => i.name.includes('Zaino')) ? 'Zaino' : '-';
@@ -891,7 +900,7 @@
                 const borsoneZainoHighlightClass = isBorsoneZainoHighlighted ? 'size-cell-highlighted' : '';
                 
                 let html = `
-                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}</td>
+                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}${isVoid ? `<div class="tabella-void-badge">${order.status === 'Ordine annullato' ? 'ANNULLATO' : 'TRASFERITO'}</div>` : ''}</td>
                     <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${escapeHtml(order.customer)}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanMainSize}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize === '-' ? '-' : sockSizeText(normalizeSockSize(cleanSockSize))}</td>
@@ -5854,7 +5863,9 @@ function updateUI() {
             
             filteredOrders.forEach(order => {
                 const row = {
-                    'ID Ordine': order.displayId,
+                    'ID Ordine': isTabellaVoidOrder(order)
+                        ? `${order.displayId} (${order.status === 'Ordine annullato' ? 'ANNULLATO' : 'TRASFERITO'})`
+                        : order.displayId,
                     'Cliente': order.customer,
                     'Taglia': order.mainSize,
                     'Taglia Calzettoni': order.sockSize || '-',
@@ -5895,6 +5906,7 @@ function updateUI() {
             
             allItems.forEach(itemName => {
                 const total = filteredOrders.reduce((sum, order) => {
+                    if (isTabellaVoidOrder(order)) return sum;
                     const found = order.itemsList.find(i => {
                         const priceMatch = i.name.match(/\s*\(\d+€\)\s*$/);
                         const cleanName = priceMatch ? i.name.substring(0, i.name.lastIndexOf(priceMatch[0])).trim() : i.name;
