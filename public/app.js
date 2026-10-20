@@ -3198,7 +3198,7 @@ function deleteOrder(id) {
         function saveFiltersState() {
             try {
                 const filtersState = {
-                    searchInput: document.getElementById('searchInput')?.value || '',
+                    searchInput: (document.getElementById('searchInput')?.value || '').trim(),
                     sortOrder: document.getElementById('sortOrder')?.value || 'asc',
                     filterStatus: document.getElementById('filterStatus')?.value || 'all',
                     filterPaymentMark: document.getElementById('filterPaymentMark')?.value || 'all',
@@ -3291,7 +3291,9 @@ function deleteOrder(id) {
             const filterSize = document.getElementById('filterSize').value;
             const filterItem = document.getElementById('filterItem').value;
             const filterRoleYear = document.getElementById('filterRoleYear').value.toLowerCase().trim();
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            // trim: uno spazio rimasto nella ricerca (anche ripristinato dai filtri
+            // salvati) nascondeva tutti gli ordini senza che si vedesse perche'
+            const search = document.getElementById('searchInput').value.trim().toLowerCase();
             const sortOrder = document.getElementById('sortOrder').value;
             
             // Filtro ID Min/Max
