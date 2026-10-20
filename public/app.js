@@ -265,6 +265,12 @@
             "pantalone,": PANT_NAME, 
             "pantalone ": PANT_NAME, 
             "felpa di allenamento gassolo": "Felpa Allen. GASSOLO Blu Marine A04 (25€)", 
+            // Le voci dei capi staff nel modulo si chiamano "...Allenatori..."
+            // e non "...staff": senza queste due il capo veniva scartato (2026B_106).
+            "t-shirt di allen. allenatori": "T-Shirt Allen. Staff DOVO COL. 565 RED (12€)",
+            "felpa di allenamento allenatori": "Felpa Allen. Staff GASSOLO COL. A02 RED (25€)",
+            "t-shirt di rappresentanza": "T-Shirt di Rappresentanza BRIZZO - Blu Marine 193   (15€)",
+            "brizzo": "T-Shirt di Rappresentanza BRIZZO - Blu Marine 193   (15€)",
             "felpa estiva": "Felpa Estiva GREVOLO Blu Marine A04 (30€)",
             "grevolo": "Felpa Estiva GREVOLO Blu Marine A04 (30€)",
             "felpa invernale": "Felpa Invernale BANTO Blu Marine 193 (30€)",
@@ -2133,6 +2139,9 @@
             let successCount = 0;
             let duplicateCount = 0;
             const newOrderIds = []; // Traccia gli ID degli ordini veramente nuovi
+            // Capi scelti nel modulo che non trovano voce in EXCEL_ITEM_MAPPING:
+            // prima venivano scartati in silenzio e l'ordine arrivava incompleto.
+            const unmappedReport = [];
 
             ordersToProcess.forEach((row, i) => {
                 try {
@@ -2149,6 +2158,8 @@
                     let rawTimestampForLog = null; // Per log debug
                     let accessorySize = 'UNICA'; // Taglia accessori (Cappellino, Scaldacollo, Guanti)
                     let ballSizeImport = null; // Taglia Pallone (colonna U Google Form), null = nessun pallone in quest'ordine
+                    let singleFieldsImport = []; // Capi singoli (colonne O e P del modulo)
+                    let unmappedFields = [];
                     let noteColorImport = 'default';
                     let inventoryScaledAtImport = null;
 
@@ -2352,10 +2363,12 @@
                         if (row[14]) {
                             const col_o_items = row[14].toString().split(',').map(x => x.trim().toLowerCase()).filter(x => x);
                             inputs.push(...col_o_items);
+                            singleFieldsImport.push(...col_o_items);
                         }
                         if (row[15]) {
                             const col_p_items = row[15].toString().split(',').map(x => x.trim().toLowerCase()).filter(x => x);
                             inputs.push(...col_p_items);
+                            singleFieldsImport.push(...col_p_items);
                         } 
                     } else { 
                         if (!row[0] && !row[1] && !row[2]) return;
@@ -2426,8 +2439,10 @@
                             itemsList = []; 
                             inputs.forEach(field => { 
                                 if (field.trim() === '0' || field.trim() === '' || field.trim() === 'no') return;
+                                let mapped = false;
                                 for (const [k, v] of Object.entries(EXCEL_ITEM_MAPPING)) { 
                                     if (field.includes(k)) { 
+                                        mapped = true;
                                         let s = mainSize; 
                                         if (isSockItem(v)) s = sockSize; 
                                         if (v.includes("Cappellino") || v.includes("Scaldacollo") || v.includes("Guanti")) s = accessorySize; 
@@ -2441,6 +2456,7 @@
                                         } 
                                     } 
                                 } 
+                                if (!mapped && singleFieldsImport.includes(field)) unmappedFields.push(field);
                             });
                         }
                     } else if (!isBackup && (notes || customer !== `Cliente Senza Nome`)) {
@@ -2559,6 +2575,7 @@
                         console.log(`✨ Nuovo ordine: ${newDisplayId} - ${customer} (timestamp: ${timestamp || 'N/A'})`);
                         
                         newOrderIds.push(newDisplayId); // Traccia questo nuovo ordine
+                        if (unmappedFields.length) unmappedReport.push(`${newDisplayId}: ${unmappedFields.join(' | ')}`);
                         
                         newOrUpdatedOrders.push({ 
                             id: Date.now() + i, 
@@ -2678,6 +2695,13 @@
                 alertMsg += `Questo evita duplicati e preserva le modifiche manuali.`;
             }
             
+            if (unmappedReport.length) {
+                console.warn('⚠️ Capi non riconosciuti, NON importati:', unmappedReport);
+                alertMsg += `\n\n⚠️ CAPI NON RICONOSCIUTI (non aggiunti all'ordine):\n`;
+                alertMsg += unmappedReport.join('\n');
+                alertMsg += `\nAggiungerli a mano con "Aggiungi Articolo Extra" e segnalare\nil nome del capo per aggiornare la mappatura dell'import.`;
+            }
+
             alert(alertMsg);
         }
 
