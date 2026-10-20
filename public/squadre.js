@@ -46,10 +46,17 @@ const TEAM_DEFAULT_CATALOG = [
     // Basket e Pallavolo: nel modulo la tendina dice solo "Maglia Blue", lo
     // sport lo dice la colonna Tipo Sport (vedi teamFindArticle)
     ['Maglia Basket Blue', 'maglia', 'Maglia Blue', 'Basket'],
+    ['Maglia Basket Rossa', 'maglia', 'Maglia Rossa', 'Basket'],
     ['Pantaloncino Basket Blue', 'pantaloncino', 'Pantaloncino Blue', 'Basket'],
+    ['Pantaloncino Basket Rosso', 'pantaloncino', 'Pantaloncino Rosso', 'Basket'],
     ['Calzettone Basket Blue', 'calzettone', 'Calzettone Blue', 'Basket'],
+    ['Calzettone Basket Rosso', 'calzettone', 'Calzettone Rosso', 'Basket'],
     ['Maglia Pallavolo Blue', 'maglia', 'Maglia Blue', 'Pallavolo'],
+    ['Maglia Pallavolo Rossa', 'maglia', 'Maglia Rossa', 'Pallavolo'],
+    ['Pantaloncino Pallavolo Blue', 'pantaloncino', 'Pantaloncino Blue', 'Pallavolo'],
     ['Pantaloncino Pallavolo Rosso', 'pantaloncino', 'Pantaloncino Rosso', 'Pallavolo'],
+    ['Calzettone Pallavolo Blue', 'calzettone', 'Calzettone Blue', 'Pallavolo'],
+    ['Calzettone Pallavolo Rosso', 'calzettone', 'Calzettone Rosso', 'Pallavolo'],
     ['Pallone Basket', 'attrezzatura', 'Pallone Basket', 'Basket'],
     ['Pettorine Arancioni', 'attrezzatura', 'Pettorine Arancioni'],
     ['Pallone da Pallavolo', 'attrezzatura', 'Pallone da Pallavolo', 'Pallavolo']
