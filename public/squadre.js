@@ -15,6 +15,9 @@
 
 const TEAM_SHEET_ID = '1HN7tSFOe7ha-NzQLiDhXt9tOTBOQsM8XXTqt6ysRTfg';
 
+// '' = articolo del calcio o valido per tutti gli sport
+const TEAM_SPORTS = ['', 'Calcio', 'Basket', 'Pallavolo'];
+
 const TEAM_GROUPS = {
     maglia: 'Maglia',
     pantaloncino: 'Pantaloncino',
@@ -39,8 +42,31 @@ const TEAM_DEFAULT_CATALOG = [
     ['Scalette', 'attrezzatura', 'Scalette'],
     ['Borsa medica', 'attrezzatura', 'Borsa medica'],
     ['Pettorine Gialle', 'attrezzatura', 'Pettorine Gialle'],
-    ['Pallone Taglia 5', 'attrezzatura', 'Pallone Taglia 5']
-].map(([nome, gruppo, alias]) => ({ nome, gruppo, alias: [alias] }));
+    ['Pallone Taglia 5', 'attrezzatura', ['Pallone Taglia 5', 'Pallone Calcio Taglia 5']],
+    // Basket e Pallavolo: nel modulo la tendina dice solo "Maglia Blue", lo
+    // sport lo dice la colonna Tipo Sport (vedi teamFindArticle)
+    ['Maglia Basket Blue', 'maglia', 'Maglia Blue', 'Basket'],
+    ['Pantaloncino Basket Blue', 'pantaloncino', 'Pantaloncino Blue', 'Basket'],
+    ['Calzettone Basket Blue', 'calzettone', 'Calzettone Blue', 'Basket'],
+    ['Maglia Pallavolo Blue', 'maglia', 'Maglia Blue', 'Pallavolo'],
+    ['Pantaloncino Pallavolo Rosso', 'pantaloncino', 'Pantaloncino Rosso', 'Pallavolo'],
+    ['Pallone Basket', 'attrezzatura', 'Pallone Basket', 'Basket'],
+    ['Pettorine Arancioni', 'attrezzatura', 'Pettorine Arancioni'],
+    ['Pallone da Pallavolo', 'attrezzatura', 'Pallone da Pallavolo', 'Pallavolo']
+].map(([nome, gruppo, alias, sport]) => ({ nome, gruppo, alias: [].concat(alias), ...(sport ? { sport } : {}) }));
+
+// Catalogo salvato prima di un articolo nuovo del modulo: si aggiungono gli
+// articoli di default che mancano (per nome) e i loro testi del modulo.
+function teamMergeDefaultCatalog(catalog) {
+    const out = catalog.map(a => ({ ...a, alias: [...(a.alias || [])] }));
+    for (const d of TEAM_DEFAULT_CATALOG) {
+        const a = out.find(x => teamNorm(x.nome) === teamNorm(d.nome));
+        if (!a) { out.push({ ...d, alias: [...d.alias] }); continue; }
+        d.alias.forEach(al => { if (!a.alias.some(x => teamNorm(x) === teamNorm(al))) a.alias.push(al); });
+        if (d.sport && !a.sport) a.sport = d.sport;
+    }
+    return out;
+}
 
 // ── Funzioni pure (testabili senza DOM) ─────────────────────────────────────
 
@@ -96,17 +122,37 @@ function teamClassifyColumns(header) {
         if (h.includes('materiale richiesto')) return { index, kind: 'tipo' };
         if (h.includes('categoria') || h.includes('annata') || h.includes('squadra')) return { index, kind: 'categoria' };
         if (h.includes('sport')) return { index, kind: 'sport' };
-        if (h.includes('divise')) return { index, kind: 'principale' };
+        // Una tendina per sport: "Divise da Gioco Calcio", "... Basket", "... Pallavolo"
+        if (h.includes('divise')) return { index, kind: 'principale', sport: h.replace(/.*divise da gioco\s*/, '') };
         // La domanda Note del modulo non ha titolo: Fogli la chiama "Colonna N".
         if (h.includes('note') || /^colonna \d+$/.test(h)) return { index, kind: 'note' };
         return { index, kind: 'unknown', label: String(raw).trim() };
     });
 }
 
-function teamFindArticle(catalog, text) {
+// Lo stesso testo ("Maglia Blue") puo' valere per piu' sport: vince l'articolo
+// dello sport della richiesta, poi quello senza sport, poi qualunque.
+function teamFindArticle(catalog, text, sport) {
     const t = teamNorm(text);
     if (!t) return null;
-    return catalog.find(a => teamNorm(a.nome) === t || (a.alias || []).some(x => teamNorm(x) === t)) || null;
+    const hits = catalog.filter(a => teamNorm(a.nome) === t || (a.alias || []).some(x => teamNorm(x) === t));
+    const s = teamNorm(sport);
+    return hits.find(a => s && teamNorm(a.sport) === s) || hits.find(a => !a.sport) || hits[0] || null;
+}
+
+// Articolo non in catalogo: il gruppo si legge dalla prima parola, cosi'
+// "Pantaloncino Verde" va nella griglia pantaloncini invece di restare da scegliere.
+function teamGuessGroup(text) {
+    const t = teamNorm(text);
+    if (/^maglia/.test(t)) return 'maglia';
+    if (/^pantaloncin/.test(t)) return 'pantaloncino';
+    if (/^calzett/.test(t)) return 'calzettone';
+    return '';
+}
+
+// Sport di un articolo: quelli senza sport sono del calcio (il primo modulo)
+function teamArticleSport(a) {
+    return teamNorm(a && a.sport) || 'calcio';
 }
 
 // Colore di un articolo, per abbinare pantaloncini e calzettoni alla maglia:
@@ -124,13 +170,15 @@ function teamColorKey(nome) {
 // Il modulo ha una sola tendina: se e' una maglia, le griglie pantaloncini e
 // calzettoni arrivano senza modello. Si deduce dal colore della maglia; se il
 // colore non c'e' o non basta a scegliere un solo articolo, resta da scegliere.
-function teamResolveByColor(righe, catalog) {
+function teamResolveByColor(righe, catalog, sport) {
     const colori = [...new Set(righe.filter(x => x.gruppo === 'maglia' && x.articolo)
         .map(x => teamColorKey(x.articolo)))];
     if (colori.length !== 1 || !colori[0]) return righe;
+    // Una maglia blu da basket non deve tirarsi dietro il pantaloncino blu del calcio
+    const s = teamNorm(sport) || 'calcio';
     return righe.map(x => {
         if (!x.daScegliere) return x;
-        const match = catalog.filter(a => a.gruppo === x.gruppo && teamColorKey(a.nome) === colori[0]);
+        const match = catalog.filter(a => a.gruppo === x.gruppo && teamColorKey(a.nome) === colori[0] && teamArticleSport(a) === s);
         return match.length === 1 ? { ...x, articolo: match[0].nome, daScegliere: false } : x;
     });
 }
@@ -151,7 +199,9 @@ function teamParseQty(s) {
 // Converte le righe CSV in richieste. knownKeys = importKey gia' presenti o
 // cancellati, da non reimportare.
 function teamBuildRequests(rows, catalog, knownKeys) {
-    const result = { nuove: [], giaPresenti: 0, senzaData: 0, colonneIgnote: [] };
+    // aggiornamenti: importKey -> { ruolo, sport } delle righe gia' importate,
+    // per completare le richieste arrivate prima che il modulo li chiedesse
+    const result = { nuove: [], giaPresenti: 0, senzaData: 0, colonneIgnote: [], aggiornamenti: {} };
     if (!rows.length) return result;
     const cols = teamClassifyColumns(rows[0]);
     const known = new Set(knownKeys || []);
@@ -163,11 +213,21 @@ function teamBuildRequests(rows, catalog, knownKeys) {
         if (!ts) { result.senzaData++; continue; }
         const email = get('email')[0] || '';
         const importKey = `SQ-${ts}|${email.toLowerCase()}`;
-        if (known.has(importKey)) { result.giaPresenti++; continue; }
+        const sport = get('sport')[0] || '';
+        const ruolo = get('ruolo')[0] || '';
+        if (known.has(importKey)) {
+            result.giaPresenti++;
+            if (ruolo || sport) result.aggiornamenti[importKey] = { ruolo, sport };
+            continue;
+        }
         known.add(importKey);
 
-        const principaleTxt = get('principale')[0] || '';
-        const principale = teamFindArticle(catalog, principaleTxt);
+        // Tendina dello sport della richiesta; se quella e' vuota, la prima compilata
+        const tendine = cols.filter(c => c.kind === 'principale')
+            .map(c => ({ sport: c.sport, val: (row[c.index] || '').trim() })).filter(c => c.val);
+        const principaleTxt = (tendine.find(c => c.sport && c.sport === teamNorm(sport)) || tendine[0] || {}).val || '';
+        const principale = teamFindArticle(catalog, principaleTxt, sport);
+        const guessed = principale ? principale.gruppo : teamGuessGroup(principaleTxt);
         const avvisi = [];
         if (principaleTxt && !principale) avvisi.push(`"${principaleTxt}" non e' nel catalogo squadra`);
 
@@ -175,7 +235,7 @@ function teamBuildRequests(rows, catalog, knownKeys) {
         // stesso gruppo, altrimenti resta da scegliere.
         const articleFor = (group) => {
             if (principale && principale.gruppo === group) return { articolo: principale.nome, daScegliere: false };
-            if (!principale && principaleTxt && group === 'maglia') return { articolo: principaleTxt, daScegliere: false };
+            if (!principale && principaleTxt && (guessed || 'maglia') === group) return { articolo: principaleTxt, daScegliere: false };
             return { articolo: '', daScegliere: true };
         };
 
@@ -199,14 +259,14 @@ function teamBuildRequests(rows, catalog, knownKeys) {
             } else if (c.kind === 'equip') {
                 const qta = teamParseQty(val);
                 if (!qta) continue;
-                const a = teamFindArticle(catalog, c.label);
+                const a = teamFindArticle(catalog, c.label, sport);
                 if (!a) avvisi.push(`"${c.label}" non e' nel catalogo squadra`);
                 righe.push({ gruppo: 'attrezzatura', articolo: a ? a.nome : c.label, daScegliere: false, taglia: '', numero: null, qta });
             } else if (c.kind === 'unknown') {
                 ignote.add(c.label);
             }
         }
-        righe = teamResolveByColor(righe, catalog);
+        righe = teamResolveByColor(righe, catalog, sport);
         if (righe.some(r => r.daScegliere)) avvisi.push('Modello da scegliere per alcune righe');
         if (!righe.length) avvisi.push('Nessun articolo compilato');
 
@@ -222,11 +282,11 @@ function teamBuildRequests(rows, catalog, knownKeys) {
                 cognome: get('cognome')[0] || '',
                 email,
                 telefono: get('telefono')[0] || '',
-                ruolo: get('ruolo')[0] || ''
+                ruolo
             },
             categoria,
             squadra: categoria,
-            sport: get('sport')[0] || '',
+            sport,
             tipo: get('tipo')[0] || '',
             articoloModulo: principaleTxt,
             righe,
@@ -251,7 +311,9 @@ const teamState = {
     filter: 'tutte',
     showCatalog: false,
     inventory: {},
-    expanded: new Set()  // richieste aperte nel dettaglio (solo a video)
+    expanded: new Set(),  // richieste aperte nel dettaglio (solo a video)
+    view: 'attive',       // 'attive' | 'archivio'
+    colFilters: {}        // filtri della riga sotto le intestazioni di Richieste
 };
 
 function teamClone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -274,7 +336,7 @@ async function loadTeamData() {
         const d = json.data || {};
         teamState.requests = Array.isArray(d.requests) ? d.requests : [];
         teamState.baseRequests = teamClone(teamState.requests);
-        if (Array.isArray(d.catalog) && d.catalog.length) teamState.catalog = d.catalog;
+        if (Array.isArray(d.catalog) && d.catalog.length) teamState.catalog = teamMergeDefaultCatalog(d.catalog);
         // Richieste importate prima della deduzione dal colore della maglia:
         // si risolvono a video; base resta quella del server, quindi il primo
         // salvataggio le scrive su Redis.
@@ -283,7 +345,7 @@ async function loadTeamData() {
         teamState.requests.forEach(r => { if (TEAM_LEGACY_STATUS[r.status]) r.status = TEAM_LEGACY_STATUS[r.status]; });
         teamState.requests.forEach(r => {
             if (!(r.righe || []).some(x => x.daScegliere)) return;
-            r.righe = teamResolveByColor(r.righe, teamState.catalog);
+            r.righe = teamResolveByColor(r.righe, teamState.catalog, r.sport);
             r.avvisi = (r.avvisi || []).filter(a => !a.startsWith('Modello da scegliere'));
             if (r.righe.some(x => x.daScegliere)) r.avvisi.push('Modello da scegliere per alcune righe');
         });
@@ -347,6 +409,7 @@ async function importTeamFromGoogleSheet() {
         const rows = teamParseCsv(await res.text());
         const known = [...teamState.requests.map(r => r.importKey), ...teamState.deletedImportKeys];
         teamState.preview = teamBuildRequests(rows, teamState.catalog, known);
+        teamState.preview.completate = teamApplyUpdates(teamState.requests, teamState.preview.aggiornamenti, true);
         renderTeamTab();
     } catch (e) {
         alert('Importazione non riuscita: ' + e.message);
@@ -355,14 +418,33 @@ async function importTeamFromGoogleSheet() {
     }
 }
 
+// Richieste gia' importate: si riempiono Ruolo e Sport solo se vuoti, mai
+// sovrascritti (l'admin puo' averli corretti a mano). dryRun = solo conta.
+function teamApplyUpdates(requests, updates, dryRun) {
+    let n = 0;
+    for (const r of requests) {
+        const u = updates && updates[r.importKey];
+        if (!u) continue;
+        const ruolo = u.ruolo && !(r.richiedente || {}).ruolo;
+        const sport = u.sport && !r.sport;
+        if (!ruolo && !sport) continue;
+        n++;
+        if (dryRun) continue;
+        if (ruolo) r.richiedente = { ...r.richiedente, ruolo: u.ruolo };
+        if (sport) r.sport = u.sport;
+    }
+    return n;
+}
+
 async function confirmTeamImport() {
     const p = teamState.preview;
-    if (!p || !p.nuove.length) { teamState.preview = null; renderTeamTab(); return; }
+    if (!p || (!p.nuove.length && !p.completate)) { teamState.preview = null; renderTeamTab(); return; }
     teamState.requests.push(...p.nuove);
+    const completate = teamApplyUpdates(teamState.requests, p.aggiornamenti, false);
     const n = p.nuove.length;
     teamState.preview = null;
     await teamSaveAndRender();
-    teamNotify(`${n} richieste materiale squadra importate`);
+    teamNotify(`${n} richieste importate${completate ? `, ${completate} completate con ruolo/sport` : ''}`);
 }
 
 function cancelTeamImport() {
@@ -423,10 +505,12 @@ async function saveTeamCatalog() {
     rows.forEach(tr => {
         const nome = tr.querySelector('[data-f="nome"]').value.trim();
         if (!nome) return;
+        const sport = tr.querySelector('[data-f="sport"]').value;
         catalog.push({
             nome,
             gruppo: tr.querySelector('[data-f="gruppo"]').value,
-            alias: tr.querySelector('[data-f="alias"]').value.split('\n').map(s => s.trim()).filter(Boolean)
+            alias: tr.querySelector('[data-f="alias"]').value.split('\n').map(s => s.trim()).filter(Boolean),
+            ...(sport ? { sport } : {})
         });
     });
     try {
@@ -671,6 +755,8 @@ function teamRerenderKeepFocus() {
         const a = document.activeElement;
         const keep = a && a.classList && a.classList.contains('inv-input') && a.closest('#teamRequestsList')
             ? { col: a.dataset.col, size: a.dataset.size } : null;
+        const keepFilter = a && a.dataset && a.dataset.filter && a.closest('#teamRequestsList')
+            ? { k: a.dataset.filter, pos: a.selectionStart } : null;
         const scroll = [...document.querySelectorAll('#teamRequestsList [style*="overflow-x"]')].map(d => d.scrollLeft);
         renderTeamTab();
         document.querySelectorAll('#teamRequestsList [style*="overflow-x"]').forEach((d, i) => { if (scroll[i]) d.scrollLeft = scroll[i]; });
@@ -678,6 +764,13 @@ function teamRerenderKeepFocus() {
             const el = [...document.querySelectorAll('#teamRequestsList .inv-input')]
                 .find(x => x.dataset.col === keep.col && x.dataset.size === keep.size);
             if (el) { el.focus(); el.select && el.select(); }
+        }
+        if (keepFilter) {
+            const el = document.querySelector(`#teamRequestsList [data-filter="${keepFilter.k}"]`);
+            if (el) {
+                el.focus();
+                if (el.setSelectionRange && keepFilter.pos != null) el.setSelectionRange(keepFilter.pos, keepFilter.pos);
+            }
         }
     }, 0);
 }
@@ -726,7 +819,7 @@ function teamToggleRequest(id) {
     teamRerenderKeepFocus();
 }
 
-function teamRequestsTableHtml(reqs) {
+function teamRequestsTableHtml(reqs, allReqs) {
     const options = (gruppo) => teamState.catalog
         .filter(a => a.gruppo === gruppo)
         .map(a => `<option value="${teamEsc(a.nome)}">${teamEsc(a.nome)}</option>`).join('');
@@ -756,12 +849,15 @@ function teamRequestsTableHtml(reqs) {
                 <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}${toggle}</td>
                 <td class="${td} text-left align-top" rowspan="${span}"><b>${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}</b>
                     <div class="text-[10px] text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? '<br>' + teamEsc(rich.telefono) : ''}</div></td>
-                <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></td>
-                <td class="${td} align-top" rowspan="${span}"><select class="status-select border rounded p-1 text-xs ${st ? st.color : ''}" onchange="teamUpdateField('${id}', 'status', this.value)">${stOptions}</select></td>
+                <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())">${r.sport ? `<div class="text-[10px] text-gray-500 mt-0.5">${teamEsc(r.sport)}</div>` : ''}</td>
+                <td class="${td} align-top" rowspan="${span}"><select class="status-select border rounded p-1 text-xs ${st ? st.color : ''}" onchange="teamChangeStatus('${id}', this.value)">${stOptions}</select>${teamStatusNoteHtml(r, id)}</td>
                 <td class="${td} align-top" rowspan="${span}"><select class="border rounded px-1 py-0.5" onchange="teamUpdateField('${id}', 'ruolo', this.value)">
-                    ${['', 'Dirigente', 'Allenatore', 'Magazziniere'].map(v => `<option value="${v}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${v || '—'}</option>`).join('')}</select></td>` : '';
+                    ${teamRoleOptions(rich.ruolo).map(v => `<option value="${teamEsc(v)}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${teamEsc(v) || '—'}</option>`).join('')}</select></td>` : '';
             const last = i === 0 ? `
                 <td class="${td} text-left align-top text-[10px]" rowspan="${span}" style="max-width:160px">${teamEsc(r.note || '').replace(/\n/g, '<br>')}</td>
+                <td class="${td} text-center align-top" rowspan="${span}">
+                    <label class="team-switch" title="${r.archived ? 'In archivio: togli la spunta per riportarla tra le attive' : 'Sposta in archivio'}">
+                        <input type="checkbox" ${r.archived ? 'checked' : ''} onchange="teamSetArchived('${id}', this.checked)"><span></span></label></td>
                 <td class="${td} text-center align-top" rowspan="${span}"><button onclick="teamDeleteRequest('${id}')" class="text-red-600 hover:text-red-800" title="Elimina richiesta"><i class="fas fa-trash"></i></button></td>` : '';
             if (collapsed) {
                 return `<tr class="${rowClass} team-req-first">${first}
@@ -776,10 +872,144 @@ function teamRequestsTableHtml(reqs) {
         }).join('');
     }).join('');
     const th = 'border px-2 py-1 bg-gray-200 text-black font-bold';
+    const empty = `<tr><td colspan="12" class="border p-4 text-center text-gray-500">Nessuna richiesta corrisponde ai filtri.</td></tr>`;
     return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full text-xs border team-requests-table">
         <thead><tr><th class="${th}">Data</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Stato</th><th class="${th}">Ruolo</th>
-            <th class="${th}">Articolo</th><th class="${th}">Taglia</th><th class="${th}">N°</th><th class="${th}">Q.tà</th><th class="${th}">Note</th><th class="${th}"></th></tr></thead>
-        <tbody>${rows}</tbody></table></div>`;
+            <th class="${th}">Articolo</th><th class="${th}">Taglia</th><th class="${th}">N°</th><th class="${th}">Q.tà</th><th class="${th}">Note</th><th class="${th}">Archivio</th><th class="${th}"></th></tr>
+            ${teamFilterRowHtml(allReqs || reqs)}</thead>
+        <tbody>${rows || empty}</tbody></table></div>`;
+}
+
+// ── Filtri per colonna di Richieste ─────────────────────────────────────────
+
+const TEAM_FILTER_FIELDS = ['data', 'richiedente', 'squadra', 'stato', 'ruolo', 'articolo', 'taglia', 'numero', 'note'];
+
+function teamRoleOptions(current) {
+    const base = ['', 'Dirigente', 'Allenatore', 'Magazziniere'];
+    return current && !base.includes(current) ? [...base, current] : base;
+}
+
+// Una richiesta passa se soddisfa TUTTI i filtri compilati. Articolo, taglia e
+// numero bastano su una riga qualsiasi dell'ordine.
+function teamMatchFilters(r, f) {
+    const has = (v, q) => teamNorm(v).includes(teamNorm(q));
+    const rich = r.richiedente || {};
+    const righe = r.righe || [];
+    if (f.data && !has(teamFormatDate(r.createdAt), f.data)) return false;
+    if (f.richiedente && !has([rich.nome, rich.cognome, rich.email, rich.telefono].join(' '), f.richiedente)) return false;
+    if (f.squadra && !has([r.squadra, r.sport].join(' '), f.squadra)) return false;
+    if (f.stato && r.status !== f.stato) return false;
+    if (f.ruolo && (f.ruolo === '-' ? !!rich.ruolo : (rich.ruolo || '') !== f.ruolo)) return false;
+    if (f.articolo && !righe.some(x => has(teamColumnName(x), f.articolo))) return false;
+    if (f.taglia && !righe.some(x => teamNorm(teamSizeKey(x.taglia)) === teamNorm(f.taglia) || has(x.taglia, f.taglia))) return false;
+    if (f.numero && !righe.some(x => x.numero && String(x.numero) === String(f.numero).trim())) return false;
+    if (f.note && !has(r.note, f.note)) return false;
+    return true;
+}
+
+function teamFilterRowHtml(reqs) {
+    const f = teamState.colFilters;
+    const cell = 'border px-1 py-1 bg-gray-100';
+    const inp = (k, ph, w) => `<input data-filter="${k}" class="team-col-filter border rounded px-1 py-0.5 w-full font-normal" style="min-width:${w}px"
+        placeholder="${ph}" value="${teamEsc(f[k] || '')}" oninput="teamSetColFilter('${k}', this.value)">`;
+    const ruoli = [...new Set(reqs.map(r => (r.richiedente || {}).ruolo).filter(Boolean))].sort();
+    const sel = (k, opts) => `<select data-filter="${k}" class="team-col-filter border rounded px-1 py-0.5 w-full font-normal" onchange="teamSetColFilter('${k}', this.value)">
+        <option value="">Tutti</option>${opts.map(([v, l]) => `<option value="${teamEsc(v)}" ${v === (f[k] || '') ? 'selected' : ''}>${teamEsc(l)}</option>`).join('')}</select>`;
+    const any = TEAM_FILTER_FIELDS.some(k => f[k]);
+    return `<tr class="team-filter-row">
+        <th class="${cell}">${inp('data', 'gg/mm', 70)}</th>
+        <th class="${cell}">${inp('richiedente', 'nome...', 90)}</th>
+        <th class="${cell}">${inp('squadra', 'squadra/sport', 90)}</th>
+        <th class="${cell}">${sel('stato', TEAM_STATUSES.map(s => [s.value, s.label]))}</th>
+        <th class="${cell}">${sel('ruolo', [...ruoli.map(v => [v, v]), ['-', 'Non indicato']])}</th>
+        <th class="${cell}">${inp('articolo', 'articolo...', 90)}</th>
+        <th class="${cell}">${inp('taglia', 'M', 40)}</th>
+        <th class="${cell}">${inp('numero', 'n°', 30)}</th>
+        <th class="${cell}"></th>
+        <th class="${cell}">${inp('note', 'note...', 60)}</th>
+        <th class="${cell}" colspan="2">${any ? `<button onclick="teamClearColFilters()" class="text-[10px] text-red-700 font-bold whitespace-nowrap" title="Togli tutti i filtri"><i class="fas fa-times mr-1"></i>Filtri</button>` : ''}</th>
+    </tr>`;
+}
+
+function teamSetColFilter(k, v) {
+    if (v) teamState.colFilters[k] = v; else delete teamState.colFilters[k];
+    teamRerenderKeepFocus();
+}
+
+function teamClearColFilters() {
+    teamState.colFilters = {};
+    renderTeamTab();
+}
+
+// ── Archivio ────────────────────────────────────────────────────────────────
+
+function setTeamView(v) {
+    teamState.view = v === 'archivio' ? 'archivio' : 'attive';
+    renderTeamTab();
+}
+
+async function teamSetArchived(id, on) {
+    const r = teamFind(id);
+    if (!r) return;
+    r.archived = !!on;
+    r.archivedAt = on ? new Date().toISOString() : null;
+    await teamSaveAndRender();
+    teamNotify(on ? 'Richiesta spostata in archivio' : 'Richiesta riportata tra le attive');
+}
+
+// ── Nota sullo stato, come in Gestione ordini ───────────────────────────────
+
+// In Gestione chiedono la nota "Manca qualcosa?" questi tre stati
+const TEAM_NOTE_STATUSES = ['In Lavorazione', 'Pronto', 'Consegna Parziale'];
+let teamStatusNoteCtx = null;
+
+function teamStatusNoteHtml(r, id) {
+    if (!r.statusNote || !TEAM_NOTE_STATUSES.includes(r.status)) return '';
+    return `<div class="team-status-note mt-1 bg-amber-50 border border-amber-300 rounded p-1 cursor-pointer hover:bg-amber-100 text-left"
+            onclick="teamOpenStatusNote('${id}', '${teamEsc(r.status)}')" title="Clicca per modificare">
+        <div class="text-[10px] font-bold text-amber-800"><i class="fas fa-box-open mr-1"></i>Manca:</div>
+        <div class="text-[10px] text-amber-700 whitespace-pre-line" style="max-width:150px">${teamEsc(r.statusNote)}</div></div>`;
+}
+
+async function teamChangeStatus(id, value) {
+    const r = teamFind(id);
+    if (!r) return;
+    if (TEAM_NOTE_STATUSES.includes(value)) { teamOpenStatusNote(id, value); return; }
+    r.status = value;
+    await teamSaveAndRender();
+}
+
+function teamOpenStatusNote(id, status) {
+    const r = teamFind(id);
+    const modal = document.getElementById('teamStatusNotePopup');
+    if (!r || !modal) return;
+    teamStatusNoteCtx = { id, status };
+    document.getElementById('teamStatusNoteTitle').textContent = `${status} - Manca Qualcosa?`;
+    document.getElementById('teamStatusNoteText').value = r.statusNote || '';
+    modal.classList.add('active');
+    setTimeout(() => document.getElementById('teamStatusNoteText').focus(), 50);
+}
+
+// Annulla: lo stato resta quello di prima (il ridisegno rimette la tendina)
+function teamCloseStatusNote() {
+    const modal = document.getElementById('teamStatusNotePopup');
+    if (modal) modal.classList.remove('active');
+    teamStatusNoteCtx = null;
+    renderTeamTab();
+}
+
+async function teamSaveStatusNote() {
+    const c = teamStatusNoteCtx;
+    const r = c && teamFind(c.id);
+    if (!r) { teamCloseStatusNote(); return; }
+    const note = document.getElementById('teamStatusNoteText').value.trim();
+    if (c.status === 'Consegna Parziale' && !note && !confirm('Nessuna nota inserita. Vuoi confermare comunque?')) return;
+    r.status = c.status;
+    r.statusNote = note || null;
+    document.getElementById('teamStatusNotePopup').classList.remove('active');
+    teamStatusNoteCtx = null;
+    await teamSaveAndRender();
+    teamNotify(`Stato "${c.status}" salvato`);
 }
 
 function teamPreviewHtml() {
@@ -792,11 +1022,12 @@ function teamPreviewHtml() {
     return `<div class="bg-purple-50 border border-purple-300 rounded p-3 mb-3 text-sm">
         <div class="font-bold text-purple-900 mb-1">Anteprima importazione</div>
         <div>${p.nuove.length} nuove richieste · ${p.giaPresenti} gia' importate o eliminate${p.senzaData ? ` · ${p.senzaData} righe senza data` : ''}</div>
+        ${p.completate ? `<div class="text-xs text-blue-800">${p.completate} richieste gia' importate verranno completate con ruolo e sport dal foglio</div>` : ''}
         ${elenco ? `<ul class="list-disc ml-5 my-2 text-xs">${elenco}</ul>` : ''}
         ${p.colonneIgnote.length ? `<div class="text-xs text-red-700 my-1"><b>Colonne del foglio non riconosciute</b> (non importate): ${p.colonneIgnote.map(teamEsc).join(', ')}</div>` : ''}
         <div class="flex gap-2 mt-2">
-            ${p.nuove.length ? `<button onclick="confirmTeamImport()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded font-bold text-xs">Conferma importazione</button>` : ''}
-            <button onclick="cancelTeamImport()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-xs">${p.nuove.length ? 'Annulla' : 'Chiudi'}</button>
+            ${p.nuove.length || p.completate ? `<button onclick="confirmTeamImport()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded font-bold text-xs">Conferma importazione</button>` : ''}
+            <button onclick="cancelTeamImport()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-xs">${p.nuove.length || p.completate ? 'Annulla' : 'Chiudi'}</button>
         </div></div>`;
 }
 
@@ -806,6 +1037,8 @@ function teamCatalogHtml() {
         <td class="p-1"><input data-f="nome" class="border rounded px-1 py-0.5 w-full" value="${teamEsc(a.nome)}"></td>
         <td class="p-1"><select data-f="gruppo" class="border rounded px-1 py-0.5">
             ${Object.entries(TEAM_GROUPS).map(([k, v]) => `<option value="${k}" ${k === a.gruppo ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
+        <td class="p-1"><select data-f="sport" class="border rounded px-1 py-0.5">
+            ${TEAM_SPORTS.map(s => `<option value="${s}" ${s === (a.sport || '') ? 'selected' : ''}>${s || 'Calcio / tutti'}</option>`).join('')}</select></td>
         <td class="p-1"><textarea data-f="alias" rows="1" class="border rounded px-1 py-0.5 w-full">${teamEsc((a.alias || []).join('\n'))}</textarea></td>
         <td class="p-1 text-center"><button onclick="teamCatalogRemove(${i})" class="text-red-600" title="Rimuovi"><i class="fas fa-times"></i></button></td>
     </tr>`).join('');
@@ -818,7 +1051,7 @@ function teamCatalogHtml() {
                 <button onclick="saveTeamCatalog()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold"><i class="fas fa-save mr-1"></i>Salva catalogo</button>
             </div></div>
         <div class="overflow-x-auto"><table class="w-full text-xs">
-            <thead class="bg-gray-100"><tr><th class="p-1 text-left">Articolo</th><th class="p-1">Gruppo</th><th class="p-1 text-left">Testo nel modulo</th><th></th></tr></thead>
+            <thead class="bg-gray-100"><tr><th class="p-1 text-left">Articolo</th><th class="p-1">Gruppo</th><th class="p-1">Sport</th><th class="p-1 text-left">Testo nel modulo</th><th></th></tr></thead>
             <tbody id="teamCatalogBody">${rows}</tbody></table></div></div>`;
 }
 
@@ -837,14 +1070,21 @@ function renderTeamTab() {
         if (TEAM_LEGACY_STATUS[teamState.filter]) teamState.filter = TEAM_LEGACY_STATUS[teamState.filter];
         sel.value = teamState.filter;
     }
-    const reqs = teamState.requests
+    // Archivio: le richieste archiviate escono dalle attive (e dai totali) ma
+    // restano consultabili nella vista Archivio, con i loro riepiloghi
+    const inView = teamState.requests.filter(r => !!r.archived === (teamState.view === 'archivio'));
+    const byStatus = inView
         .filter(r => teamState.filter === 'tutte' || r.status === teamState.filter)
         .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    const reqs = byStatus.filter(r => teamMatchFilters(r, teamState.colFilters));
+    const nArch = teamState.requests.filter(r => r.archived).length;
     const counter = document.getElementById('teamCounter');
     if (counter) {
-        const nuove = teamState.requests.filter(r => r.status === 'Nuovo').length;
-        counter.textContent = `${teamState.requests.length} richieste · ${nuove} nuove`;
+        const nuove = teamState.requests.filter(r => !r.archived && r.status === 'Nuovo').length;
+        counter.textContent = `${teamState.requests.length - nArch} richieste attive · ${nuove} nuove · ${nArch} in archivio`;
     }
+    const viewBtn = (v, label, n) => `<button onclick="setTeamView('${v}')" class="px-3 py-1 text-xs font-bold ${teamState.view === v ? 'bg-blue-700 text-white' : 'bg-white text-blue-800 hover:bg-blue-50'}">${label} (${n})</button>`;
+    const viewSwitch = `<div class="inline-flex border border-blue-700 rounded overflow-hidden">${viewBtn('attive', 'Attive', teamState.requests.length - nArch)}${viewBtn('archivio', 'Archivio', nArch)}</div>`;
     // Netto: con "tutte" contano le richieste ancora aperte, altrimenti lo stato scelto
     const lordoReqs = reqs.filter(r => !teamIsVoid(r));
     const netReqs = teamState.filter === 'tutte'
@@ -859,8 +1099,9 @@ function renderTeamTab() {
     const netLabel = teamState.filter === 'tutte' ? 'richieste Nuovo' : 'stato filtrato';
     list.innerHTML =
         `<div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-3">
-            <div class="section-title text-blue-900 mb-2"><span><i class="fas fa-clipboard-list mr-2"></i> 1. Richieste</span></div>
-            ${reqs.length ? teamRequestsTableHtml(reqs) : '<p class="text-sm text-gray-500 p-4 text-center">Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.</p>'}
+            <div class="section-title text-blue-900 mb-2 flex flex-wrap items-center justify-between gap-2"><span><i class="fas fa-clipboard-list mr-2"></i> 1. Richieste${teamState.view === 'archivio' ? ' in archivio' : ''}</span>${viewSwitch}</div>
+            ${byStatus.length ? teamRequestsTableHtml(reqs, byStatus)
+                : `<p class="text-sm text-gray-500 p-4 text-center">${teamState.view === 'archivio' ? 'Nessuna richiesta in archivio.' : 'Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.'}</p>`}
         </div>` +
         box('2. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
         box('3. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
