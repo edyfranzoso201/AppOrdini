@@ -711,10 +711,18 @@ function teamNetToBuy(layout, inventory, col, size) {
 }
 
 function teamMatrixHtml(mode, layout, inventory) {
-    const { columns, lordo, net } = layout;
+    const { lordo, net } = layout;
     // Lordo e Netto: solo le taglie richieste; Giacenza: tutte, per l'inventario
-    const sizes = mode === 'GROSS' ? lordo.sizes : mode === 'NET' ? net.sizes : layout.sizes;
-    if (!sizes.length) return `<p class="text-xs text-gray-500 p-2">${mode === 'NET' ? 'Niente da ordinare.' : 'Nessun articolo richiesto.'}</p>`;
+    // Da ordinare: solo gli articoli (e le taglie) con qualcosa da comprare;
+    // quelli a zero, perche' non richiesti o coperti dalla giacenza, sono rumore
+    const buy = (c, size) => teamNetToBuy(layout, inventory, c, size) > 0;
+    const columns = mode === 'NET'
+        ? layout.columns.filter(c => net.sizes.some(size => buy(c, size)))
+        : layout.columns;
+    const sizes = mode === 'GROSS' ? lordo.sizes
+        : mode === 'NET' ? net.sizes.filter(size => columns.some(c => buy(c, size)))
+        : layout.sizes;
+    if (!sizes.length || !columns.length) return `<p class="text-xs text-gray-500 p-2">${mode === 'NET' ? 'Niente da ordinare.' : 'Nessun articolo richiesto.'}</p>`;
     const bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100');
     const head = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow text-center align-middle text-sm font-bold">TAGLIA</th>` +
         columns.map(c => `<th class="border-l align-bottom pb-2 ${c.includes('da scegliere') ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-50'}"><div class="vertical-header">${teamEsc(c)}</div></th>`).join('');
@@ -752,7 +760,7 @@ function teamMatrixHtml(mode, layout, inventory) {
     }).join('');
     const total = `<tr class="total-row"><td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>${columns.map(c => `<td class="text-center border-l p-2">${totals[c] || 0}</td>`).join('')}</tr>`;
     // table-layout fixed: tutte le colonne articolo larghe uguali
-    return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="team-matrix min-w-full divide-y divide-gray-200 text-xs border mb-0" style="min-width:${55 + columns.length * 56}px">
+    return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="team-matrix ${mode === 'NET' ? '' : 'min-w-full '}divide-y divide-gray-200 text-xs border mb-0" style="min-width:${55 + columns.length * 56}px">
         <thead class="${bgHead} sticky-header"><tr>${head}</tr></thead>
         <tbody class="divide-y divide-gray-200">${body}${total}</tbody></table></div>`;
 }
