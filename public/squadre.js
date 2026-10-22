@@ -856,7 +856,8 @@ function teamRequestsTableHtml(reqs, allReqs) {
                 <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}${toggle}</td>
                 <td class="${td} text-left align-top" rowspan="${span}"><b>${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}</b>
                     <div class="text-[10px] text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? '<br>' + teamEsc(rich.telefono) : ''}</div></td>
-                <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())">${r.sport ? `<div class="text-[10px] text-gray-500 mt-0.5">${teamEsc(r.sport)}</div>` : ''}</td>
+                <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></td>
+                <td class="${td} text-center align-top" rowspan="${span}">${teamEsc(r.sport || '') || '<span class="text-gray-400">—</span>'}</td>
                 <td class="${td} align-top" rowspan="${span}"><select class="status-select border rounded p-1 text-xs ${st ? st.color : ''}" onchange="teamChangeStatus('${id}', this.value)">${stOptions}</select>${teamStatusNoteHtml(r, id)}</td>
                 <td class="${td} align-top" rowspan="${span}"><select class="border rounded px-1 py-0.5" onchange="teamUpdateField('${id}', 'ruolo', this.value)">
                     ${teamRoleOptions(rich.ruolo).map(v => `<option value="${teamEsc(v)}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${teamEsc(v) || '—'}</option>`).join('')}</select></td>` : '';
@@ -879,9 +880,9 @@ function teamRequestsTableHtml(reqs, allReqs) {
         }).join('');
     }).join('');
     const th = 'border px-2 py-1 bg-gray-200 text-black font-bold';
-    const empty = `<tr><td colspan="12" class="border p-4 text-center text-gray-500">Nessuna richiesta corrisponde ai filtri.</td></tr>`;
+    const empty = `<tr><td colspan="13" class="border p-4 text-center text-gray-500">Nessuna richiesta corrisponde ai filtri.</td></tr>`;
     return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full text-xs border team-requests-table">
-        <thead><tr><th class="${th}">Data</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Stato</th><th class="${th}">Ruolo</th>
+        <thead><tr><th class="${th}">Data</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Sport</th><th class="${th}">Stato</th><th class="${th}">Ruolo</th>
             <th class="${th}">Articolo</th><th class="${th}">Taglia</th><th class="${th}">N°</th><th class="${th}">Q.tà</th><th class="${th}">Note</th><th class="${th}">Archivio</th><th class="${th}"></th></tr>
             ${teamFilterRowHtml(allReqs || reqs)}</thead>
         <tbody>${rows || empty}</tbody></table></div>`;
@@ -889,7 +890,7 @@ function teamRequestsTableHtml(reqs, allReqs) {
 
 // ── Filtri per colonna di Richieste ─────────────────────────────────────────
 
-const TEAM_FILTER_FIELDS = ['data', 'richiedente', 'squadra', 'stato', 'ruolo', 'articolo', 'taglia', 'numero', 'note'];
+const TEAM_FILTER_FIELDS = ['data', 'richiedente', 'squadra', 'sport', 'stato', 'ruolo', 'articolo', 'taglia', 'numero', 'note'];
 
 function teamRoleOptions(current) {
     const base = ['', 'Dirigente', 'Allenatore', 'Magazziniere'];
@@ -904,7 +905,8 @@ function teamMatchFilters(r, f) {
     const righe = r.righe || [];
     if (f.data && !has(teamFormatDate(r.createdAt), f.data)) return false;
     if (f.richiedente && !has([rich.nome, rich.cognome, rich.email, rich.telefono].join(' '), f.richiedente)) return false;
-    if (f.squadra && !has([r.squadra, r.sport].join(' '), f.squadra)) return false;
+    if (f.squadra && !has(r.squadra, f.squadra)) return false;
+    if (f.sport && (f.sport === '-' ? !!r.sport : teamNorm(r.sport) !== teamNorm(f.sport))) return false;
     if (f.stato && r.status !== f.stato) return false;
     if (f.ruolo && (f.ruolo === '-' ? !!rich.ruolo : (rich.ruolo || '') !== f.ruolo)) return false;
     if (f.articolo && !righe.some(x => has(teamColumnName(x), f.articolo))) return false;
@@ -920,13 +922,15 @@ function teamFilterRowHtml(reqs) {
     const inp = (k, ph, w) => `<input data-filter="${k}" class="team-col-filter border rounded px-1 py-0.5 w-full font-normal" style="min-width:${w}px"
         placeholder="${ph}" value="${teamEsc(f[k] || '')}" oninput="teamSetColFilter('${k}', this.value)">`;
     const ruoli = [...new Set(reqs.map(r => (r.richiedente || {}).ruolo).filter(Boolean))].sort();
+    const sport = [...new Set([...TEAM_SPORTS.filter(Boolean), ...reqs.map(r => r.sport).filter(Boolean)])];
     const sel = (k, opts) => `<select data-filter="${k}" class="team-col-filter border rounded px-1 py-0.5 w-full font-normal" onchange="teamSetColFilter('${k}', this.value)">
         <option value="">Tutti</option>${opts.map(([v, l]) => `<option value="${teamEsc(v)}" ${v === (f[k] || '') ? 'selected' : ''}>${teamEsc(l)}</option>`).join('')}</select>`;
     const any = TEAM_FILTER_FIELDS.some(k => f[k]);
     return `<tr class="team-filter-row">
         <th class="${cell}">${inp('data', 'gg/mm', 70)}</th>
         <th class="${cell}">${inp('richiedente', 'nome...', 90)}</th>
-        <th class="${cell}">${inp('squadra', 'squadra/sport', 90)}</th>
+        <th class="${cell}">${inp('squadra', 'squadra...', 90)}</th>
+        <th class="${cell}">${sel('sport', [...sport.map(v => [v, v]), ['-', 'Non indicato']])}</th>
         <th class="${cell}">${sel('stato', TEAM_STATUSES.map(s => [s.value, s.label]))}</th>
         <th class="${cell}">${sel('ruolo', [...ruoli.map(v => [v, v]), ['-', 'Non indicato']])}</th>
         <th class="${cell}">${inp('articolo', 'articolo...', 90)}</th>
