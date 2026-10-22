@@ -269,7 +269,9 @@
         /* Distinta Squadre: bordo marcato tra una richiesta e l'altra; rifiutate grigie */
         .team-matrix { table-layout: fixed; }
         .team-matrix th:not(.sticky-col), .team-matrix td:not(.sticky-col) { width: 56px; min-width: 56px; max-width: 56px; text-align: center; vertical-align: middle; }
-        .team-matrix tbody td { height: 34px; }
+        /* righe compatte; il testo resta della stessa misura */
+        .team-matrix tbody td { height: 24px; line-height: 1.1; }
+        .team-matrix .net-val { display: block; line-height: 1.1; }
         .team-matrix .vertical-header { width: 100%; margin: 0 auto; }
         .team-matrix .inv-input { width: 100%; }
         /* Distinta Squadre: bordi piu' marcati del grigio chiaro di default */

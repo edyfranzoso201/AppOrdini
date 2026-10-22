@@ -318,10 +318,38 @@ const teamState = {
     filter: 'tutte',
     showCatalog: false,
     inventory: {},
+    lastDisplayId: 0,
     expanded: new Set(),  // richieste aperte nel dettaglio (solo a video)
     view: 'attive',       // 'attive' | 'archivio'
     colFilters: {}        // filtri della riga sotto le intestazioni di Richieste
 };
+
+// ID di ogni richiesta (SQ_001, SQ_002...), come gli ID degli ordini personali.
+// L'id interno resta l'importKey (serve al merge tra dispositivi), questo e'
+// solo il numero da leggere e da citare. Si assegna in ordine di arrivo e si
+// salva con la richiesta; lastDisplayId ricorda il massimo gia' dato, cosi'
+// eliminando l'ultima richiesta il suo numero non viene riusato.
+const TEAM_ID_PREFIX = 'SQ_';
+
+function teamIdNum(id) {
+    const m = String(id || '').match(/(\d+)$/);
+    return m ? parseInt(m[1], 10) : 0;
+}
+
+function teamAssignIds(requests, lastId) {
+    let max = requests.reduce((m, r) => Math.max(m, teamIdNum(r.displayId)), lastId || 0);
+    requests.filter(r => !r.displayId)
+        .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) || String(a.importKey).localeCompare(String(b.importKey)))
+        .forEach(r => { r.displayId = TEAM_ID_PREFIX + String(++max).padStart(3, '0'); });
+    return max;
+}
+
+// Range di ID di un elenco di richieste: "SQ_003 -> SQ_010", come la Distinta
+function teamIdRange(requests) {
+    const ids = requests.map(r => r.displayId).filter(Boolean).sort((a, b) => teamIdNum(a) - teamIdNum(b));
+    if (!ids.length) return 'Nessuna';
+    return ids.length === 1 ? ids[0] : `${ids[0]} -> ${ids[ids.length - 1]}`;
+}
 
 function teamClone(x) { return JSON.parse(JSON.stringify(x)); }
 
@@ -357,6 +385,10 @@ async function loadTeamData() {
             if (r.righe.some(x => x.daScegliere)) r.avvisi.push('Modello da scegliere per alcune righe');
         });
         teamState.deletedImportKeys = d.deletedImportKeys || [];
+        // Richieste senza ID (importate prima degli ID): si numerano a video in
+        // ordine di arrivo, stesso risultato su ogni dispositivo; il primo
+        // salvataggio le scrive su Redis
+        teamState.lastDisplayId = teamAssignIds(teamState.requests, d.lastDisplayId);
         teamState.inventory = (d.inventory && typeof d.inventory === 'object') ? d.inventory : {};
         teamState.version = json.version || 0;
         teamState.loaded = true;
@@ -376,6 +408,7 @@ async function saveTeamRequests(newDeletedKeys) {
             requests: teamState.requests,
             baseRequests: teamState.baseRequests,
             baseVersion: teamState.version,
+            lastDisplayId: teamState.lastDisplayId,
             deletedImportKeys: newDeletedKeys || []
         })
     });
@@ -447,6 +480,7 @@ async function confirmTeamImport() {
     const p = teamState.preview;
     if (!p || (!p.nuove.length && !p.completate)) { teamState.preview = null; renderTeamTab(); return; }
     teamState.requests.push(...p.nuove);
+    teamState.lastDisplayId = teamAssignIds(teamState.requests, teamState.lastDisplayId);
     const completate = teamApplyUpdates(teamState.requests, p.aggiornamenti, false);
     const n = p.nuove.length;
     teamState.preview = null;
@@ -853,7 +887,7 @@ function teamRequestsTableHtml(reqs, allReqs) {
                          <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${options(x.gruppo)}</select>`
                     : teamEsc(x.articolo);
             const first = i === 0 ? `
-                <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${teamFormatDate(r.createdAt)}${toggle}</td>
+                <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${r.displayId ? `<div class="font-bold text-blue-800">${teamEsc(r.displayId)}</div>` : ''}${teamFormatDate(r.createdAt)}${toggle}</td>
                 <td class="${td} text-left align-top" rowspan="${span}"><b>${teamEsc(rich.nome)} ${teamEsc(rich.cognome)}</b>
                     <div class="text-[10px] text-gray-500 break-all">${teamEsc(rich.email)}${rich.telefono ? '<br>' + teamEsc(rich.telefono) : ''}</div></td>
                 <td class="${td} align-top" rowspan="${span}"><input class="border rounded px-1 py-0.5 w-28" value="${teamEsc(r.squadra)}" onchange="teamUpdateField('${id}', 'squadra', this.value.trim())"></td>
@@ -882,7 +916,7 @@ function teamRequestsTableHtml(reqs, allReqs) {
     const th = 'border px-2 py-1 bg-gray-200 text-black font-bold';
     const empty = `<tr><td colspan="13" class="border p-4 text-center text-gray-500">Nessuna richiesta corrisponde ai filtri.</td></tr>`;
     return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full text-xs border team-requests-table">
-        <thead><tr><th class="${th}">Data</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Sport</th><th class="${th}">Stato</th><th class="${th}">Ruolo</th>
+        <thead><tr><th class="${th}">ID / Data</th><th class="${th}">Richiedente</th><th class="${th}">Squadra</th><th class="${th}">Sport</th><th class="${th}">Stato</th><th class="${th}">Ruolo</th>
             <th class="${th}">Articolo</th><th class="${th}">Taglia</th><th class="${th}">N°</th><th class="${th}">Q.tà</th><th class="${th}">Note</th><th class="${th}">Archivio</th><th class="${th}"></th></tr>
             ${teamFilterRowHtml(allReqs || reqs)}</thead>
         <tbody>${rows || empty}</tbody></table></div>`;
@@ -903,7 +937,7 @@ function teamMatchFilters(r, f) {
     const has = (v, q) => teamNorm(v).includes(teamNorm(q));
     const rich = r.richiedente || {};
     const righe = r.righe || [];
-    if (f.data && !has(teamFormatDate(r.createdAt), f.data)) return false;
+    if (f.data && !has(`${r.displayId || ''} ${teamFormatDate(r.createdAt)}`, f.data)) return false;
     if (f.richiedente && !has([rich.nome, rich.cognome, rich.email, rich.telefono].join(' '), f.richiedente)) return false;
     if (f.squadra && !has(r.squadra, f.squadra)) return false;
     if (f.sport && (f.sport === '-' ? !!r.sport : teamNorm(r.sport) !== teamNorm(f.sport))) return false;
@@ -927,7 +961,7 @@ function teamFilterRowHtml(reqs) {
         <option value="">Tutti</option>${opts.map(([v, l]) => `<option value="${teamEsc(v)}" ${v === (f[k] || '') ? 'selected' : ''}>${teamEsc(l)}</option>`).join('')}</select>`;
     const any = TEAM_FILTER_FIELDS.some(k => f[k]);
     return `<tr class="team-filter-row">
-        <th class="${cell}">${inp('data', 'gg/mm', 70)}</th>
+        <th class="${cell}">${inp('data', 'ID o gg/mm', 70)}</th>
         <th class="${cell}">${inp('richiedente', 'nome...', 90)}</th>
         <th class="${cell}">${inp('squadra', 'squadra...', 90)}</th>
         <th class="${cell}">${sel('sport', [...sport.map(v => [v, v]), ['-', 'Non indicato']])}</th>
@@ -1108,6 +1142,8 @@ function renderTeamTab() {
             ${html}
         </div>`;
     const netLabel = teamState.filter === 'tutte' ? 'richieste Nuovo' : 'stato filtrato';
+    // ID e data/ora di stampa, come in 3. Ordine Fornitore della Distinta
+    const netInfo = `<span class="supplier-info"><i class="fas fa-info-circle mr-1"></i>ID: ${teamEsc(teamIdRange(netReqs))} | ${new Date().toLocaleString('it-IT')}</span>`;
     list.innerHTML =
         `<div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-3">
             <div class="section-title text-blue-900 mb-2 flex flex-wrap items-center justify-between gap-2"><span><i class="fas fa-clipboard-list mr-2"></i> 1. Richieste${teamState.view === 'archivio' ? ' in archivio' : ''}</span>${viewSwitch}</div>
@@ -1116,7 +1152,7 @@ function renderTeamTab() {
         </div>` +
         box('2. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
         box('3. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
-        box(`4. Da ordinare (Netto: ${netLabel} meno giacenza)`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
+        box(`4. Da ordinare (Netto: ${netLabel} meno giacenza) ${netInfo}`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
         '<div class="mb-6"></div>';
 }
 

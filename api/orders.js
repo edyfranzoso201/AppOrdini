@@ -215,7 +215,7 @@ async function handleTeam(req, res, session, redis) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const { action, requests, baseRequests, baseVersion, deletedImportKeys, catalog, key, value } = req.body || {};
+  const { action, requests, baseRequests, baseVersion, deletedImportKeys, catalog, key, value, lastDisplayId } = req.body || {};
   const current = { ...TEAM_EMPTY, ...(await redis.get(KEYS.TEAM_ORDERS) || {}) };
   const currentVersion = current.version || 0;
 
@@ -279,6 +279,9 @@ async function handleTeam(req, res, session, redis) {
       ...(current.deletedImportKeys || []),
       ...(Array.isArray(deletedImportKeys) ? deletedImportKeys : [])
     ])),
+    // Ultimo ID dato (SQ_nnn): solo in avanti, cosi' un numero eliminato non
+    // torna e un dispositivo indietro non lo abbassa
+    lastDisplayId: Math.max(Number(current.lastDisplayId) || 0, Number.isInteger(lastDisplayId) && lastDisplayId > 0 ? lastDisplayId : 0),
     version: currentVersion + 1,
     updatedAt: new Date().toISOString()
   };
