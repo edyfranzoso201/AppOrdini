@@ -7,13 +7,18 @@
 // spostare una domanda nel modulo non fa slittare i dati, e una colonna che
 // non si riconosce viene segnalata nell'anteprima invece di sparire.
 //
-// Limite noto del modulo: "Divise da Gioco Calcio" e' una tendina a scelta
+// Limite noto del modulo: "Divise da Gioco <sport>" e' una tendina a scelta
 // singola. Se si sceglie una maglia, il modulo prosegue anche nelle griglie
-// pantaloncini e calzettoni senza chiederne il modello: quelle righe entrano
-// come "modello da scegliere" e l'admin lo indica a mano.
+// pantaloncini e calzettoni senza chiederne il modello: si deduce dal colore
+// della maglia, altrimenti entrano come "modello da scegliere" e l'admin lo
+// indica a mano.
+//
+// Modulo di ottobre 2026: le griglie maglie di Volley e Basket si chiamano
+// tutte "Da n°1 a n°25", "Da n°26 a n°50"... senza dire cosa sono; lo dice la
+// sezione che le precede nel foglio (vedi teamClassifyColumns).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TEAM_SHEET_ID = '1HN7tSFOe7ha-NzQLiDhXt9tOTBOQsM8XXTqt6ysRTfg';
+const TEAM_SHEET_ID = '1DnzkAtm1dpSLAhjRyDI-a1L0ofjTuhOcT1s0GjoHp9g';
 
 // '' = articolo del calcio o valido per tutti gli sport
 const TEAM_SPORTS = ['', 'Calcio', 'Basket', 'Pallavolo'];
@@ -22,43 +27,52 @@ const TEAM_GROUPS = {
     maglia: 'Maglia',
     pantaloncino: 'Pantaloncino',
     calzettone: 'Calzettone',
+    rappresentanza: 'Rappresentanza',
     attrezzatura: 'Attrezzatura'
 };
 
 // Catalogo iniziale ricavato dal modulo; l'admin lo modifica dal tab.
-// alias = testo esatto con cui l'articolo compare nel modulo.
+// alias = testo esatto con cui l'articolo compare nel modulo (maiuscole e
+// spazi doppi non contano, vedi teamNorm). Senza sport = valido per tutti.
 const TEAM_DEFAULT_CATALOG = [
-    ['Maglia Portiere GK TEE Arancione', 'maglia', 'Maglia Portiere Calcio GK TEE (Arancione)'],
-    ['Maglia Portiere GK TEE Gialla', 'maglia', 'Maglia Portiere Calcio GK TEE (Gialla)'],
-    ['Maglia Portiere GK TEE Blue Turkis', 'maglia', 'Maglia Portiere Calcio GK TEE (Blue Turkis)'],
-    ['Maglia CASTOLO Blue Marine', 'maglia', 'Maglia Giocatore da campo Calcio CASTOLO Blue Marine'],
-    ['Maglia CASTOLO Red Chinese', 'maglia', 'Maglia Giocatore da campo Calcio CASTOLO Red Chinese'],
-    ['Pantaloncino BORGO Blu Marine', 'pantaloncino', 'Pantaloncino Calcio BORGO Blu Marine'],
-    ['Pantaloncino BORGO Rosso', 'pantaloncino', 'Pantaloncino Calcio BORGO Rosso'],
-    ['Calzettone WULGAR Blu Marine', 'calzettone', 'Calzettone Calcio WULGAR Blu Marine'],
-    ['Calzettone WULGAR Rosso', 'calzettone', 'Calzettone Calcio WULGAR Rosso'],
+    ['MAGLIA PORTIERE ARANCIO FLUO PQ1 FARCO', 'maglia', 'MAGLIA PORTIERE ARANCIO FLUO PQ1 FARCO', 'Calcio'],
+    ['MAGLIA PORTIERE VERDE FLUO PM7 FARCO', 'maglia', 'MAGLIA PORTIERE VERDE FLUO PM7 FARCO', 'Calcio'],
+    ['MAGLIA GARA BLU 193 DASTOLO', 'maglia', 'MAGLIA GARA BLU 193 DASTOLO', 'Calcio'],
+    ['MAGLIA GARA RED 595 DASTOLO', 'maglia', 'MAGLIA GARA RED 595 DASTOLO', 'Calcio'],
+    ['PANTALONCINO GARA BLU 193 BORGO', 'pantaloncino', 'PANTALONCINO GARA BLU 193 BORGO', 'Calcio'],
+    ['PANTALONCINO GARA RED 565 BORGO', 'pantaloncino', 'PANTALONCINO GARA RED 565 BORGO', 'Calcio'],
+    ['CALZETTONE GARA BLU 193 WULGAR', 'calzettone', 'CALZETTONE GARA BLU 193 WULGAR', 'Calcio'],
+    ['CALZETTONE GARA ROSSO 565 WULGAR', 'calzettone', 'CALZETTONE GARA ROSSO 565 WULGAR', 'Calcio'],
+    ['MAGLIA GARA DONNA BLU A02 GAVELIA', 'maglia', 'MAGLIA GARA DONNA BLU A02 GAVELIA', 'Pallavolo'],
+    ['MAGLIA GARA DONNA ROSSA A04 GAVELIA', 'maglia', 'MAGLIA GARA DONNA ROSSA A04 GAVELIA', 'Pallavolo'],
+    ['MAGLIA GARA UOMO BLU 193 DASTOLO', 'maglia', 'MAGLIA GARA UOMO BLU 193 DASTOLO', 'Pallavolo'],
+    ['MAGLIA GARA UOMO ROSSA 595 DASTOLO', 'maglia', 'MAGLIA GARA UOMO ROSSA 595 DASTOLO', 'Pallavolo'],
+    ['PANTALONCINO DONNA BLU 193 GENNA', 'pantaloncino', 'PANTALONCINO DONNA BLU 193 GENNA', 'Pallavolo'],
+    ['PANTALONCINO DONNA ROSSA 565 GENNA', 'pantaloncino', 'PANTALONCINO DONNA ROSSA 565 GENNA', 'Pallavolo'],
+    ['PANTALONCINO UOMO BLU 193 BORGO', 'pantaloncino', 'PANTALONCINO UOMO BLU 193 BORGO', 'Pallavolo'],
+    ['PANTALONCINO UOMO ROSSA 565 BORGO', 'pantaloncino', 'PANTALONCINO UOMO ROSSA 565 BORGO', 'Pallavolo'],
+    ['POLO DIRIGENTE 901 GASTIO', 'rappresentanza', 'POLO DIRIGENTE 901 GASTIO', 'Pallavolo'],
+    ['POLO ALLENATORE 901 GASTIO', 'rappresentanza', 'POLO ALLENATORE 901 GASTIO', 'Pallavolo'],
+    ['MAGLIA GARA BLU A10 DANCO', 'maglia', 'MAGLIA GARA BLU A10 DANCO', 'Basket'],
+    ['MAGLIA GARA ROSSA A01 DANCO', 'maglia', 'MAGLIA GARA ROSSA A01 DANCO', 'Basket'],
+    ['MAGLIA PRE GARA ROYAL H03 DOVO', 'maglia', 'MAGLIA PRE GARA ROYAL H03 DOVO', 'Basket'],
+    ['PANTALONCINO GARA BLU A10 DUMPO', 'pantaloncino', 'PANTALONCINO GARA BLU A10 DUMPO', 'Basket'],
+    // nel modulo e' scritto "PANALONCINO"
+    ['PANTALONCINO GARA ROSSO A01 DUMPO', 'pantaloncino', ['PANTALONCINO GARA ROSSO A01 DUMPO', 'PANALONCINO GARA ROSSO A01 DUMPO'], 'Basket'],
+    ['POLO RAPPR. DIRIGENTE H03 GASTIO', 'rappresentanza', 'POLO RAPPR. DIRIGENTE H03 GASTIO', 'Basket'],
+    ['POLO RAPPR. ALLENATORE H03 GASTIO', 'rappresentanza', 'POLO RAPPR. ALLENATORE H03 GASTIO', 'Basket'],
+    // Stesso capo nelle tendine di Volley e Basket: un solo articolo
+    ['MAGLIA RAPPR. 193 BRIZZO', 'rappresentanza', 'MAGLIA RAPPR. 193 BRIZZO'],
+    ['TUTA RAPPR. A02 DALCITO', 'rappresentanza', 'TUTA RAPPR. A02 DALCITO'],
+    ['ZAINO RAPPRESENTANZA 901 BACKPACK', 'rappresentanza', 'ZAINO RAPPRESENTANZA 901 BACKPACK'],
     ['Cinesini', 'attrezzatura', 'Cinesini'],
     ['Coni', 'attrezzatura', 'Coni'],
     ['Scalette', 'attrezzatura', 'Scalette'],
     ['Borsa medica', 'attrezzatura', 'Borsa medica'],
     ['Pettorine Gialle', 'attrezzatura', 'Pettorine Gialle'],
-    ['Pallone Taglia 5', 'attrezzatura', ['Pallone Taglia 5', 'Pallone Calcio Taglia 5']],
-    // Basket e Pallavolo: nel modulo la tendina dice solo "Maglia Blue", lo
-    // sport lo dice la colonna Tipo Sport (vedi teamFindArticle)
-    ['Maglia Basket Blue', 'maglia', 'Maglia Blue', 'Basket'],
-    ['Maglia Basket Rossa', 'maglia', 'Maglia Rossa', 'Basket'],
-    ['Pantaloncino Basket Blue', 'pantaloncino', 'Pantaloncino Blue', 'Basket'],
-    ['Pantaloncino Basket Rosso', 'pantaloncino', 'Pantaloncino Rosso', 'Basket'],
-    ['Calzettone Basket Blue', 'calzettone', 'Calzettone Blue', 'Basket'],
-    ['Calzettone Basket Rosso', 'calzettone', 'Calzettone Rosso', 'Basket'],
-    ['Maglia Pallavolo Blue', 'maglia', 'Maglia Blue', 'Pallavolo'],
-    ['Maglia Pallavolo Rossa', 'maglia', 'Maglia Rossa', 'Pallavolo'],
-    ['Pantaloncino Pallavolo Blue', 'pantaloncino', 'Pantaloncino Blue', 'Pallavolo'],
-    ['Pantaloncino Pallavolo Rosso', 'pantaloncino', 'Pantaloncino Rosso', 'Pallavolo'],
-    ['Calzettone Pallavolo Blue', 'calzettone', 'Calzettone Blue', 'Pallavolo'],
-    ['Calzettone Pallavolo Rosso', 'calzettone', 'Calzettone Rosso', 'Pallavolo'],
-    ['Pallone Basket', 'attrezzatura', 'Pallone Basket', 'Basket'],
     ['Pettorine Arancioni', 'attrezzatura', 'Pettorine Arancioni'],
+    ['Pallone Calcio Taglia 5', 'attrezzatura', ['Pallone Calcio Taglia 5', 'Pallone Taglia 5'], 'Calcio'],
+    ['Pallone Basket', 'attrezzatura', 'Pallone Basket', 'Basket'],
     ['Pallone da Pallavolo', 'attrezzatura', 'Pallone da Pallavolo', 'Pallavolo']
 ].map(([nome, gruppo, alias, sport]) => ({ nome, gruppo, alias: [].concat(alias), ...(sport ? { sport } : {}) }));
 
@@ -107,18 +121,33 @@ function teamParseCsv(text) {
 }
 
 // Classifica ogni colonna dell'intestazione. Ritorna [{index, kind, extra}].
+// Griglie: la riga dice il numero di maglia ("[1]", "[n°1]") oppure solo una
+// quantita' ("[Q.tà 1]", "[Qtà n°1]"): solo nel primo caso c'e' un numero.
+// Le griglie "Da n°1 a n°25" non dicono cosa sono: valgono come la griglia
+// che le precede (maglie dopo le maglie del calcio, pantaloncini dopo quelli).
 function teamClassifyColumns(header) {
+    let lastGroup = 'maglia';
     return header.map((raw, index) => {
         const h = teamNorm(raw);
         const br = String(raw).match(/^(.*)\[(.*)\]\s*$/);
         if (br) {
             const prefix = teamNorm(br[1]);
-            const inner = br[2].trim();
-            const num = (inner.match(/\d+/) || [])[0];
-            if (prefix.includes('maglia')) return { index, kind: 'grid', group: 'maglia', numero: num ? Number(num) : null };
-            if (prefix.includes('pantaloncin')) return { index, kind: 'grid', group: 'pantaloncino' };
-            if (prefix.includes('calzett') || (prefix === '' && /^qt/i.test(teamNorm(inner)))) return { index, kind: 'grid', group: 'calzettone' };
-            return { index, kind: 'equip', label: inner };
+            const inner = teamNorm(br[2]);
+            const qtaPrefix = /^q\.?\s*ta\b/.test(prefix);
+            const numMatch = inner.match(/^(?:n\s*°?\s*)?(\d+)$/);
+            const numero = numMatch && !qtaPrefix ? Number(numMatch[1]) : null;
+            let group = '';
+            if (/magli[ae]/.test(prefix)) group = 'maglia';
+            else if (prefix.includes('pantaloncin')) group = 'pantaloncino';
+            else if (prefix.includes('calzett') || (prefix === '' && /^q\.?\s*ta/.test(inner))) group = 'calzettone';
+            else if (prefix.includes('rappresentanza')) group = 'rappresentanza';
+            else if (/^da n\s*°?\s*\d+ a n/.test(prefix)) group = lastGroup;
+            if (group) {
+                lastGroup = group;
+                return { index, kind: 'grid', group, numero };
+            }
+            if (prefix === '' || prefix.includes('attrezzatura')) return { index, kind: 'equip', label: br[2].trim() };
+            return { index, kind: 'unknown', label: String(raw).trim() };
         }
         if (index === 0 || h.includes('cronologic') || h === 'timestamp') return { index, kind: 'timestamp' };
         if (h === 'e-mail' || h === 'email' || h.includes('indirizzo email')) return { index, kind: 'email' };
@@ -154,6 +183,7 @@ function teamGuessGroup(text) {
     if (/^maglia/.test(t)) return 'maglia';
     if (/^pantaloncin/.test(t)) return 'pantaloncino';
     if (/^calzett/.test(t)) return 'calzettone';
+    if (/rappr|^polo|^tuta|^zaino/.test(t)) return 'rappresentanza';
     return '';
 }
 
@@ -171,21 +201,34 @@ function teamColorKey(nome) {
     if (/\bred\b|ross/.test(t)) return 'rosso';
     if (/arancio/.test(t)) return 'arancione';
     if (/giall/.test(t)) return 'giallo';
+    if (/verde/.test(t)) return 'verde';
+    return '';
+}
+
+// Pallavolo: maglie e pantaloncini DONNA / UOMO dello stesso colore
+function teamGenderKey(nome) {
+    const t = teamNorm(nome);
+    if (/\bdonna\b/.test(t)) return 'donna';
+    if (/\buomo\b/.test(t)) return 'uomo';
     return '';
 }
 
 // Il modulo ha una sola tendina: se e' una maglia, le griglie pantaloncini e
-// calzettoni arrivano senza modello. Si deduce dal colore della maglia; se il
-// colore non c'e' o non basta a scegliere un solo articolo, resta da scegliere.
+// calzettoni arrivano senza modello. Si deduce dal colore del capo scelto; se
+// il colore non c'e' o non basta a scegliere un solo articolo, resta da scegliere.
+const TEAM_COLOR_GROUPS = ['maglia', 'pantaloncino', 'calzettone'];
 function teamResolveByColor(righe, catalog, sport) {
-    const colori = [...new Set(righe.filter(x => x.gruppo === 'maglia' && x.articolo)
-        .map(x => teamColorKey(x.articolo)))];
+    const scelti = righe.filter(x => TEAM_COLOR_GROUPS.includes(x.gruppo) && x.articolo && !x.daScegliere);
+    const colori = [...new Set(scelti.map(x => teamColorKey(x.articolo)))];
     if (colori.length !== 1 || !colori[0]) return righe;
+    const generi = [...new Set(scelti.map(x => teamGenderKey(x.articolo)))];
+    const genere = generi.length === 1 ? generi[0] : '';
     // Una maglia blu da basket non deve tirarsi dietro il pantaloncino blu del calcio
     const s = teamNorm(sport) || 'calcio';
     return righe.map(x => {
-        if (!x.daScegliere) return x;
-        const match = catalog.filter(a => a.gruppo === x.gruppo && teamColorKey(a.nome) === colori[0] && teamArticleSport(a) === s);
+        if (!x.daScegliere || !TEAM_COLOR_GROUPS.includes(x.gruppo)) return x;
+        let match = catalog.filter(a => a.gruppo === x.gruppo && teamColorKey(a.nome) === colori[0] && teamArticleSport(a) === s);
+        if (match.length > 1 && genere) match = match.filter(a => teamGenderKey(a.nome) === genere);
         return match.length === 1 ? { ...x, articolo: match[0].nome, daScegliere: false } : x;
     });
 }
@@ -253,8 +296,9 @@ function teamBuildRequests(rows, catalog, knownKeys) {
             if (!val) continue;
             if (c.kind === 'grid') {
                 const art = articleFor(c.group);
-                if (c.group === 'maglia') {
-                    righe.push({ gruppo: 'maglia', ...art, taglia: val, numero: c.numero, qta: 1 });
+                // Riga con il numero (maglie, pantaloncini basket): un capo per numero
+                if (c.group === 'maglia' || c.numero != null) {
+                    righe.push({ gruppo: c.group, ...art, taglia: val, numero: c.numero, qta: 1 });
                 } else {
                     const k = `${c.group}|${val}`;
                     if (!aggregate[k]) {
@@ -650,7 +694,7 @@ function teamAggregate(requests, catalog) {
     return { columns, sizes, cells };
 }
 
-// Colonne per gruppo (maglia, pantaloncino, calzettone, attrezzatura), poi
+// Colonne per gruppo (maglia, pantaloncino, calzettone, rappresentanza, attrezzatura), poi
 // nell'ordine del catalogo; il "modello da scegliere" chiude il suo gruppo
 function teamSortColumns(cols, groupOf, catalog) {
     const groupOrder = Object.keys(TEAM_GROUPS);
@@ -677,7 +721,7 @@ function teamSortSizes(sizes) {
 // sempre presenti in Giacenza per fare l'inventario. Una taglia diversa compare
 // solo se c'e' in una richiesta o in magazzino.
 const TEAM_DEFAULT_SIZES = ['23/26', '27/30', '31/34', '35/38', '39/42', '43/46',
-    '8 ANNI', '10 ANNI', '14 ANNI', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'UNICA'];
+    '6 ANNI', '8 ANNI', '10 ANNI', '12 ANNI', '14 ANNI', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'UNICA'];
 // Netto come nella Distinta: di default solo i "Nuovo"
 const TEAM_NET_DEFAULT = ['Nuovo'];
 
@@ -869,8 +913,14 @@ function teamToggleRequest(id) {
 }
 
 function teamRequestsTableHtml(reqs, allReqs) {
-    const options = (gruppo) => teamState.catalog
-        .filter(a => a.gruppo === gruppo)
+    // Prima i modelli dello sport della richiesta; se non ce ne sono, tutti
+    const options = (gruppo, sport) => {
+        const delGruppo = teamState.catalog.filter(a => a.gruppo === gruppo);
+        const s = teamNorm(sport);
+        const perSport = s ? delGruppo.filter(a => !a.sport || teamNorm(a.sport) === s) : delGruppo;
+        return (perSport.length ? perSport : delGruppo);
+    };
+    const optionsHtml = (gruppo, sport) => options(gruppo, sport)
         .map(a => `<option value="${teamEsc(a.nome)}">${teamEsc(a.nome)}</option>`).join('');
     const td = 'border px-2 py-1';
     const rows = reqs.map((r, ri) => {
@@ -892,7 +942,7 @@ function teamRequestsTableHtml(reqs, allReqs) {
             const art = !x ? '<span class="italic text-gray-400">Nessun articolo</span>'
                 : x.daScegliere
                     ? `<select class="border border-yellow-500 bg-yellow-50 rounded px-1 py-0.5 text-xs max-w-full" onchange="teamChooseModel('${id}', ${i}, this.value)">
-                         <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${options(x.gruppo)}</select>`
+                         <option value="">${teamEsc(TEAM_GROUPS[x.gruppo] || x.gruppo)}: scegli modello...</option>${optionsHtml(x.gruppo, r.sport)}</select>`
                     : teamEsc(x.articolo);
             const first = i === 0 ? `
                 <td class="${td} text-center whitespace-nowrap align-top" rowspan="${span}">${r.displayId ? `<div class="font-bold text-blue-800">${teamEsc(r.displayId)}</div>` : ''}${teamFormatDate(r.createdAt)}${toggle}</td>
