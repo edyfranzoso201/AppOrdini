@@ -755,7 +755,7 @@ function teamNetToBuy(layout, inventory, col, size) {
 }
 
 // Da ordinare: colonne minime a video, riempite con articoli a zero o vuote
-const TEAM_NET_MIN_COLUMNS = 25;
+const TEAM_NET_MIN_COLUMNS = 26;
 
 function teamMatrixHtml(mode, layout, inventory) {
     const { lordo, net } = layout;
