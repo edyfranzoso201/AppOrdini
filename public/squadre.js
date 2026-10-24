@@ -754,19 +754,27 @@ function teamNetToBuy(layout, inventory, col, size) {
     return v ? Math.max(0, v.qta - teamStock(inventory, col, size)) : 0;
 }
 
+// Da ordinare: colonne minime a video, riempite con articoli a zero o vuote
+const TEAM_NET_MIN_COLUMNS = 25;
+
 function teamMatrixHtml(mode, layout, inventory) {
     const { lordo, net } = layout;
     // Lordo e Netto: solo le taglie richieste; Giacenza: tutte, per l'inventario
-    // Da ordinare: solo gli articoli (e le taglie) con qualcosa da comprare;
-    // quelli a zero, perche' non richiesti o coperti dalla giacenza, sono rumore
+    // Da ordinare: prima gli articoli con qualcosa da comprare, poi altri articoli
+    // a zero fino ad almeno TEAM_NET_MIN_COLUMNS colonne (anche vuote, senza nome),
+    // cosi' la tabella ha sempre la stessa larghezza; oltre, si allarga
     const buy = (c, size) => teamNetToBuy(layout, inventory, c, size) > 0;
-    const columns = mode === 'NET'
-        ? layout.columns.filter(c => net.sizes.some(size => buy(c, size)))
-        : layout.columns;
+    let columns = layout.columns;
+    if (mode === 'NET') {
+        const toBuy = layout.columns.filter(c => net.sizes.some(size => buy(c, size)));
+        const fill = layout.columns.filter(c => !toBuy.includes(c)).slice(0, Math.max(0, TEAM_NET_MIN_COLUMNS - toBuy.length));
+        columns = [...toBuy, ...fill];
+        while (columns.length < TEAM_NET_MIN_COLUMNS) columns.push('');
+    }
     const sizes = mode === 'GROSS' ? lordo.sizes
         : mode === 'NET' ? net.sizes.filter(size => columns.some(c => buy(c, size)))
         : layout.sizes;
-    if (!sizes.length || !columns.length) return `<p class="text-xs text-gray-500 p-2">${mode === 'NET' ? 'Niente da ordinare.' : 'Nessun articolo richiesto.'}</p>`;
+    if (mode !== 'NET' && (!sizes.length || !columns.length)) return '<p class="text-xs text-gray-500 p-2">Nessun articolo richiesto.</p>';
     const bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100');
     const head = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow text-center align-middle text-sm font-bold">TAGLIA</th>` +
         columns.map(c => `<th class="border-l align-bottom pb-2 ${c.includes('da scegliere') ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-50'}"><div class="vertical-header">${teamEsc(c)}</div></th>`).join('');
@@ -793,6 +801,8 @@ function teamMatrixHtml(mode, layout, inventory) {
                 cell = `<td class="text-center border-b border-l py-0 ${hl ? 'inv-cell-needed' : 'bg-white' + alt}" ${hl ? `title="Richiesti (aperti): ${toBuy}, in magazzino: ${val}"` : ''}>
                     <input type="number" min="0" step="1" value="${raw !== undefined ? teamEsc(raw) : ''}" data-col="${teamEsc(c)}" data-size="${teamEsc(size)}"
                         onchange="teamSetStockFromInput(this)" class="inv-input" placeholder="-" ${disabled}></td>`;
+            } else if (!c) {
+                cell = '<td class="text-center border-b border-l bg-white py-0' + alt + '"><span class="net-val buy-ok">-</span></td>';
             } else {
                 val = teamNetToBuy(layout, inventory, c, size);
                 const v = net.cells[c] && net.cells[c][size];
@@ -802,7 +812,7 @@ function teamMatrixHtml(mode, layout, inventory) {
             return cell;
         }).join('') + '</tr>';
     }).join('');
-    const total = `<tr class="total-row"><td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>${columns.map(c => `<td class="text-center border-l p-2">${totals[c] || 0}</td>`).join('')}</tr>`;
+    const total = `<tr class="total-row"><td class="px-4 py-2 font-bold sticky-col border-r shadow">TOTALE</td>${columns.map(c => `<td class="text-center border-l p-2">${c ? (totals[c] || 0) : ''}</td>`).join('')}</tr>`;
     // table-layout fixed: tutte le colonne articolo larghe uguali
     return `<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="team-matrix ${mode === 'NET' ? '' : 'min-w-full '}divide-y divide-gray-200 text-xs border mb-0" style="min-width:${55 + columns.length * 56}px">
         <thead class="${bgHead} sticky-header"><tr>${head}</tr></thead>
