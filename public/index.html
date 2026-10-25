@@ -1517,6 +1517,10 @@
                     <select id="teamFilterStatus" onchange="setTeamFilter(this.value)" class="text-xs border rounded px-2 py-1 bg-white">
                         <option value="tutte">Tutte</option>
                     </select>
+                    <div class="flex items-center gap-1">
+                        <label for="teamNextIdInput" class="text-[10px] font-medium text-gray-600">ID:</label>
+                        <input type="text" id="teamNextIdInput" onblur="setTeamNextId()" placeholder="SQ_001" title="Prossimo ID: scrivi un numero per cambiarlo" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
                     <button onclick="toggleTeamCatalog()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-book-open mr-1"></i>Catalogo squadra</button>
                     <button onclick="importTeamFromGoogleSheet()" id="btnImportTeam" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-cloud-download-alt mr-1"></i>Importa materiale squadra</button>
                 </div>

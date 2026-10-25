@@ -250,6 +250,24 @@ async function handleTeam(req, res, session, redis) {
     return res.status(200).json({ success: true, version: dataToSave.version });
   }
 
+  // Prossimo ID (campo "ID:" come in Gestione): imposta lastDisplayId anche
+  // all'indietro, ma mai sotto un numero gia' dato a una richiesta presente.
+  // Non cambia la version: le richieste non sono toccate.
+  if (action === 'set-next-id') {
+    const maxUsed = (current.requests || []).reduce((m, r) => {
+      const x = String((r && r.displayId) || '').match(/(\d+)$/);
+      return Math.max(m, x ? parseInt(x[1], 10) : 0);
+    }, 0);
+    if (!Number.isInteger(lastDisplayId) || lastDisplayId < 0 || lastDisplayId > 99998) {
+      return res.status(400).json({ success: false, error: 'ID non valido' });
+    }
+    if (lastDisplayId < maxUsed) {
+      return res.status(400).json({ success: false, error: 'ID gia\' usato da una richiesta presente' });
+    }
+    await redis.set(KEYS.TEAM_ORDERS, { ...current, lastDisplayId, updatedAt: new Date().toISOString() });
+    return res.status(200).json({ success: true, lastDisplayId });
+  }
+
   if (action !== 'save') {
     return res.status(400).json({ success: false, error: 'Invalid action' });
   }

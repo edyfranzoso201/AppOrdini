@@ -388,6 +388,52 @@ function teamAssignIds(requests, lastId) {
     return max;
 }
 
+// Prossimo numero che verra' dato: oltre il massimo presente e oltre lastDisplayId
+function teamNextIdNum(requests, lastId) {
+    return requests.reduce((m, r) => Math.max(m, teamIdNum(r.displayId)), lastId || 0) + 1;
+}
+
+// Campo "ID:" come in Gestione: "SQ_015" o "15" = prossimo ID. Si puo' scendere
+// (per riusare il numero dell'ultima richiesta eliminata) ma non fino a un
+// numero gia' dato a una richiesta presente. Restituisce il nuovo lastDisplayId.
+function teamParseNextId(input, requests, lastId) {
+    const m = String(input || '').trim().match(/^(?:SQ_?)?(\d{1,5})$/i);
+    const n = m ? parseInt(m[1], 10) : 0;
+    if (n < 1) return { error: 'ERRORE: Formato ID non valido (es. SQ_015).' };
+    const maxUsed = requests.reduce((x, r) => Math.max(x, teamIdNum(r.displayId)), 0);
+    if (n <= maxUsed) return { error: `ERRORE: l'ID ${TEAM_ID_PREFIX}${String(n).padStart(3, '0')} è già usato o precede l'ultima richiesta (${TEAM_ID_PREFIX}${String(maxUsed).padStart(3, '0')}).` };
+    if (n === teamNextIdNum(requests, lastId)) return { nochange: true };
+    return { last: n - 1 };
+}
+
+function refreshTeamNextIdPlaceholder() {
+    const el = document.getElementById('teamNextIdInput');
+    if (el) el.placeholder = TEAM_ID_PREFIX + String(teamNextIdNum(teamState.requests, teamState.lastDisplayId)).padStart(3, '0');
+}
+
+async function setTeamNextId() {
+    const el = document.getElementById('teamNextIdInput');
+    if (!el || !el.value.trim()) { refreshTeamNextIdPlaceholder(); return; }
+    const p = teamParseNextId(el.value, teamState.requests, teamState.lastDisplayId);
+    el.value = '';
+    if (p.error) { alert(p.error); return; }
+    if (p.nochange) { alert('Nessuna modifica.'); return; }
+    try {
+        const res = await fetch('/api/orders?scope=team', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'set-next-id', lastDisplayId: p.last })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+        teamState.lastDisplayId = json.lastDisplayId;
+        teamNotify('ID Sequenza aggiornato.');
+    } catch (e) {
+        alert('Aggiornamento ID non riuscito: ' + e.message);
+    }
+    refreshTeamNextIdPlaceholder();
+}
+
 // Range di ID di un elenco di richieste: "SQ_003 -> SQ_010", come la Distinta
 function teamIdRange(requests) {
     const ids = requests.map(r => r.displayId).filter(Boolean).sort((a, b) => teamIdNum(a) - teamIdNum(b));
@@ -1173,6 +1219,7 @@ function renderTeamTab() {
     if (!list) return;
     document.getElementById('teamPreview').innerHTML = teamPreviewHtml();
     document.getElementById('teamCatalog').innerHTML = teamCatalogHtml();
+    refreshTeamNextIdPlaceholder();
 
     const sel = document.getElementById('teamFilterStatus');
     if (sel) {
