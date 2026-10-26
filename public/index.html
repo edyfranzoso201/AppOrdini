@@ -1522,6 +1522,7 @@
                         <input type="text" id="teamNextIdInput" onblur="setTeamNextId()" placeholder="SQ_001" title="Prossimo ID: scrivi un numero per cambiarlo" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
                     </div>
                     <button onclick="toggleTeamCatalog()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-book-open mr-1"></i>Catalogo squadra</button>
+                    <button onclick="teamOpenEditor()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-plus mr-1"></i>Nuova richiesta</button>
                     <button onclick="importTeamFromGoogleSheet()" id="btnImportTeam" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-cloud-download-alt mr-1"></i>Importa materiale squadra</button>
                 </div>
             </div>
@@ -1976,6 +1977,25 @@
     </div>
 
     <!-- Distinta Squadre: nota sullo stato (In Lavorazione / Pronto / Consegna Parziale), logica in squadre.js -->
+    <div id="teamEditPopup" class="modal" style="align-items: flex-start; overflow-y: auto; padding: 16px 0;">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-4" style="max-width: 720px; width: calc(100% - 24px); margin: auto;">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-users text-blue-700"></i>
+                    <span id="teamEditTitle">Nuova richiesta</span>
+                </h2>
+                <button onclick="teamCloseEditor()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="teamEditBody"></div>
+            <div class="flex gap-2 justify-end mt-4">
+                <button onclick="teamCloseEditor()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 font-bold transition">Annulla</button>
+                <button onclick="teamSaveEditor()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold transition">Salva</button>
+            </div>
+        </div>
+    </div>
+
     <div id="teamStatusNotePopup" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <div class="flex justify-between items-center border-b pb-3 mb-4">

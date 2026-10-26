@@ -634,6 +634,184 @@ async function teamDeleteRequest(id) {
     await teamSaveAndRender([r.importKey]);
 }
 
+// ── Nuova richiesta a mano / modifica, come in Gestione ordini ──────────────
+
+// Si lavora su una copia: la richiesta vera cambia solo con "Salva"
+let teamEditCtx = null;
+
+function teamOpenEditor(id) {
+    if (currentUser?.role !== 'admin') { alert('Solo l\'amministratore puo\' modificare il materiale squadra.'); return; }
+    const r = id ? teamFind(id) : null;
+    if (id && !r) return;
+    const draft = r ? teamClone(r) : {
+        richiedente: { nome: '', cognome: '', email: '', telefono: '', ruolo: '' },
+        squadra: '', sport: '', note: '', righe: []
+    };
+    if (!draft.righe.length) draft.righe.push({ gruppo: '', articolo: '', taglia: '', numero: null, qta: 1 });
+    teamEditCtx = { id: id || null, draft };
+    teamRenderEditor();
+    document.getElementById('teamEditPopup').classList.add('active');
+}
+
+function teamCloseEditor() {
+    document.getElementById('teamEditPopup').classList.remove('active');
+    teamEditCtx = null;
+}
+
+function teamEditSet(path, value) {
+    const d = teamEditCtx && teamEditCtx.draft;
+    if (!d) return;
+    const [a, b] = path.split('.');
+    if (b) d[a] = { ...d[a], [b]: value }; else d[a] = value;
+    // Cambiando sport cambiano i modelli proposti nelle tendine
+    if (path === 'sport') teamRenderEditor();
+}
+
+function teamEditSetRow(i, field, value) {
+    const x = teamEditCtx && teamEditCtx.draft.righe[i];
+    if (!x) return;
+    if (field === 'articolo') {
+        const a = teamState.catalog.find(c => c.nome === value);
+        x.articolo = value;
+        if (a) x.gruppo = a.gruppo;
+        x.daScegliere = !value;
+        if (x.gruppo === 'attrezzatura') x.numero = null;
+        teamRenderEditor();
+    } else if (field === 'numero') {
+        const n = parseInt(value, 10);
+        x.numero = Number.isFinite(n) && n > 0 ? n : null;
+    } else if (field === 'qta') {
+        const n = parseInt(value, 10);
+        x.qta = Number.isFinite(n) && n > 0 ? n : 0;
+    } else {
+        x[field] = value;
+    }
+}
+
+function teamEditAddRow() {
+    const d = teamEditCtx && teamEditCtx.draft;
+    if (!d) return;
+    // La nuova riga parte dall'articolo dell'ultima: di solito si aggiungono taglie
+    const last = d.righe[d.righe.length - 1];
+    d.righe.push({ gruppo: last ? last.gruppo : '', articolo: last ? last.articolo : '', taglia: '', numero: null, qta: 1, daScegliere: last ? !!last.daScegliere : false });
+    teamRenderEditor();
+}
+
+function teamEditRemoveRow(i) {
+    const d = teamEditCtx && teamEditCtx.draft;
+    if (!d) return;
+    d.righe.splice(i, 1);
+    teamRenderEditor();
+}
+
+function teamRenderEditor() {
+    const box = document.getElementById('teamEditBody');
+    const c = teamEditCtx;
+    if (!box || !c) return;
+    const d = c.draft;
+    const rich = d.richiedente || {};
+    const s = teamNorm(d.sport);
+    const arts = teamState.catalog.filter(a => !s || !a.sport || teamNorm(a.sport) === s);
+    const artOptions = (cur) => {
+        const groups = Object.entries(TEAM_GROUPS).map(([k, label]) => {
+            const opts = arts.filter(a => a.gruppo === k)
+                .map(a => `<option value="${teamEsc(a.nome)}" ${a.nome === cur ? 'selected' : ''}>${teamEsc(a.nome)}</option>`).join('');
+            return opts ? `<optgroup label="${teamEsc(label)}">${opts}</optgroup>` : '';
+        }).join('');
+        // Articolo fuori catalogo (o di un altro sport): resta selezionabile
+        const extra = cur && !arts.some(a => a.nome === cur) ? `<option value="${teamEsc(cur)}" selected>${teamEsc(cur)}</option>` : '';
+        return `<option value="">— scegli articolo —</option>${extra}${groups}`;
+    };
+    const inp = 'border rounded px-2 py-1 w-full text-sm';
+    const field = (label, path, value, type) => `<label class="block"><span class="text-xs font-bold text-gray-600">${label}</span>
+        <input type="${type || 'text'}" class="${inp}" value="${teamEsc(value || '')}" oninput="teamEditSet('${path}', this.value)"></label>`;
+    const rows = d.righe.map((x, i) => `<tr class="border-t">
+        <td class="p-1"><select class="border rounded px-1 py-1 text-xs w-full ${x.articolo ? '' : 'border-yellow-500 bg-yellow-50'}" onchange="teamEditSetRow(${i}, 'articolo', this.value)">${artOptions(x.articolo)}</select></td>
+        <td class="p-1"><input class="border rounded px-1 py-1 text-xs w-20" value="${teamEsc(x.taglia || '')}" placeholder="M" oninput="teamEditSetRow(${i}, 'taglia', this.value.trim())"></td>
+        <td class="p-1"><input type="number" min="1" class="border rounded px-1 py-1 text-xs w-14" value="${x.numero || ''}" ${x.gruppo === 'attrezzatura' ? 'disabled' : ''} oninput="teamEditSetRow(${i}, 'numero', this.value)"></td>
+        <td class="p-1"><input type="number" min="1" class="border rounded px-1 py-1 text-xs w-14 font-bold" value="${x.qta || ''}" oninput="teamEditSetRow(${i}, 'qta', this.value)"></td>
+        <td class="p-1 text-center"><button onclick="teamEditRemoveRow(${i})" class="text-red-600 hover:text-red-800" title="Togli riga"><i class="fas fa-times"></i></button></td>
+    </tr>`).join('');
+    document.getElementById('teamEditTitle').textContent = c.id ? `Modifica richiesta ${d.displayId || ''}`.trim() : 'Nuova richiesta';
+    box.innerHTML = `
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            ${field('Nome', 'richiedente.nome', rich.nome)}
+            ${field('Cognome', 'richiedente.cognome', rich.cognome)}
+            ${field('Email', 'richiedente.email', rich.email, 'email')}
+            ${field('Telefono', 'richiedente.telefono', rich.telefono, 'tel')}
+            ${field('Squadra', 'squadra', d.squadra)}
+            <label class="block"><span class="text-xs font-bold text-gray-600">Ruolo</span>
+                <select class="${inp}" onchange="teamEditSet('richiedente.ruolo', this.value)">
+                ${teamRoleOptions(rich.ruolo).map(v => `<option value="${teamEsc(v)}" ${v === (rich.ruolo || '') ? 'selected' : ''}>${teamEsc(v) || '—'}</option>`).join('')}</select></label>
+            <label class="block"><span class="text-xs font-bold text-gray-600">Sport</span>
+                <select class="${inp}" onchange="teamEditSet('sport', this.value)">
+                ${[...new Set([...TEAM_SPORTS, d.sport || ''])].map(v => `<option value="${teamEsc(v)}" ${v === (d.sport || '') ? 'selected' : ''}>${teamEsc(v) || '—'}</option>`).join('')}</select></label>
+        </div>
+        <div class="overflow-x-auto"><table class="w-full text-xs mb-2">
+            <thead class="bg-gray-100"><tr><th class="p-1 text-left">Articolo</th><th class="p-1 text-left">Taglia</th><th class="p-1 text-left">N°</th><th class="p-1 text-left">Q.tà</th><th></th></tr></thead>
+            <tbody>${rows}</tbody></table></div>
+        <button onclick="teamEditAddRow()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-xs mb-3"><i class="fas fa-plus mr-1"></i>Riga</button>
+        <label class="block"><span class="text-xs font-bold text-gray-600">Note</span>
+            <textarea rows="2" class="${inp}" oninput="teamEditSet('note', this.value)">${teamEsc(d.note || '')}</textarea></label>`;
+}
+
+async function teamSaveEditor() {
+    const c = teamEditCtx;
+    if (!c) return;
+    const d = c.draft;
+    const rich = d.richiedente || {};
+    // Righe vuote (niente articolo e niente taglia) si scartano in silenzio
+    const righe = d.righe
+        .filter(x => x.articolo || x.taglia)
+        .map(x => ({ ...x, gruppo: x.gruppo || teamGuessGroup(x.articolo) || 'maglia', daScegliere: !x.articolo, qta: Number(x.qta) || 0 }));
+    if (!`${rich.nome || ''}${rich.cognome || ''}`.trim() && !String(d.squadra || '').trim()) {
+        alert('Indica almeno il nome del richiedente o la squadra.'); return;
+    }
+    if (!righe.length) { alert('Aggiungi almeno un articolo.'); return; }
+    if (righe.some(x => !x.qta)) { alert('Ogni riga deve avere una quantita\' di almeno 1.'); return; }
+    // Due maglie con lo stesso numero nello stesso articolo sono quasi sempre un errore
+    const seen = new Set();
+    const dup = righe.find(x => {
+        if (!x.numero) return false;
+        const k = `${x.articolo}|${x.numero}`;
+        if (seen.has(k)) return true;
+        seen.add(k); return false;
+    });
+    if (dup && !confirm(`Il numero ${dup.numero} e' ripetuto per ${dup.articolo}. Salvare comunque?`)) return;
+
+    const avvisi = (d.avvisi || []).filter(a => !a.startsWith('Modello da scegliere') && a !== 'Nessun articolo compilato');
+    if (righe.some(x => x.daScegliere)) avvisi.push('Modello da scegliere per alcune righe');
+    const fields = {
+        richiedente: { nome: (rich.nome || '').trim(), cognome: (rich.cognome || '').trim(), email: (rich.email || '').trim(), telefono: (rich.telefono || '').trim(), ruolo: rich.ruolo || '' },
+        squadra: String(d.squadra || '').trim(),
+        sport: d.sport || '',
+        note: d.note || '',
+        righe,
+        avvisi,
+        // Le quantita' scelte a mano non vanno ricorrette dall'import
+        qtaDaGriglia: true
+    };
+    if (c.id) {
+        const r = teamFind(c.id);
+        if (!r) { teamCloseEditor(); return; }
+        Object.assign(r, fields, { categoria: fields.squadra });
+    } else {
+        const now = new Date().toISOString();
+        const key = `MAN-${Date.now()}`;
+        teamState.requests.push({
+            id: key, importKey: key, manuale: true,
+            createdAt: now, importedAt: now, status: 'Nuovo',
+            categoria: fields.squadra, tipo: '', articoloModulo: '',
+            ...fields
+        });
+        teamState.lastDisplayId = teamAssignIds(teamState.requests, teamState.lastDisplayId);
+    }
+    const nuova = !c.id;
+    teamCloseEditor();
+    await teamSaveAndRender();
+    teamNotify(nuova ? 'Richiesta creata' : 'Richiesta modificata');
+}
+
 // ── Catalogo squadra ────────────────────────────────────────────────────────
 
 function toggleTeamCatalog() {
@@ -1035,7 +1213,7 @@ function teamRequestsTableHtml(reqs, allReqs) {
                 <td class="${td} text-center align-top" rowspan="${span}">
                     <label class="team-switch" title="${r.archived ? 'In archivio: togli la spunta per riportarla tra le attive' : 'Sposta in archivio'}">
                         <input type="checkbox" ${r.archived ? 'checked' : ''} onchange="teamSetArchived('${id}', this.checked)"><span></span></label></td>
-                <td class="${td} text-center align-top" rowspan="${span}"><button onclick="teamDeleteRequest('${id}')" class="text-red-600 hover:text-red-800" title="Elimina richiesta"><i class="fas fa-trash"></i></button></td>` : '';
+                <td class="${td} text-center align-top whitespace-nowrap" rowspan="${span}"><button onclick="teamOpenEditor('${id}')" class="text-blue-600 hover:text-blue-800 mr-2" title="Modifica richiesta"><i class="fas fa-edit"></i></button><button onclick="teamDeleteRequest('${id}')" class="text-red-600 hover:text-red-800" title="Elimina richiesta"><i class="fas fa-trash"></i></button></td>` : '';
             if (collapsed) {
                 return `<tr class="${rowClass} team-req-first">${first}
                 <td class="${td} text-left cursor-pointer hover:bg-blue-50" colspan="3" onclick="teamToggleRequest('${id}')" title="Clic per il dettaglio">${teamRequestSummaryHtml(r)}</td>
