@@ -136,6 +136,10 @@ function teamClassifyColumns(header) {
             const qtaPrefix = /^q\.?\s*ta\b/.test(prefix);
             const numMatch = inner.match(/^(?:n\s*°?\s*)?(\d+)$/);
             const numero = numMatch && !qtaPrefix ? Number(numMatch[1]) : null;
+            // "[Q.tà 10]" / "[Qtà n°10]": la riga E' la quantita' (10 pezzi di
+            // quella taglia), non un capo solo
+            const qtaMatch = inner.match(/^q\.?\s*ta\s*(?:n\s*°?\s*)?(\d+)$/);
+            const qta = qtaMatch ? Number(qtaMatch[1]) : 1;
             let group = '';
             if (/magli[ae]/.test(prefix)) group = 'maglia';
             else if (prefix.includes('pantaloncin')) group = 'pantaloncino';
@@ -144,7 +148,7 @@ function teamClassifyColumns(header) {
             else if (/^da n\s*°?\s*\d+ a n/.test(prefix)) group = lastGroup;
             if (group) {
                 lastGroup = group;
-                return { index, kind: 'grid', group, numero };
+                return { index, kind: 'grid', group, numero, qta };
             }
             if (prefix === '' || prefix.includes('attrezzatura')) return { index, kind: 'equip', label: br[2].trim() };
             return { index, kind: 'unknown', label: String(raw).trim() };
@@ -249,8 +253,9 @@ function teamParseQty(s) {
 // Converte le righe CSV in richieste. knownKeys = importKey gia' presenti o
 // cancellati, da non reimportare.
 function teamBuildRequests(rows, catalog, knownKeys) {
-    // aggiornamenti: importKey -> { ruolo, sport } delle righe gia' importate,
-    // per completare le richieste arrivate prima che il modulo li chiedesse
+    // aggiornamenti: importKey -> { ruolo, sport, righeQta } delle righe gia'
+    // importate, per completare le richieste arrivate prima che il modulo li
+    // chiedesse e correggere le quantita' importate prima di "[Q.ta' N]"
     const result = { nuove: [], giaPresenti: 0, senzaData: 0, colonneIgnote: [], aggiornamenti: {} };
     if (!rows.length) return result;
     const cols = teamClassifyColumns(rows[0]);
@@ -265,11 +270,7 @@ function teamBuildRequests(rows, catalog, knownKeys) {
         const importKey = `SQ-${ts}|${email.toLowerCase()}`;
         const sport = get('sport')[0] || '';
         const ruolo = get('ruolo')[0] || '';
-        if (known.has(importKey)) {
-            result.giaPresenti++;
-            if (ruolo || sport) result.aggiornamenti[importKey] = { ruolo, sport };
-            continue;
-        }
+        const giaPresente = known.has(importKey);
         known.add(importKey);
 
         // Tendina dello sport della richiesta; se quella e' vuota, la prima compilata
@@ -298,14 +299,14 @@ function teamBuildRequests(rows, catalog, knownKeys) {
                 const art = articleFor(c.group);
                 // Riga con il numero (maglie, pantaloncini basket): un capo per numero
                 if (c.group === 'maglia' || c.numero != null) {
-                    righe.push({ gruppo: c.group, ...art, taglia: val, numero: c.numero, qta: 1 });
+                    righe.push({ gruppo: c.group, ...art, taglia: val, numero: c.numero, qta: c.numero != null ? 1 : c.qta });
                 } else {
                     const k = `${c.group}|${val}`;
                     if (!aggregate[k]) {
                         aggregate[k] = { gruppo: c.group, ...art, taglia: val, numero: null, qta: 0 };
                         righe.push(aggregate[k]);
                     }
-                    aggregate[k].qta++;
+                    aggregate[k].qta += c.qta;
                 }
             } else if (c.kind === 'equip') {
                 const qta = teamParseQty(val);
@@ -316,6 +317,13 @@ function teamBuildRequests(rows, catalog, knownKeys) {
             } else if (c.kind === 'unknown') {
                 ignote.add(c.label);
             }
+        }
+        if (giaPresente) {
+            result.giaPresenti++;
+            const righeQta = righe.filter(r => r.gruppo !== 'attrezzatura' && r.numero == null)
+                .map(r => ({ gruppo: r.gruppo, taglia: r.taglia, qta: r.qta }));
+            result.aggiornamenti[importKey] = { ruolo, sport, righeQta };
+            continue;
         }
         righe = teamResolveByColor(righe, catalog, sport);
         if (righe.some(r => r.daScegliere)) avvisi.push('Modello da scegliere per alcune righe');
@@ -341,6 +349,7 @@ function teamBuildRequests(rows, catalog, knownKeys) {
             tipo: get('tipo')[0] || '',
             articoloModulo: principaleTxt,
             righe,
+            qtaDaGriglia: true,
             note: get('note').join('\n'),
             avvisi
         });
@@ -549,7 +558,9 @@ async function importTeamFromGoogleSheet() {
 }
 
 // Richieste gia' importate: si riempiono Ruolo e Sport solo se vuoti, mai
-// sovrascritti (l'admin puo' averli corretti a mano). dryRun = solo conta.
+// sovrascritti (l'admin puo' averli corretti a mano). Le richieste importate
+// prima che "[Q.ta' N]" valesse N pezzi (senza qtaDaGriglia) ricevono una
+// volta sola le quantita' giuste, per gruppo + taglia. dryRun = solo conta.
 function teamApplyUpdates(requests, updates, dryRun) {
     let n = 0;
     for (const r of requests) {
@@ -557,11 +568,21 @@ function teamApplyUpdates(requests, updates, dryRun) {
         if (!u) continue;
         const ruolo = u.ruolo && !(r.richiedente || {}).ruolo;
         const sport = u.sport && !r.sport;
-        if (!ruolo && !sport) continue;
+        const qtaFix = [];
+        if (!r.qtaDaGriglia && Array.isArray(u.righeQta)) {
+            for (const riga of r.righe || []) {
+                if (riga.gruppo === 'attrezzatura' || riga.numero != null) continue;
+                const g = u.righeQta.find(x => x.gruppo === riga.gruppo && x.taglia === riga.taglia);
+                if (g && g.qta !== riga.qta) qtaFix.push([riga, g.qta]);
+            }
+        }
+        if (!dryRun && Array.isArray(u.righeQta)) r.qtaDaGriglia = true;
+        if (!ruolo && !sport && !qtaFix.length) continue;
         n++;
         if (dryRun) continue;
         if (ruolo) r.richiedente = { ...r.richiedente, ruolo: u.ruolo };
         if (sport) r.sport = u.sport;
+        for (const [riga, qta] of qtaFix) riga.qta = qta;
     }
     return n;
 }
@@ -575,7 +596,7 @@ async function confirmTeamImport() {
     const n = p.nuove.length;
     teamState.preview = null;
     await teamSaveAndRender();
-    teamNotify(`${n} richieste importate${completate ? `, ${completate} completate con ruolo/sport` : ''}`);
+    teamNotify(`${n} richieste importate${completate ? `, ${completate} aggiornate dal foglio` : ''}`);
 }
 
 function cancelTeamImport() {
@@ -1181,7 +1202,7 @@ function teamPreviewHtml() {
     return `<div class="bg-purple-50 border border-purple-300 rounded p-3 mb-3 text-sm">
         <div class="font-bold text-purple-900 mb-1">Anteprima importazione</div>
         <div>${p.nuove.length} nuove richieste · ${p.giaPresenti} gia' importate o eliminate${p.senzaData ? ` · ${p.senzaData} righe senza data` : ''}</div>
-        ${p.completate ? `<div class="text-xs text-blue-800">${p.completate} richieste gia' importate verranno completate con ruolo e sport dal foglio</div>` : ''}
+        ${p.completate ? `<div class="text-xs text-blue-800">${p.completate} richieste gia' importate verranno aggiornate dal foglio (ruolo, sport o quantita')</div>` : ''}
         ${elenco ? `<ul class="list-disc ml-5 my-2 text-xs">${elenco}</ul>` : ''}
         ${p.colonneIgnote.length ? `<div class="text-xs text-red-700 my-1"><b>Colonne del foglio non riconosciute</b> (non importate): ${p.colonneIgnote.map(teamEsc).join(', ')}</div>` : ''}
         <div class="flex gap-2 mt-2">
