@@ -215,7 +215,7 @@ async function handleTeam(req, res, session, redis) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const { action, requests, baseRequests, baseVersion, deletedImportKeys, catalog, key, value, lastDisplayId } = req.body || {};
+  const { action, requests, baseRequests, baseVersion, deletedImportKeys, catalog, key, value, lastDisplayId, quickFilters } = req.body || {};
   const current = { ...TEAM_EMPTY, ...(await redis.get(KEYS.TEAM_ORDERS) || {}) };
   const currentVersion = current.version || 0;
 
@@ -266,6 +266,24 @@ async function handleTeam(req, res, session, redis) {
     }
     await redis.set(KEYS.TEAM_ORDERS, { ...current, lastDisplayId, updatedAt: new Date().toISOString() });
     return res.status(200).json({ success: true, lastDisplayId });
+  }
+
+  // Quick ID della Distinta Squadre (pulsanti 1-15 con range min/max).
+  // Non cambia la version: le richieste non sono toccate.
+  if (action === 'set-quick-filters') {
+    if (!quickFilters || typeof quickFilters !== 'object' || Array.isArray(quickFilters)) {
+      return res.status(400).json({ success: false, error: 'Quick ID non validi' });
+    }
+    const clean = {};
+    for (let i = 1; i <= 15; i++) {
+      const f = quickFilters[i];
+      if (!f || typeof f !== 'object') continue;
+      const min = String(f.min ?? '').trim().slice(0, 20);
+      const max = String(f.max ?? '').trim().slice(0, 20);
+      if (min && max) clean[i] = { min, max };
+    }
+    await redis.set(KEYS.TEAM_ORDERS, { ...current, quickFilters: clean, updatedAt: new Date().toISOString() });
+    return res.status(200).json({ success: true, quickFilters: clean });
   }
 
   if (action !== 'save') {

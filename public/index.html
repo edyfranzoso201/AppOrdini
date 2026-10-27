@@ -1522,24 +1522,48 @@
                         <label for="teamNextIdInput" class="text-[10px] font-medium text-gray-600">ID:</label>
                         <input type="text" id="teamNextIdInput" onblur="setTeamNextId()" placeholder="SQ_001" title="Prossimo ID: scrivi un numero per cambiarlo" class="text-xs border rounded px-1 py-0.5 w-20 text-right outline-none focus:ring-1 focus:ring-blue-500">
                     </div>
-                    <button onclick="toggleTeamCatalog()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-book-open mr-1"></i>Catalogo squadra</button>
                     <button onclick="teamOpenEditor()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-plus mr-1"></i>Nuova richiesta</button>
                     <button onclick="importTeamFromGoogleSheet()" id="btnImportTeam" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold"><i class="fas fa-cloud-download-alt mr-1"></i>Importa materiale squadra</button>
                 </div>
             </div>
             <div id="teamPreview"></div>
-            <div id="teamCatalog"></div>
             <div id="teamRequestsList">
                 <p class="text-sm text-gray-500">Caricamento...</p>
             </div>
         </div>
 
-        <!-- Distinta Squadre: riepiloghi 2-4 calcolati sulle richieste filtrate in Ordini Squadra -->
+        <!-- Distinta Squadre: riepiloghi 2-4 con filtri propri (range ID, stato,
+             Quick), indipendenti da quelli di Ordini Squadra come la Distinta
+             rispetto a Gestione. Seguono solo la vista Attive/Archivio. -->
         <div id="tab-squadre-distinta" class="tab-content">
-            <div class="bg-white p-3 rounded shadow mb-3">
-                <h2 class="font-bold text-xl text-blue-900"><i class="fas fa-th mr-2"></i>Distinta Squadre</h2>
-                <p class="text-xs text-gray-500" id="teamMatrixInfo">Riepiloghi del materiale richiesto per le squadre</p>
+            <div class="bg-white p-2 rounded shadow mb-3 flex justify-between items-center gap-4 flex-wrap">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div>
+                        <h2 class="font-bold text-lg text-blue-900"><i class="fas fa-th mr-2"></i>Distinta Squadre</h2>
+                        <p class="text-xs text-gray-500" id="teamMatrixInfo">Riepiloghi del materiale richiesto per le squadre</p>
+                    </div>
+                    <div id="teamLiveClock" class="live-clock hidden md:block">--:--:--</div>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <div class="flex items-center gap-2 bg-gray-50 p-2 rounded border">
+                        <span class="text-xs font-bold text-gray-600">Filtra:</span>
+                        <select id="teamDistMinId" onchange="setTeamDistFilters()" class="text-xs border rounded px-2 py-1 w-28 text-center font-bold bg-white"></select>
+                        <span class="text-xs text-gray-400">a</span>
+                        <select id="teamDistMaxId" onchange="setTeamDistFilters()" class="text-xs border rounded px-2 py-1 w-28 text-center font-bold bg-white"></select>
+                        <select id="teamDistStatus" onchange="setTeamDistFilters()" class="text-xs border rounded px-2 py-1 text-center font-bold bg-white" title="Filtra Distinta Squadre per stato"></select>
+                        <button onclick="renderTeamTab()" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Aggiorna"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div class="flex items-center gap-1 flex-wrap">
+                        <span class="text-xs font-bold text-gray-600">Quick:</span>
+                        <div class="flex items-center gap-1 flex-wrap" id="teamQuickButtons"></div>
+                        <button onclick="openTeamQuickConfig()" class="bg-gray-500 hover:bg-gray-600 text-white px-1.5 py-1 rounded text-xs font-bold transition" title="Configura Quick ID squadre"><i class="fas fa-cog"></i></button>
+                        <button onclick="resetTeamDistFilters()" class="bg-red-500 hover:bg-red-600 text-white px-1.5 py-1 rounded text-xs font-bold transition" title="Reset filtri"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleTeamCatalog()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-bold transition" title="Articoli del materiale squadra"><i class="fas fa-cog mr-1"></i> DB</button>
+                </div>
             </div>
+            <div id="teamCatalog"></div>
             <div id="teamMatrixList">
                 <p class="text-sm text-gray-500">Caricamento...</p>
             </div>

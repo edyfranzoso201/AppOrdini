@@ -374,7 +374,13 @@ const teamState = {
     lastDisplayId: 0,
     expanded: new Set(),  // richieste aperte nel dettaglio (solo a video)
     view: 'attive',       // 'attive' | 'archivio'
-    colFilters: {}        // filtri della riga sotto le intestazioni di Richieste
+    colFilters: {},       // filtri della riga sotto le intestazioni di Richieste
+    // Filtri propri della Distinta Squadre (range ID per numero, stato) e
+    // pulsanti Quick salvati sul server: indipendenti da Ordini Squadra
+    distMin: null,
+    distMax: null,
+    distStatus: 'tutte',
+    quickFilters: {}
 };
 
 // ID di ogni richiesta (SQ_001, SQ_002...), come gli ID degli ordini personali.
@@ -489,6 +495,7 @@ async function loadTeamData() {
         // salvataggio le scrive su Redis
         teamState.lastDisplayId = teamAssignIds(teamState.requests, d.lastDisplayId);
         teamState.inventory = (d.inventory && typeof d.inventory === 'object') ? d.inventory : {};
+        teamState.quickFilters = (d.quickFilters && typeof d.quickFilters === 'object') ? d.quickFilters : {};
         teamState.version = json.version || 0;
         teamState.loaded = true;
         renderTeamTab();
@@ -1420,7 +1427,6 @@ function renderTeamTab() {
     const list = document.getElementById('teamRequestsList');
     if (!list) return;
     document.getElementById('teamPreview').innerHTML = teamPreviewHtml();
-    document.getElementById('teamCatalog').innerHTML = teamCatalogHtml();
     refreshTeamNextIdPlaceholder();
 
     const sel = document.getElementById('teamFilterStatus');
@@ -1447,10 +1453,13 @@ function renderTeamTab() {
     }
     const viewBtn = (v, label, n) => `<button onclick="setTeamView('${v}')" class="px-3 py-1 text-xs font-bold ${teamState.view === v ? 'bg-blue-700 text-white' : 'bg-white text-blue-800 hover:bg-blue-50'}">${label} (${n})</button>`;
     const viewSwitch = `<div class="inline-flex border border-blue-700 rounded overflow-hidden">${viewBtn('attive', 'Attive', teamState.requests.length - nArch)}${viewBtn('archivio', 'Archivio', nArch)}</div>`;
-    // Netto: con "tutte" contano le richieste ancora aperte, altrimenti lo stato scelto
-    const lordoReqs = reqs.filter(r => !teamIsVoid(r));
-    const netReqs = teamState.filter === 'tutte'
-        ? reqs.filter(r => TEAM_NET_DEFAULT.includes(r.status))
+    // Riepiloghi 2-4: filtri propri della Distinta Squadre (range ID e stato),
+    // nella stessa vista Attive/Archivio. Netto: con "tutte" contano le
+    // richieste ancora aperte, altrimenti lo stato scelto
+    const distReqs = teamDistRequests(inView);
+    const lordoReqs = distReqs.filter(r => !teamIsVoid(r));
+    const netReqs = teamState.distStatus === 'tutte'
+        ? distReqs.filter(r => TEAM_NET_DEFAULT.includes(r.status))
         : lordoReqs;
     const layout = teamLayout(lordoReqs, netReqs, teamState.catalog, teamState.inventory);
     const box = (title, icon, color, html) => `
@@ -1458,7 +1467,7 @@ function renderTeamTab() {
             <div class="section-title ${color} mb-2"><span><i class="fas ${icon} mr-2"></i> ${title}</span></div>
             ${html}
         </div>`;
-    const netLabel = teamState.filter === 'tutte' ? 'richieste Nuovo' : 'stato filtrato';
+    const netLabel = teamState.distStatus === 'tutte' ? 'richieste Nuovo' : 'stato filtrato';
     // ID e data/ora di stampa, come in 3. Ordine Fornitore della Distinta
     const netInfo = `<span class="supplier-info"><i class="fas fa-info-circle mr-1"></i>ID: ${teamEsc(teamIdRange(netReqs))} | ${new Date().toLocaleString('it-IT')}</span>`;
     list.innerHTML =
@@ -1469,13 +1478,14 @@ function renderTeamTab() {
         </div>`;
     const matrix = document.getElementById('teamMatrixList');
     if (!matrix) return;
-    // I riepiloghi seguono stato, vista e filtri di colonna di Ordini Squadra
+    // Il catalogo articoli (pulsante DB) vive nella Distinta Squadre
+    const cat = document.getElementById('teamCatalog');
+    if (cat) cat.innerHTML = teamCatalogHtml();
+    teamRenderDistFilters(inView);
+    teamRenderQuickButtons();
     const info = document.getElementById('teamMatrixInfo');
     if (info) {
-        const nFiltri = Object.values(teamState.colFilters || {}).filter(v => String(v ?? '').trim()).length;
-        info.textContent = `Calcolata su ${reqs.length} richieste ${teamState.view === 'archivio' ? 'in archivio' : 'attive'}`
-            + (teamState.filter !== 'tutte' ? ` · stato ${teamState.filter}` : '')
-            + (nFiltri ? ` · ${nFiltri} filtri di colonna attivi in Ordini Squadra` : '');
+        info.textContent = `${distReqs.length} richieste ${teamState.view === 'archivio' ? 'in archivio' : 'attive'} · ID ${teamIdRange(distReqs)}`;
     }
     matrix.innerHTML =
         box('2. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
@@ -1484,12 +1494,166 @@ function renderTeamTab() {
         '<div class="mb-6"></div>';
 }
 
+// ── Filtri Distinta Squadre ─────────────────────────────────────────────────
+
+function teamDistRequests(inView) {
+    const min = teamState.distMin, max = teamState.distMax;
+    return inView.filter(r => {
+        if (teamState.distStatus !== 'tutte' && r.status !== teamState.distStatus) return false;
+        const n = teamIdNum(r.displayId);
+        if (min != null && n < min) return false;
+        if (max != null && n > max) return false;
+        return true;
+    });
+}
+
+// Tendine "Filtra: da ... a ..." con gli ID presenti nella vista; il primo
+// ID del Da e l'ultimo dell'A equivalgono a "nessun limite"
+function teamRenderDistFilters(inView) {
+    const minSel = document.getElementById('teamDistMinId');
+    const maxSel = document.getElementById('teamDistMaxId');
+    const stSel = document.getElementById('teamDistStatus');
+    if (stSel) {
+        stSel.innerHTML = '<option value="tutte">Stato: Tutti</option>' +
+            TEAM_STATUSES.map(s => `<option value="${teamEsc(s.value)}">${teamEsc(s.label)}</option>`).join('');
+        stSel.value = teamState.distStatus;
+    }
+    if (!minSel || !maxSel) return;
+    const nums = [...new Set(inView.map(r => teamIdNum(r.displayId)).filter(n => n > 0))].sort((a, b) => a - b);
+    const opts = nums.map(n => `<option value="${n}">${TEAM_ID_PREFIX}${String(n).padStart(3, '0')}</option>`).join('');
+    minSel.innerHTML = opts || '<option value="">-</option>';
+    maxSel.innerHTML = opts || '<option value="">-</option>';
+    if (!nums.length) return;
+    // Un limite che non coincide con un ID presente si mostra sul piu' vicino interno al range
+    const lo = teamState.distMin == null ? nums[0] : (nums.find(n => n >= teamState.distMin) ?? nums[nums.length - 1]);
+    const hi = teamState.distMax == null ? nums[nums.length - 1] : ([...nums].reverse().find(n => n <= teamState.distMax) ?? nums[0]);
+    minSel.value = String(lo);
+    maxSel.value = String(hi);
+}
+
+function setTeamDistFilters() {
+    const minSel = document.getElementById('teamDistMinId');
+    const maxSel = document.getElementById('teamDistMaxId');
+    const stSel = document.getElementById('teamDistStatus');
+    if (stSel) teamState.distStatus = stSel.value || 'tutte';
+    if (minSel && maxSel && minSel.options && minSel.options.length && minSel.value && maxSel.value) {
+        const first = parseInt(minSel.options[0].value, 10);
+        const last = parseInt(maxSel.options[maxSel.options.length - 1].value, 10);
+        let lo = parseInt(minSel.value, 10), hi = parseInt(maxSel.value, 10);
+        if (lo > hi) [lo, hi] = [hi, lo];
+        teamState.distMin = lo === first ? null : lo;
+        teamState.distMax = hi === last ? null : hi;
+    }
+    renderTeamTab();
+}
+
+function resetTeamDistFilters() {
+    teamState.distMin = null;
+    teamState.distMax = null;
+    teamState.distStatus = 'tutte';
+    renderTeamTab();
+}
+
+function teamRenderQuickButtons() {
+    const box = document.getElementById('teamQuickButtons');
+    if (!box) return;
+    let html = '';
+    for (let i = 1; i <= 15; i++) {
+        const f = teamState.quickFilters[i];
+        const ok = f && f.min && f.max;
+        html += `<button onclick="applyTeamQuick(${i})" ${ok ? '' : 'disabled'} title="${ok ? teamEsc(f.min + ' → ' + f.max) : 'Non configurato'}"
+            class="${ok ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'} text-white px-2 py-1 rounded text-xs font-bold transition min-w-[30px]">${i}</button>`;
+    }
+    box.innerHTML = html;
+}
+
+function applyTeamQuick(i) {
+    const f = teamState.quickFilters[i];
+    if (!f || !f.min || !f.max) return;
+    let lo = teamIdNum(f.min), hi = teamIdNum(f.max);
+    if (lo > hi) [lo, hi] = [hi, lo];
+    teamState.distMin = lo;
+    teamState.distMax = hi;
+    renderTeamTab();
+}
+
+function openTeamQuickConfig() {
+    closeTeamQuickConfig();
+    let rows = '';
+    for (let i = 1; i <= 15; i++) {
+        const f = teamState.quickFilters[i] || {};
+        rows += `<div class="flex items-center gap-2"><span class="w-6 text-xs font-bold text-right">${i}</span>
+            <input id="teamQuickMin_${i}" value="${teamEsc(f.min || '')}" placeholder="SQ_001" class="text-xs border rounded px-2 py-1 w-28">
+            <span class="text-xs text-gray-400">a</span>
+            <input id="teamQuickMax_${i}" value="${teamEsc(f.max || '')}" placeholder="SQ_010" class="text-xs border rounded px-2 py-1 w-28"></div>`;
+    }
+    const wrap = document.createElement('div');
+    wrap.id = 'teamQuickConfig';
+    // items-start + my-auto: con zoom alto la cima del box resta raggiungibile
+    wrap.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center overflow-y-auto p-4';
+    wrap.innerHTML = `<div class="bg-white rounded shadow-lg p-4 w-full max-w-sm my-auto">
+        <h3 class="font-bold text-blue-900 mb-1"><i class="fas fa-cog mr-2"></i>Quick ID squadre</h3>
+        <p class="text-xs text-gray-500 mb-3">Range di ID per ogni pulsante (es. SQ_001 a SQ_020). Lascia vuoto per disattivare.</p>
+        <div class="flex flex-col gap-1">${rows}</div>
+        <div class="flex justify-end gap-2 mt-4">
+            <button onclick="closeTeamQuickConfig()" class="bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded text-xs font-bold">Annulla</button>
+            <button onclick="saveTeamQuickConfig()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold">Salva</button>
+        </div></div>`;
+    document.body.appendChild(wrap);
+}
+
+function closeTeamQuickConfig() {
+    const el = document.getElementById('teamQuickConfig');
+    if (el) el.remove();
+}
+
+async function saveTeamQuickConfig() {
+    const quickFilters = {};
+    for (let i = 1; i <= 15; i++) {
+        const min = (document.getElementById('teamQuickMin_' + i)?.value || '').trim();
+        const max = (document.getElementById('teamQuickMax_' + i)?.value || '').trim();
+        if (!min && !max) continue;
+        if (!min || !max || !teamIdNum(min) || !teamIdNum(max)) {
+            alert(`Pulsante ${i}: indica un ID iniziale e uno finale (es. SQ_001 e SQ_020).`);
+            return;
+        }
+        quickFilters[i] = { min, max };
+    }
+    try {
+        const res = await fetch('/api/orders?scope=team', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'set-quick-filters', quickFilters })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+        teamState.quickFilters = json.quickFilters || {};
+        closeTeamQuickConfig();
+        teamNotify('Quick ID squadre salvati');
+        renderTeamTab();
+    } catch (e) {
+        alert('Salvataggio Quick ID non riuscito: ' + e.message);
+    }
+}
+
+// Orologio della Distinta Squadre: parte alla prima apertura delle schede
+// squadra e si aggiorna solo quando e' visibile
+let teamClockTimer = null;
+function teamStartClock() {
+    if (teamClockTimer) return;
+    teamClockTimer = setInterval(() => {
+        const el = document.getElementById('teamLiveClock');
+        if (el && el.offsetParent) el.textContent = new Date().toLocaleTimeString('it-IT');
+    }, 1000);
+}
+
 function setTeamFilter(v) {
     teamState.filter = v;
     renderTeamTab();
 }
 
 function openTeamTab() {
+    teamStartClock();
     if (!teamState.loaded) loadTeamData();
     else renderTeamTab();
 }
