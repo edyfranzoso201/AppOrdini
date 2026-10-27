@@ -459,8 +459,8 @@
             }
 
             // Materiale squadra: solo admin (anche il server risponde 403 agli altri)
-            if ((tabName === 'squadre' || tabName === 'squadre-distinta') && currentUser?.role !== 'admin') {
-                alert('⚠️ Non hai i permessi per visualizzare la Distinta Squadre.');
+            if (tabName.startsWith('squadre') && currentUser?.role !== 'admin') {
+                alert('⚠️ Non hai i permessi per visualizzare le schede Squadra.');
                 return;
             }
 
@@ -473,7 +473,7 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             
             // Reset stili nav buttons MA rispetta i permessi
-            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-pagamenti', 'nav-catalogo', 'nav-squadre', 'nav-squadre-distinta'];
+            const navButtons = ['nav-ordini', 'nav-matrix', 'nav-tabella-ordini', 'nav-dashboard', 'nav-pagamenti', 'nav-catalogo', 'nav-squadre', 'nav-squadre-distinta', 'nav-squadre-catalogo'];
             navButtons.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn && !btn.classList.contains('hidden')) {
@@ -495,6 +495,7 @@
             if (tabName === 'catalogo') loadCatalogData();
             if (tabName === 'pagamenti') renderPaymentsTab();
             if ((tabName === 'squadre' || tabName === 'squadre-distinta') && typeof openTeamTab === 'function') openTeamTab();
+            if (tabName === 'squadre-catalogo' && typeof openTeamCatalogTab === 'function') openTeamCatalogTab();
             if (tabName === 'tabella-ordini') { populateTabellaOrdiniFilters(); renderTabellaOrdini(); }
         }
 
@@ -6508,6 +6509,8 @@ function resetFiltersToDefault() {
             if (squadreBtn) squadreBtn.classList.toggle('hidden', currentUser.role !== 'admin');
             const squadreDistBtn = document.getElementById('nav-squadre-distinta');
             if (squadreDistBtn) squadreDistBtn.classList.toggle('hidden', currentUser.role !== 'admin');
+            const squadreCatBtn = document.getElementById('nav-squadre-catalogo');
+            if (squadreCatBtn) squadreCatBtn.classList.toggle('hidden', currentUser.role !== 'admin');
 
             // Mostra Pagamenti SOLO per admin
             const pagamentiBtn = document.getElementById('nav-pagamenti');

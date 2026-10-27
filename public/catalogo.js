@@ -12,10 +12,24 @@
             return url;
         }
 
+        // catalogo.html?tipo=squadra mostra il Catalogo Squadra (blob separato)
+        const IS_TEAM_CATALOG = new URLSearchParams(window.location.search).get('tipo') === 'squadra';
+
+        // Il campo QR accetta l'immagine di un generatore (QuickChart "?text=<link>",
+        // qrserver "?data=<link>") o direttamente il link al modulo: in quel
+        // caso il QR si genera qui
+        function resolveOrderLinks(qrUrl) {
+            const url = (qrUrl || '').trim();
+            if (!url) return null;
+            const m = url.match(/[?&](?:text|data)=([^&]+)/);
+            if (m) return { qrImg: url, formUrl: decodeURIComponent(m[1]) };
+            return { qrImg: 'https://quickchart.io/qr?text=' + encodeURIComponent(url), formUrl: url };
+        }
+
         // Carica i dati del catalogo da Redis
         async function loadCatalog() {
             try {
-                const response = await fetch('/api/config');
+                const response = await fetch(IS_TEAM_CATALOG ? '/api/config?scope=team' : '/api/config');
                 if (!response.ok) {
                     throw new Error(`Errore HTTP: ${response.status}`);
                 }
@@ -32,12 +46,13 @@
                 
                 // ═══════ RENDERIZZA PACCHETTI KIT ═══════
                 if (catalog.kits) {
-                    renderKits(catalog.kits, catalog.qrUrl);
+                    renderKits(catalog.kits, IS_TEAM_CATALOG ? resolveOrderLinks(catalog.qrUrl)?.formUrl : null);
                 }
                 
                 // Aggiorna titolo e sottotitolo
                 if (catalog.title) {
                     document.getElementById('catalogTitle').textContent = catalog.title;
+                    document.title = catalog.title;
                 }
                 
                 // Mostra logo (se presente)
@@ -61,15 +76,9 @@
                     const qrImg = document.getElementById('qrCodeImage');
                     const orderLink = document.getElementById('orderFormLink');
                     
-                    qrImg.src = catalog.qrUrl;
-                    
-                    // Estrai l'URL del Google Form dall'immagine QR Code generata da QuickChart
-                    const urlMatch = catalog.qrUrl.match(/text=([^&]+)/);
-                    if (urlMatch) {
-                        const formUrl = decodeURIComponent(urlMatch[1]);
-                        orderLink.href = formUrl;
-                        console.log('✅ Link ordini estratto:', formUrl);
-                    }
+                    const links = resolveOrderLinks(catalog.qrUrl);
+                    qrImg.src = links.qrImg;
+                    orderLink.href = links.formUrl;
                     
                     qrSection.style.display = 'block';
                 }
@@ -250,7 +259,7 @@
                                     <span class="text-3xl font-bold text-yellow-300 drop-shadow">€${parseFloat(kit.discountedPrice).toFixed(2)}</span>
                                 </div>
                             ` : ''}
-                            <a href="https://docs.google.com/forms/d/e/1FAIpQLScZrznifm9Rhju7jAX5j2qnLdJyzukRd2PU9nQLEkmCwGEi9A/viewform"
+                            <a href="${escapeHtml(orderUrl || 'https://docs.google.com/forms/d/e/1FAIpQLScZrznifm9Rhju7jAX5j2qnLdJyzukRd2PU9nQLEkmCwGEi9A/viewform')}"
                                target="_blank"
                                class="block w-full text-center bg-white hover:bg-opacity-90 text-blue-900 font-bold py-4 px-6 rounded-lg transition shadow-lg">
                                 <i class="fas fa-shopping-cart mr-2"></i>Ordina

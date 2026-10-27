@@ -2,6 +2,15 @@ import { getRedis } from './lib/redis.js';
 import { requireAuth } from './lib/auth.js';
 
 const CONFIG_KEY = 'orderflow:config';
+// Catalogo pubblico del materiale squadra (catalogo.html?tipo=squadra): blob
+// separato da CONFIG_KEY, che saveData() riscrive a ogni salvataggio per tutti
+// i ruoli. Stessa forma di config.catalog.
+const TEAM_CATALOG_KEY = 'orderflow:team:public-catalog';
+const TEAM_KIT_KEYS = ['kit_completo_campo', 'kit_completo_portiere', 'mini_kit_campo', 'mini_kit_portiere', 'kit_generico'];
+
+function teamCatalogDefault() {
+  return { title: 'Catalogo Squadra', logo: '', qrUrl: '', fullCatalogUrl: '', orderNote: '', items: [], kits: {} };
+}
 
 // Ruoli che possono salvare i Quick ID filters (permesso useQuickIdFilters in
 // USER_ROLES): il pulsante "Configura Quick ID" non è nascosto per questi
@@ -20,6 +29,12 @@ export default async function handler(req, res) {
 
   try {
     // GET resta pubblico: catalogo.html lo consulta senza login
+    if (req.method === 'GET' && req.query?.scope === 'team') {
+      const catalog = { ...teamCatalogDefault(), ...((await redis.get(TEAM_CATALOG_KEY)) || {}) };
+      if (!catalog.kits || typeof catalog.kits !== 'object') catalog.kits = {};
+      return res.status(200).json({ success: true, data: { catalog } });
+    }
+
     if (req.method === 'GET') {
       const config = await redis.get(CONFIG_KEY);
       console.log(`GET /api/config - items: ${config?.catalog?.items?.length||0}, kits: ${Object.keys(config?.catalog?.kits||{}).length}`);
@@ -38,6 +53,48 @@ export default async function handler(req, res) {
       if (!session) return;
 
       const { action, globalItems, globalKitTypes, quickIdFilters, catalog } = req.body;
+
+      // Catalogo Squadra: solo admin, non tocca la config dell'abbigliamento
+      if (action === 'save-team-catalog') {
+        if ((session.role || '').toLowerCase() !== 'admin') {
+          return res.status(403).json({ success: false, error: 'Solo admin' });
+        }
+        if (!catalog || typeof catalog !== 'object' || Array.isArray(catalog) || !Array.isArray(catalog.items || [])) {
+          return res.status(400).json({ success: false, error: 'Catalogo non valido' });
+        }
+        const str = (v, n) => String(v ?? '').trim().slice(0, n);
+        const existing = await redis.get(TEAM_CATALOG_KEY);
+        let items = (catalog.items || []).slice(0, 300);
+        // Stessa protezione del catalogo abbigliamento: un client con la
+        // lista vuota non cancella gli articoli salvati
+        if ((existing?.items?.length || 0) > 0 && items.length === 0 && !catalog.clearItems) {
+          items = existing.items;
+        }
+        const kits = {};
+        for (const k of TEAM_KIT_KEYS) {
+          const kit = catalog.kits?.[k];
+          if (!kit || typeof kit !== 'object') continue;
+          const price = parseFloat(kit.discountedPrice);
+          kits[k] = {
+            name: str(kit.name, 120),
+            description: str(kit.description, 500),
+            discountedPrice: isNaN(price) ? null : price,
+            items: Array.isArray(kit.items) ? kit.items.slice(0, 100) : []
+          };
+        }
+        const saved = {
+          title: str(catalog.title, 200) || 'Catalogo Squadra',
+          logo: str(catalog.logo, 1000),
+          qrUrl: str(catalog.qrUrl, 1000),
+          fullCatalogUrl: str(catalog.fullCatalogUrl, 1000),
+          orderNote: str(catalog.orderNote, 300),
+          items,
+          kits,
+          updatedAt: new Date().toISOString()
+        };
+        await redis.set(TEAM_CATALOG_KEY, saved);
+        return res.status(200).json({ success: true, catalog: saved });
+      }
 
       if (action === 'save') {
         const role = (session.role || '').toLowerCase();
