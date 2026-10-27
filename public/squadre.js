@@ -1039,8 +1039,8 @@ function teamMatrixHtml(mode, layout, inventory) {
     const bgHead = mode === 'INV' ? 'bg-yellow-50' : (mode === 'GROSS' ? 'bg-blue-50' : 'bg-gray-100');
     const head = `<th class="px-0 py-0 ${bgHead} sticky-col border-r shadow text-center align-middle text-sm font-bold">TAGLIA</th>` +
         columns.map(c => `<th class="border-l align-bottom pb-2 ${c.includes('da scegliere') ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-50'}"><div class="vertical-header">${teamEsc(c)}</div></th>`).join('');
-    // Numeri di maglia: in Da ordinare il 30% piu' grandi (9px -> 11.7px)
-    const numSize = mode === 'NET' ? 'font-size:11.7px' : 'font-size:9px';
+    // Numeri di maglia: in Da ordinare piu' grandi (9px +30% +20% = 14px)
+    const numSize = mode === 'NET' ? 'font-size:14px' : 'font-size:9px';
     const nums = (v) => v && v.numeri.length ? `<div class="font-normal text-blue-800 leading-tight" style="${numSize}">n° ${v.numeri.map(teamEsc).join(', ')}</div>` : '';
     const totals = {};
     const body = sizes.map((size, rowIdx) => {
