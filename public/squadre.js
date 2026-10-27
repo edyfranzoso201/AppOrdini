@@ -494,7 +494,10 @@ async function loadTeamData() {
         renderTeamTab();
     } catch (e) {
         console.error('Errore caricamento materiale squadra:', e);
-        if (box) box.innerHTML = `<p class="text-red-600 text-sm">Errore nel caricamento: ${teamEsc(e.message)}</p>`;
+        const msg = `<p class="text-red-600 text-sm">Errore nel caricamento: ${teamEsc(e.message)}</p>`;
+        if (box) box.innerHTML = msg;
+        const matrix = document.getElementById('teamMatrixList');
+        if (matrix) matrix.innerHTML = msg;
     }
 }
 
@@ -1101,20 +1104,20 @@ async function teamSetStockFromInput(input) {
 function teamRerenderKeepFocus() {
     setTimeout(() => {
         const a = document.activeElement;
-        const keep = a && a.classList && a.classList.contains('inv-input') && a.closest('#teamRequestsList')
+        const keep = a && a.classList && a.classList.contains('inv-input') && a.closest('#teamRequestsList, #teamMatrixList')
             ? { col: a.dataset.col, size: a.dataset.size } : null;
-        const keepFilter = a && a.dataset && a.dataset.filter && a.closest('#teamRequestsList')
+        const keepFilter = a && a.dataset && a.dataset.filter && a.closest('#teamRequestsList, #teamMatrixList')
             ? { k: a.dataset.filter, pos: a.selectionStart } : null;
-        const scroll = [...document.querySelectorAll('#teamRequestsList [style*="overflow-x"]')].map(d => d.scrollLeft);
+        const scroll = [...document.querySelectorAll('#teamRequestsList [style*="overflow-x"], #teamMatrixList [style*="overflow-x"]')].map(d => d.scrollLeft);
         renderTeamTab();
-        document.querySelectorAll('#teamRequestsList [style*="overflow-x"]').forEach((d, i) => { if (scroll[i]) d.scrollLeft = scroll[i]; });
+        document.querySelectorAll('#teamRequestsList [style*="overflow-x"], #teamMatrixList [style*="overflow-x"]').forEach((d, i) => { if (scroll[i]) d.scrollLeft = scroll[i]; });
         if (keep) {
-            const el = [...document.querySelectorAll('#teamRequestsList .inv-input')]
+            const el = [...document.querySelectorAll('#teamRequestsList .inv-input, #teamMatrixList .inv-input')]
                 .find(x => x.dataset.col === keep.col && x.dataset.size === keep.size);
             if (el) { el.focus(); el.select && el.select(); }
         }
         if (keepFilter) {
-            const el = document.querySelector(`#teamRequestsList [data-filter="${keepFilter.k}"]`);
+            const el = document.querySelector(`#teamRequestsList [data-filter="${keepFilter.k}"], #teamMatrixList [data-filter="${keepFilter.k}"]`);
             if (el) {
                 el.focus();
                 if (el.setSelectionRange && keepFilter.pos != null) el.setSelectionRange(keepFilter.pos, keepFilter.pos);
@@ -1463,7 +1466,18 @@ function renderTeamTab() {
             <div class="section-title text-blue-900 mb-2 flex flex-wrap items-center justify-between gap-2"><span><i class="fas fa-clipboard-list mr-2"></i> 1. Richieste${teamState.view === 'archivio' ? ' in archivio' : ''}</span>${viewSwitch}</div>
             ${byStatus.length ? teamRequestsTableHtml(reqs, byStatus)
                 : `<p class="text-sm text-gray-500 p-4 text-center">${teamState.view === 'archivio' ? 'Nessuna richiesta in archivio.' : 'Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.'}</p>`}
-        </div>` +
+        </div>`;
+    const matrix = document.getElementById('teamMatrixList');
+    if (!matrix) return;
+    // I riepiloghi seguono stato, vista e filtri di colonna di Ordini Squadra
+    const info = document.getElementById('teamMatrixInfo');
+    if (info) {
+        const nFiltri = Object.values(teamState.colFilters || {}).filter(v => String(v ?? '').trim()).length;
+        info.textContent = `Calcolata su ${reqs.length} richieste ${teamState.view === 'archivio' ? 'in archivio' : 'attive'}`
+            + (teamState.filter !== 'tutte' ? ` · stato ${teamState.filter}` : '')
+            + (nFiltri ? ` · ${nFiltri} filtri di colonna attivi in Ordini Squadra` : '');
+    }
+    matrix.innerHTML =
         box('2. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
         box('3. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
         box(`4. Da ordinare (Netto: ${netLabel} meno giacenza) ${netInfo}`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
