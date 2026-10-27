@@ -380,7 +380,13 @@ const teamState = {
     distMin: null,
     distMax: null,
     distStatus: 'tutte',
-    quickFilters: {}
+    quickFilters: {},
+    // Filtri & Ricerca di Ordini Squadra (oltre a colFilters)
+    ordSort: 'desc',
+    ordTaglia: '',
+    ordArticolo: '',
+    ordMin: null,
+    ordMax: null
 };
 
 // ID di ogni richiesta (SQ_001, SQ_002...), come gli ID degli ordini personali.
@@ -1441,10 +1447,9 @@ function renderTeamTab() {
     // Archivio: le richieste archiviate escono dalle attive (e dai totali) ma
     // restano consultabili nella vista Archivio, con i loro riepiloghi
     const inView = teamState.requests.filter(r => !!r.archived === (teamState.view === 'archivio'));
-    const byStatus = inView
-        .filter(r => teamState.filter === 'tutte' || r.status === teamState.filter)
-        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-    const reqs = byStatus.filter(r => teamMatchFilters(r, teamState.colFilters));
+    const byStatus = teamOrdSort(inView
+        .filter(r => teamState.filter === 'tutte' || r.status === teamState.filter));
+    const reqs = byStatus.filter(r => teamMatchFilters(r, teamState.colFilters) && teamOrdMatch(r));
     const nArch = teamState.requests.filter(r => r.archived).length;
     const counter = document.getElementById('teamCounter');
     if (counter) {
@@ -1470,7 +1475,7 @@ function renderTeamTab() {
     const netLabel = teamState.distStatus === 'tutte' ? 'richieste Nuovo' : 'stato filtrato';
     // ID e data/ora di stampa, come in 3. Ordine Fornitore della Distinta
     const netInfo = `<span class="supplier-info"><i class="fas fa-info-circle mr-1"></i>ID: ${teamEsc(teamIdRange(netReqs))} | ${new Date().toLocaleString('it-IT')}</span>`;
-    list.innerHTML =
+    list.innerHTML = teamOrdFiltersHtml(inView) +
         `<div class="bg-white rounded shadow px-2 pt-2 pb-2 mb-3">
             <div class="section-title text-blue-900 mb-2 flex flex-wrap items-center justify-between gap-2"><span><i class="fas fa-clipboard-list mr-2"></i> 1. Richieste${teamState.view === 'archivio' ? ' in archivio' : ''}</span>${viewSwitch}</div>
             ${byStatus.length ? teamRequestsTableHtml(reqs, byStatus)
@@ -1492,6 +1497,122 @@ function renderTeamTab() {
         box('3. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
         box(`4. Da ordinare (Netto: ${netLabel} meno giacenza) ${netInfo}`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
         '<div class="mb-6"></div>';
+}
+
+// ── Filtri & Ricerca di Ordini Squadra (come Gestione) ──────────────────────
+// Richiedente, stato, sport, ruolo e squadra usano gli stessi filtri della
+// riga sotto le intestazioni (restano allineati); taglia e capo sono scelte
+// esatte; range ID e Quick ID sono propri di Ordini Squadra (i Quick sono gli
+// stessi pulsanti salvati della Distinta Squadre).
+
+function teamOrdMatch(r) {
+    const righe = r.righe || [];
+    if (teamState.ordTaglia && !righe.some(x => teamSizeKey(x.taglia) === teamState.ordTaglia)) return false;
+    if (teamState.ordArticolo && !righe.some(x => teamColumnName(x) === teamState.ordArticolo)) return false;
+    const n = teamIdNum(r.displayId);
+    if (teamState.ordMin != null && n < teamState.ordMin) return false;
+    if (teamState.ordMax != null && n > teamState.ordMax) return false;
+    return true;
+}
+
+function teamOrdSort(reqs) {
+    const dir = teamState.ordSort === 'asc' ? 1 : -1;
+    return reqs.sort((a, b) => dir * ((teamIdNum(a.displayId) - teamIdNum(b.displayId))
+        || String(a.createdAt).localeCompare(String(b.createdAt))));
+}
+
+function teamOrdFiltersHtml(inView) {
+    const f = teamState.colFilters;
+    const ctl = 'text-sm border rounded px-2 py-1';
+    const opt = (v, l, cur) => `<option value="${teamEsc(v)}" ${v === cur ? 'selected' : ''}>${teamEsc(l)}</option>`;
+    const sel = (k, first, opts, extra) => `<select data-filter="p-${k}" onchange="teamSetColFilter('${k}', this.value)" class="${ctl} ${extra || ''}">
+        ${opt('', first, f[k] || '')}${opts.map(([v, l]) => opt(v, l, f[k] || '')).join('')}</select>`;
+    const inp = (k, ph, w) => `<input data-filter="p-${k}" oninput="teamSetColFilter('${k}', this.value)" value="${teamEsc(f[k] || '')}" placeholder="${ph}" class="${ctl} ${w}">`;
+    const ruoli = [...new Set(inView.map(r => (r.richiedente || {}).ruolo).filter(Boolean))].sort();
+    const sport = [...new Set([...TEAM_SPORTS.filter(Boolean), ...inView.map(r => r.sport).filter(Boolean)])];
+    const righe = inView.flatMap(r => r.righe || []);
+    const taglie = teamSortSizes([...new Set(righe.map(x => teamSizeKey(x.taglia)).filter(Boolean))]);
+    const capi = [...new Set(righe.map(x => teamColumnName(x)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const nums = [...new Set(inView.map(r => teamIdNum(r.displayId)).filter(n => n > 0))].sort((a, b) => a - b);
+    // Un limite che non coincide con un ID presente si mostra sul piu' vicino interno al range
+    const lo = !nums.length ? '' : teamState.ordMin == null ? nums[0] : (nums.find(n => n >= teamState.ordMin) ?? nums[nums.length - 1]);
+    const hi = !nums.length ? '' : teamState.ordMax == null ? nums[nums.length - 1] : ([...nums].reverse().find(n => n <= teamState.ordMax) ?? nums[0]);
+    const idOpts = cur => nums.map(n => opt(String(n), TEAM_ID_PREFIX + String(n).padStart(3, '0'), String(cur))).join('') || '<option value="">-</option>';
+    let quick = '';
+    for (let i = 1; i <= 15; i++) {
+        const q = teamState.quickFilters[i];
+        const ok = q && q.min && q.max;
+        quick += `<button onclick="applyTeamOrdQuick(${i})" ${ok ? '' : 'disabled'} title="${ok ? teamEsc(q.min + ' → ' + q.max) : 'Non configurato'}"
+            class="${ok ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'} text-white px-2 py-1 rounded text-xs font-bold transition min-w-[30px]">${i}</button>`;
+    }
+    return `<div class="bg-white rounded shadow p-3 mb-3 team-ord-filters">
+        <h2 class="font-bold text-blue-900 text-sm mb-2">Filtri & Ricerca</h2>
+        <div class="flex gap-2 flex-wrap items-center">
+            ${inp('richiedente', 'Cerca Richiedente...', 'w-48')}
+            <select id="teamOrdSort" onchange="setTeamOrdSort(this.value)" class="${ctl} font-bold bg-gray-50 text-blue-900">
+                ${opt('desc', 'ID Decrescente (10..1)', teamState.ordSort)}${opt('asc', 'ID Crescente (1..10)', teamState.ordSort)}</select>
+            ${sel('stato', 'Stato: Tutti', TEAM_STATUSES.map(s => [s.value, s.label]))}
+            ${sel('sport', 'Sport: Tutti', [...sport.map(v => [v, v]), ['-', 'Non indicato']])}
+            ${sel('ruolo', 'Ruolo: Tutti', [...ruoli.map(v => [v, v]), ['-', 'Non indicato']])}
+            ${inp('squadra', 'Squadra...', 'w-32')}
+            <select id="teamOrdTaglia" onchange="setTeamOrdField('ordTaglia', this.value)" class="${ctl}">
+                ${opt('', 'Taglia: Tutte', teamState.ordTaglia)}${taglie.map(t => opt(t, t, teamState.ordTaglia)).join('')}</select>
+            <select id="teamOrdArticolo" onchange="setTeamOrdField('ordArticolo', this.value)" class="${ctl} bg-purple-50 border-purple-300 font-medium" style="max-width:260px">
+                ${opt('', 'Cerca Capo...', teamState.ordArticolo)}${capi.map(c => opt(c, c, teamState.ordArticolo)).join('')}</select>
+            <div class="h-6 w-px bg-gray-300"></div>
+            <span class="text-xs font-bold text-gray-600">ID:</span>
+            <select id="teamOrdMinId" onchange="setTeamOrdRange()" class="text-xs border rounded px-2 py-1 w-28 text-center font-bold bg-white">${idOpts(lo)}</select>
+            <span class="text-xs text-gray-400">→</span>
+            <select id="teamOrdMaxId" onchange="setTeamOrdRange()" class="text-xs border rounded px-2 py-1 w-28 text-center font-bold bg-white">${idOpts(hi)}</select>
+            <div class="h-6 w-px bg-gray-300"></div>
+            <span class="text-xs font-bold text-gray-600">Quick ID:</span>
+            <div class="flex items-center gap-1 flex-wrap">${quick}</div>
+            <button onclick="openTeamQuickConfig()" class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs font-bold transition" title="Configura Quick ID squadre"><i class="fas fa-cog"></i></button>
+            <button onclick="resetTeamOrdFilters()" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset filtri"><i class="fas fa-times"></i></button>
+        </div></div>`;
+}
+
+function setTeamOrdSort(v) {
+    teamState.ordSort = v === 'asc' ? 'asc' : 'desc';
+    renderTeamTab();
+}
+
+function setTeamOrdField(k, v) {
+    teamState[k] = v || '';
+    renderTeamTab();
+}
+
+// Il primo ID del Da e l'ultimo dell'A equivalgono a "nessun limite"
+function setTeamOrdRange() {
+    const minSel = document.getElementById('teamOrdMinId');
+    const maxSel = document.getElementById('teamOrdMaxId');
+    if (!minSel || !maxSel || !minSel.value || !maxSel.value) return;
+    const first = parseInt(minSel.options[0].value, 10);
+    const last = parseInt(maxSel.options[maxSel.options.length - 1].value, 10);
+    let lo = parseInt(minSel.value, 10), hi = parseInt(maxSel.value, 10);
+    if (lo > hi) [lo, hi] = [hi, lo];
+    teamState.ordMin = lo === first ? null : lo;
+    teamState.ordMax = hi === last ? null : hi;
+    renderTeamTab();
+}
+
+function applyTeamOrdQuick(i) {
+    const q = teamState.quickFilters[i];
+    if (!q || !q.min || !q.max) return;
+    let lo = teamIdNum(q.min), hi = teamIdNum(q.max);
+    if (lo > hi) [lo, hi] = [hi, lo];
+    teamState.ordMin = lo;
+    teamState.ordMax = hi;
+    renderTeamTab();
+}
+
+function resetTeamOrdFilters() {
+    teamState.colFilters = {};
+    teamState.ordTaglia = '';
+    teamState.ordArticolo = '';
+    teamState.ordMin = null;
+    teamState.ordMax = null;
+    renderTeamTab();
 }
 
 // ── Filtri Distinta Squadre ─────────────────────────────────────────────────
