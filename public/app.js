@@ -444,6 +444,7 @@
             setInterval(updateClock, 1000);
         }
 
+        const NAV_TEAM_CLASS = "px-3 py-1.5 rounded-md text-xs font-medium transition text-emerald-800 bg-emerald-100 hover:bg-emerald-200";
         function showTab(tabName) { 
             // Verifica permessi per Dashboard
             if (tabName === 'dashboard' && !checkPermission('viewDashboard')) {
@@ -476,12 +477,15 @@
             navButtons.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn && !btn.classList.contains('hidden')) {
-                    btn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200";
+                    btn.className = id.startsWith('nav-squadre') ? NAV_TEAM_CLASS : "px-3 py-1.5 rounded-md text-xs font-medium transition text-gray-600 hover:bg-gray-200";
                 }
             });
             
             document.getElementById('tab-' + tabName).classList.add('active');
-            document.getElementById('nav-' + tabName).className = "px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow";
+            // Ordini/Distinta Squadre in verde per distinguerle dall'abbigliamento
+            document.getElementById('nav-' + tabName).className = tabName.startsWith('squadre')
+                ? "px-3 py-1.5 rounded-md text-xs font-medium transition bg-emerald-700 text-white shadow"
+                : "px-3 py-1.5 rounded-md text-xs font-medium transition bg-blue-900 text-white shadow";
             
             if (tabName === 'matrix') renderMatrices();
             if (tabName === 'dashboard') { 
