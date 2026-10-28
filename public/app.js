@@ -8052,7 +8052,8 @@ async function clearActivityLog() {
                 const filter = quickIdFilters[i];
                 const hasConfig = filter && filter.min && filter.max;
                 const bgColor = hasConfig ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 hover:bg-gray-400 cursor-not-allowed';
-                const title = hasConfig ? `${filter.min} → ${filter.max}` : 'Non configurato';
+                // Il nome facoltativo segue l'intervallo nel tooltip
+                const title = hasConfig ? escapeHtml(`${filter.min} → ${filter.max}` + (filter.name ? ` · ${filter.name}` : '')) : 'Non configurato';
                 
                 html += `<button 
                     onclick="applyQuickIdFilter(${i})" 
@@ -8259,6 +8260,13 @@ async function clearActivityLog() {
                                 placeholder="ID Max"
                                 class="text-sm border rounded px-2 py-1 w-full">
                         </div>
+                        <input 
+                            type="text" 
+                            id="quickIdName_${i}" 
+                            value="${escapeHtml(filter.name || '')}" 
+                            placeholder="Nome (facoltativo)"
+                            maxlength="40"
+                            class="text-sm border rounded px-2 py-1 w-full mt-2">
                     </div>
                 `;
             }
@@ -8298,6 +8306,7 @@ async function saveQuickIdConfig() {
         for (let i = 1; i <= 15; i++) {
             const minInput = document.getElementById(`quickIdMin_${i}`);
             const maxInput = document.getElementById(`quickIdMax_${i}`);
+            const nameInput = document.getElementById(`quickIdName_${i}`);
             
             if (minInput && maxInput) {
                 const min = minInput.value.trim().toUpperCase();
@@ -8305,7 +8314,8 @@ async function saveQuickIdConfig() {
                 
                 // Se entrambi i campi sono compilati, salva il filtro
                 if (min && max) {
-                    newFilters[i] = { min: min, max: max };
+                    const name = nameInput ? nameInput.value.trim() : '';
+                    newFilters[i] = name ? { min: min, max: max, name: name } : { min: min, max: max };
                     configuredCount++;
                 }
             }
