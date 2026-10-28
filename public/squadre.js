@@ -1162,21 +1162,26 @@ function teamRequestSummaryHtml(r) {
     const byArt = new Map();
     r.righe.forEach(x => {
         const col = teamColumnName(x);
-        const a = byArt.get(col) || { sizes: new Map(), numeri: [], daScegliere: !!x.daScegliere };
+        const a = byArt.get(col) || { sizes: new Map(), numeri: new Map(), daScegliere: !!x.daScegliere };
         const size = teamSizeKey(x.taglia);
         a.sizes.set(size, (a.sizes.get(size) || 0) + (Number(x.qta) || 0));
-        if (x.numero) a.numeri.push(x.numero);
+        // Numeri di maglia accanto alla loro taglia: in coda all'articolo
+        // sembravano nell'ordine delle taglie (L 25, XL 45) anche quando non lo erano
+        if (x.numero) a.numeri.set(size, [...(a.numeri.get(size) || []), x.numero]);
         byArt.set(col, a);
     });
     return [...byArt.entries()].map(([col, a]) => {
         const sizes = [...a.sizes.entries()]
             .sort((p, q) => teamSizeRank(p[0]) - teamSizeRank(q[0]))
-            .map(([sz, q]) => sz === 'UNICA' ? `×${q}` : `${teamEsc(sz)} ×${q}`).join(', ');
-        const nums = a.numeri.length ? ` <span class="text-blue-800">· n° ${teamEsc(teamCompactNumbers(a.numeri))}</span>` : '';
+            .map(([sz, q]) => {
+                const n = a.numeri.get(sz);
+                const nums = n ? ` <span class="text-blue-800">(n° ${teamEsc(teamCompactNumbers(n))})</span>` : '';
+                return (sz === 'UNICA' ? `×${q}` : `${teamEsc(sz)} ×${q}`) + nums;
+            }).join(', ');
         const name = a.daScegliere
             ? `<span class="text-yellow-800 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>${teamEsc(col)}</span>`
             : `<b>${teamEsc(col)}</b>`;
-        return `<div>${name} <span class="text-gray-400">—</span> ${sizes}${nums}</div>`;
+        return `<div>${name} <span class="text-gray-400">—</span> ${sizes}</div>`;
     }).join('');
 }
 
