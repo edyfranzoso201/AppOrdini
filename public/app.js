@@ -3687,6 +3687,7 @@ function deleteOrder(id) {
             }
 
             renderGenericMatrix('grossTable', 'grossHeader', 'grossBody', globalItems, filteredGross, 'GROSS');
+            renderMissingTable(filteredGross);
             renderGenericMatrix('invClothingTable', 'invClothingHeader', 'invClothingBody', globalItems, filteredGross, 'INV', filteredNet); 
             renderGenericMatrix('netTable', 'netHeader', 'netBody', globalItems, filteredNet, 'NET'); 
             
@@ -3698,6 +3699,86 @@ function deleteOrder(id) {
 
             // NON chiamare più updateDashboardCounts qui - la Dashboard ha i suoi filtri indipendenti
             renderChart();
+        }
+
+        // Tabella dei mancanti: i capi che nel foglio Tabella hanno la cella
+        // BIANCA, cioe' ne' evidenziata a mano (verde) ne' scalata dal
+        // magazzino (arancione). Usa gli stessi ordini del Lordo, quindi segue
+        // il range ID e il filtro Stato della Distinta.
+        //
+        // La chiave e' la stessa della Tabella (id_nomeSenzaPrezzo_taglia):
+        // se cambia la' va cambiata anche qui, o il verde non verrebbe visto.
+        // Se un ordine ha piu' pezzi dello stesso capo/taglia conta ognuno,
+        // tolti quelli gia' scalati.
+        function renderMissingTable(filteredOrders) {
+            const header = document.getElementById('missingHeader');
+            const body = document.getElementById('missingBody');
+            if (!header || !body) return;
+
+            const cleanItemName = (name) => {
+                const priceMatch = name.match(/\s*\(\d+€\)\s*$/);
+                return priceMatch ? name.substring(0, name.lastIndexOf(priceMatch[0])).trim() : name;
+            };
+
+            // counts[item][sizeShown] = { qty, ids: [] }
+            const counts = {};
+            filteredOrders.forEach(order => {
+                const groups = {};
+                (order.itemsList || []).forEach(i => {
+                    if (!i || !i.name || typeof i.name !== 'string') return;
+                    const itemName = cleanItemName(i.name);
+                    const size = i.size || '';
+                    const g = `${itemName}\u0000${size}`;
+                    if (!groups[g]) groups[g] = { itemName, size, n: 0 };
+                    groups[g].n++;
+                });
+                Object.values(groups).forEach(({ itemName, size, n }) => {
+                    if (highlightedSizeCells[`${order.id}_${itemName}_${size}`] === true) return;
+                    const missing = n - countScaled(order, itemName, size);
+                    if (missing <= 0) return;
+                    const sizeShown = isSockItem(itemName) ? sockSizeText(normalizeSockSize(size)) : (size || '-');
+                    if (!counts[itemName]) counts[itemName] = {};
+                    if (!counts[itemName][sizeShown]) counts[itemName][sizeShown] = { qty: 0, ids: [] };
+                    counts[itemName][sizeShown].qty += missing;
+                    counts[itemName][sizeShown].ids.push(missing > 1 ? `${order.displayId} (x${missing})` : order.displayId);
+                });
+            });
+
+            const items = Object.keys(counts).sort((a, b) => {
+                const ia = globalItems.findIndex(g => stripPriceOnly(g) === stripPriceOnly(a));
+                const ib = globalItems.findIndex(g => stripPriceOnly(g) === stripPriceOnly(b));
+                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib) || a.localeCompare(b);
+            });
+            const sizeRank = (s) => {
+                if (s === 'UNICA') return 10000;
+                const idx = SIZE_ORDER.indexOf(s);
+                return idx === -1 ? 5000 : idx;
+            };
+            const sizes = [...new Set(items.flatMap(it => Object.keys(counts[it])))]
+                .sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b));
+
+            if (items.length === 0) {
+                header.innerHTML = '';
+                body.innerHTML = `<tr><td class="p-3 text-center text-green-700 font-bold"><i class="fas fa-check-circle mr-1"></i>Nessun capo mancante negli ordini filtrati</td></tr>`;
+                return;
+            }
+
+            header.innerHTML = `<tr><th class="px-2 py-1 border text-left">Taglia</th>${items.map(it => `<th class="px-1 py-1 border text-center" title="${escapeHtml(it)}">${formatHeaderName(escapeHtml(it))}</th>`).join('')}<th class="px-2 py-1 border text-center">TOT</th></tr>`;
+
+            const colTotals = items.map(() => 0);
+            let rowsHtml = sizes.map(size => {
+                let rowTot = 0;
+                const cells = items.map((it, c) => {
+                    const cell = counts[it][size];
+                    if (!cell) return `<td class="border text-center text-gray-300">-</td>`;
+                    rowTot += cell.qty; colTotals[c] += cell.qty;
+                    return `<td class="border text-center font-bold text-red-700 bg-red-50" title="${escapeHtml(cell.ids.join(', '))}">${cell.qty}</td>`;
+                }).join('');
+                return `<tr><td class="border px-2 font-bold">${escapeHtml(size)}</td>${cells}<td class="border text-center font-bold">${rowTot}</td></tr>`;
+            }).join('');
+            const grand = colTotals.reduce((a, b) => a + b, 0);
+            rowsHtml += `<tr class="total-row"><td class="border px-2 font-bold">TOTALE</td>${colTotals.map(t => `<td class="border text-center font-bold">${t}</td>`).join('')}<td class="border text-center font-bold">${grand}</td></tr>`;
+            body.innerHTML = rowsHtml;
         }
 
         function updateDashboardCounts() {
@@ -5112,6 +5193,12 @@ function updateUI() {
                     tableId = 'grossTable';
                     titleColor = '#1e3a8a';
                     borderColor = '#3b82f6';
+                    break;
+                case 'missing':
+                    title = 'Mancanti (celle bianche in Tabella)';
+                    tableId = 'missingTable';
+                    titleColor = '#991b1b';
+                    borderColor = '#dc2626';
                     break;
                 case 'inv':
                     title = '2. Magazzino (Giacenze)';
