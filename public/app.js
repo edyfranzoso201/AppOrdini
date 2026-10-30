@@ -937,13 +937,39 @@
                 `;
                 
                 allItems.forEach((itemName, idx) => {
-                    const item = order.itemsList.find(i => {
+                    const matching = order.itemsList.filter(i => {
                         if (!i || !i.name || typeof i.name !== 'string') return false;
                         const priceMatch = i.name.match(/\s*\(\d+€\)\s*$/);
                         const cleanName = priceMatch ? i.name.substring(0, i.name.lastIndexOf(priceMatch[0])).trim() : i.name;
                         return cleanName === itemName;
                     });
+                    const item = matching[0];
                     const size = item ? item.size : '';
+                    // Stesso capo in piu' taglie nello stesso ordine (es. allenatore
+                    // che e' anche atleta: tuta M + tuta L): la cella mostrava solo la
+                    // prima taglia e l'altra restava "mancante" senza poterla colorare.
+                    // Una casella cliccabile per taglia, ognuna con la sua chiave.
+                    const distinctSizes = [...new Set(matching.map(i => i.size || ''))];
+                    if (distinctSizes.length > 1) {
+                        const halfPointM = Math.ceil(allItems.length / 2);
+                        const partClassM = idx < halfPointM ? 'print-show-part-1' : 'print-show-part-2';
+                        const boxes = distinctSizes.map((sz, k) => {
+                            const st = highlightedSizeCells[`${order.id}_${itemName}_${sz}`];
+                            const scQty = countScaled(order, itemName, sz);
+                            const cls = st === true ? 'size-cell-highlighted' : (st === 'skip' ? 'size-cell-skip' : (scQty > 0 ? 'size-cell-scaled' : ''));
+                            const shown = isSockItem(itemName) ? sockSizeText(normalizeSockSize(sz)) : sz;
+                            return `<div class="size-cell-clickable p-1 ${cls}"
+                                        data-scaled="${scQty > 0 ? 1 : 0}"
+                                        onclick="toggleSizeCellHighlight(this, '${order.id}', '${itemName.replace(/'/g, "\\'")}', '${sz}')"
+                                        style="${k > 0 ? 'border-top: 1px solid #cbd5e1;' : ''}">${shown}</div>`;
+                        }).join('');
+                        html += `<td class="border p-0 text-center item-col ${partClassM}"
+                                    data-col-index="${8 + idx}"
+                                    data-order-id="${order.id}"
+                                    data-item-name="${itemName}"
+                                    style="font-size: 10px;">${boxes}</td>`;
+                        return;
+                    }
                     // Solo testo a video: le calze mostrano sempre "misura + codice N"
                     // (anche se salvate senza). Chiavi e data-size restano sul valore salvato.
                     const sizeShown = (item && isSockItem(itemName)) ? sockSizeText(normalizeSockSize(size)) : size;
