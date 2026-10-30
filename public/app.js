@@ -339,7 +339,8 @@
             { value: 'Ordine trasferito ad altro ID', label: 'Trasferito', color: 'bg-purple-100 text-purple-800' },
 	    { value: 'Da piazzare', label: 'Da piazzare', color: 'bg-indigo-100 text-indigo-800' },
             { value: 'In sospeso', label: 'In sospeso', color: 'bg-slate-200 text-slate-700' },
-            { value: 'Pronto', label: 'Pronto', color: 'bg-green-100 text-green-800' }
+            { value: 'Pronto', label: 'Pronto', color: 'bg-green-100 text-green-800' },
+            { value: 'Pronto x Parziale', label: 'Pronto x Parziale', color: 'bg-lime-100 text-lime-800' }
         ];
         
         // === FUNZIONI GLOBALI PER ORDINAMENTO ID ===
@@ -2834,7 +2835,7 @@ function handleStatusChange(id, newStatus) {
         // Apri popup per inserire cosa manca
         openPartialDeliveryPopup(id);
         return; // Il salvataggio verrà fatto dal popup
-    } else if (newStatus === 'Pronto' || newStatus === 'In Lavorazione') {
+    } else if (newStatus === 'Pronto' || newStatus === 'Pronto x Parziale' || newStatus === 'In Lavorazione') {
         // Apri popup per inserire una nota facoltativa (es. cosa manca)
         openReadyMissingPopup(id, newStatus);
         return; // Il salvataggio verrà fatto dal popup
@@ -3517,7 +3518,7 @@ function deleteOrder(id) {
                         // Controlla se c'è una nota di consegna parziale
                         const hasPartialNote = o.status === 'Consegna Parziale' && o.partialDeliveryNote;
                         // Controlla se c'è una nota "manca qualcosa" per gli stati Pronto / In Lavorazione
-                        const hasReadyMissingNote = (o.status === 'Pronto' || o.status === 'In Lavorazione') && o.readyMissingNote;
+                        const hasReadyMissingNote = (o.status === 'Pronto' || o.status === 'Pronto x Parziale' || o.status === 'In Lavorazione') && o.readyMissingNote;
 
                         const statusOptionsHTML = STATUSES.map(s => `<option value="${s.value}" ${o.status===s.value?'selected':''}>${s.label}</option>`).join('');
                         statusInfo = `
