@@ -566,22 +566,26 @@
             }, 100);
         }
         
-        // Funzione per evidenziare/de-evidenziare celle taglie
+        // Clic su una cella taglia: bianca (o arancione) -> verde -> grigia -> bianca.
+        // Verde = consegnato (true); grigio = NON va consegnato di proposito
+        // (es. allenatore che e' anche atleta: una sola tuta), salvato come
+        // 'skip'. Entrambi tolgono il capo dai Mancanti della Distinta.
+        // Tornando a "nessuno stato" la cella riprende l'arancione se il capo
+        // era scalato (data-scaled, messo da renderTabellaOrdini).
         function toggleSizeCellHighlight(cell, orderId, itemName, size) {
             const cellKey = `${orderId}_${itemName}_${size}`;
-            
-            // Toggle dello stato
-            if (highlightedSizeCells[cellKey]) {
+            const state = highlightedSizeCells[cellKey];
+
+            cell.classList.remove('size-cell-highlighted', 'size-cell-skip', 'size-cell-scaled');
+            if (state === true) {
+                highlightedSizeCells[cellKey] = 'skip';
+                cell.classList.add('size-cell-skip');
+            } else if (state === 'skip') {
                 delete highlightedSizeCells[cellKey];
-                cell.classList.remove('size-cell-highlighted');
+                if (cell.dataset.scaled === '1') cell.classList.add('size-cell-scaled');
             } else {
                 highlightedSizeCells[cellKey] = true;
                 cell.classList.add('size-cell-highlighted');
-                // Il click sostituisce l'arancione (scalato) col verde manuale:
-                // senza questo le due classi restavano entrambe sulla cella e
-                // al click successivo sarebbe ricomparsa l'arancione invece che
-                // tornare neutra.
-                cell.classList.remove('size-cell-scaled');
             }
             
             // Salva lo stato
@@ -908,7 +912,8 @@
                 // Crea chiave per Borsone/Zaino
                 const borsoneZainoCellKey = `${order.id}_BorsoneZaino_${borsoneZaino}`;
                 const isBorsoneZainoHighlighted = highlightedSizeCells[borsoneZainoCellKey] === true;
-                const borsoneZainoHighlightClass = isBorsoneZainoHighlighted ? 'size-cell-highlighted' : '';
+                const borsoneZainoHighlightClass = isBorsoneZainoHighlighted ? 'size-cell-highlighted'
+                    : (highlightedSizeCells[borsoneZainoCellKey] === 'skip' ? 'size-cell-skip' : '');
                 
                 let html = `
                     <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}${isVoid ? `<div class="tabella-void-badge">${order.status === 'Ordine annullato' ? 'ANNULLATO' : 'TRASFERITO'}</div>` : ''}</td>
@@ -955,14 +960,17 @@
                     // Capo gia' scalato dal magazzino per questo ordine: arancione,
                     // a meno che l'utente non abbia evidenziato la cella a mano
                     // (click manuale, verde) - quello resta prioritario.
-                    const isScaled = !isHighlighted && item && countScaled(order, itemName, size) > 0;
-                    const highlightClass = isHighlighted ? 'size-cell-highlighted' : (isScaled ? 'size-cell-scaled' : '');
+                    const isSkip = highlightedSizeCells[cellKey] === 'skip';
+                    const scaledQty = item ? countScaled(order, itemName, size) : 0;
+                    const isScaled = !isHighlighted && !isSkip && scaledQty > 0;
+                    const highlightClass = isHighlighted ? 'size-cell-highlighted' : (isSkip ? 'size-cell-skip' : (isScaled ? 'size-cell-scaled' : ''));
 
                     html += `<td class="border p-1 text-center item-col size-cell-clickable ${partClass} ${highlightClass}"
                                 data-col-index="${colIndex}" 
                                 data-order-id="${order.id}" 
                                 data-item-name="${itemName}" 
                                 data-size="${size}"
+                                data-scaled="${scaledQty > 0 ? 1 : 0}"
                                 onclick="toggleSizeCellHighlight(this, '${order.id}', '${itemName.replace(/'/g, "\\'")}', '${size}')" 
                                 style="font-size: 10px;">${sizeShown}</td>`;
                 });
@@ -3702,7 +3710,7 @@ function deleteOrder(id) {
         }
 
         // Tabella dei mancanti: i capi che nel foglio Tabella hanno la cella
-        // BIANCA, cioe' ne' evidenziata a mano (verde) ne' scalata dal
+        // BIANCA, cioe' ne' verde, ne' grigia (non da consegnare), ne' scalata dal
         // magazzino (arancione). Usa gli stessi ordini del Lordo, quindi segue
         // il range ID e il filtro Stato della Distinta.
         //
@@ -3733,7 +3741,8 @@ function deleteOrder(id) {
                     groups[g].n++;
                 });
                 Object.values(groups).forEach(({ itemName, size, n }) => {
-                    if (highlightedSizeCells[`${order.id}_${itemName}_${size}`] === true) return;
+                    // Verde (true) o grigio ('skip', non va consegnato): non manca.
+                    if (highlightedSizeCells[`${order.id}_${itemName}_${size}`]) return;
                     const missing = n - countScaled(order, itemName, size);
                     if (missing <= 0) return;
                     const sizeShown = isSockItem(itemName) ? sockSizeText(normalizeSockSize(size)) : (size || '-');

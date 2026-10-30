@@ -205,6 +205,8 @@
         .inv-cell-needed { background-color: #ffff00 !important; }
         .inv-cell-needed .inv-input { background-color: #ffff00; font-weight: 700; }
         .size-cell-scaled { background-color: #f97316 !important; color: white !important; font-weight: bold; }
+        /* Grigio: capo che volutamente NON va consegnato (es. allenatore-atleta: una sola tuta). Non conta tra i Mancanti. */
+        .size-cell-skip { background-color: #64748b !important; color: white !important; font-weight: bold; }
 
         /* Stili Catalogo */
         .catalog-item-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; }
@@ -256,7 +258,8 @@
            evidenziate (verde/arancione), e cosi' anche in stampa. */
         #tabellaOrdiniStampabile tbody tr.tabella-row-void > td,
         #tabellaOrdiniStampabile tbody tr.tabella-row-void > td.size-cell-highlighted,
-        #tabellaOrdiniStampabile tbody tr.tabella-row-void > td.size-cell-scaled {
+        #tabellaOrdiniStampabile tbody tr.tabella-row-void > td.size-cell-scaled,
+        #tabellaOrdiniStampabile tbody tr.tabella-row-void > td.size-cell-skip {
             background-color: #d1d5db !important; color: #6b7280 !important;
             text-decoration: line-through; font-weight: normal;
             -webkit-print-color-adjust: exact; print-color-adjust: exact;
