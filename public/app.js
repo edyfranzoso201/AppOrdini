@@ -800,6 +800,9 @@
                 if (minId && compareDisplayIds(o.displayId, minId) < 0) return false;
                 if (maxId && compareDisplayIds(o.displayId, maxId) > 0) return false;
                 
+                // Ordini completati nascosti (pulsante "Mostra nascosti")
+                if (!isHiddenDoneVisible(o)) return false;
+
                 // Filtro Cliente
                 if (filterCliente && !o.customer.toLowerCase().includes(filterCliente)) return false;
                 
@@ -843,7 +846,7 @@
             filteredOrders.forEach((order, rowIdx) => {
                 const tr = document.createElement('tr');
                 const isVoid = isTabellaVoidOrder(order);
-                tr.className = 'border hover:bg-gray-50' + (rowIdx % 2 === 1 ? ' tabella-row-alt' : '') + (isVoid ? ' tabella-row-void' : '');
+                tr.className = 'border hover:bg-gray-50' + (rowIdx % 2 === 1 ? ' tabella-row-alt' : '') + (isVoid ? ' tabella-row-void' : '') + (order.hiddenDone ? ' hidden-done-row' : '');
                 if (isVoid) tr.title = order.status;
                 
                 const borsoneZaino = order.itemsList.find(i => i.name.includes('Borsone')) ? 'Borsone' : 
@@ -917,7 +920,7 @@
                     : (highlightedSizeCells[borsoneZainoCellKey] === 'skip' ? 'size-cell-skip' : '');
                 
                 let html = `
-                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId}${isVoid ? `<div class="tabella-void-badge">${order.status === 'Ordine annullato' ? 'ANNULLATO' : 'TRASFERITO'}</div>` : ''}</td>
+                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId} ${hiddenDoneButtonHtml(order)}${isVoid ? `<div class="tabella-void-badge">${order.status === 'Ordine annullato' ? 'ANNULLATO' : 'TRASFERITO'}</div>` : ''}</td>
                     <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${escapeHtml(order.customer)}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanMainSize}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize === '-' ? '-' : sockSizeText(normalizeSockSize(cleanSockSize))}</td>
@@ -1006,6 +1009,7 @@
                 tbody.appendChild(tr);
             });
             markEmptyTabellaCols();
+            updateHiddenDoneButtons();
         }
 
         function importFromGoogleSheet() {
@@ -2906,6 +2910,59 @@ function toggleHiddenFromLimited(id, hidden) {
 }
 window.toggleHiddenFromLimited = toggleHiddenFromLimited;
 
+// Ordini completati nascosti in Gestione e Tabella (o.hiddenDone, salvato sul
+// server: vale per tutti). Solo vista: Distinta e conteggi non cambiano.
+// showHiddenDone e' solo per questa sessione: al ricaricamento tornano nascosti.
+let showHiddenDone = false;
+
+function canHideDone() {
+    return !!currentUser && currentUser.role === 'admin';
+}
+
+function isHiddenDoneVisible(o) {
+    return !o.hiddenDone || showHiddenDone;
+}
+
+function hiddenDoneButtonHtml(o) {
+    if (!canHideDone()) return '';
+    return o.hiddenDone
+        ? `<button onclick="event.stopPropagation(); toggleHiddenDone(${o.id})" class="text-[10px] text-slate-600 hover:text-green-700" title="Ordine nascosto: clicca per renderlo di nuovo visibile"><i class="fas fa-eye-slash"></i> nascosto</button>`
+        : `<button onclick="event.stopPropagation(); toggleHiddenDone(${o.id})" class="text-[10px] text-gray-300 hover:text-slate-700" title="Nascondi questo ordine (completato)"><i class="fas fa-eye-slash"></i></button>`;
+}
+
+function toggleHiddenDone(id) {
+    if (!canHideDone()) return;
+    const o = orders.find(x => x.id === id);
+    if (!o) return;
+    o.hiddenDone = !o.hiddenDone;
+    logActivity('TOGGLE_HIDDEN_DONE', `Ordine ${o.displayId} (${o.customer}): ${o.hiddenDone ? 'nascosto (completato)' : 'reso di nuovo visibile'}`);
+    updateUI(); // salva e ridisegna Gestione
+    renderTabellaOrdini();
+}
+
+function toggleShowHiddenDone() {
+    showHiddenDone = !showHiddenDone;
+    renderTable();
+    renderTabellaOrdini();
+}
+
+function updateHiddenDoneButtons() {
+    const n = orders.filter(o => o.hiddenDone).length;
+    document.querySelectorAll('.hidden-done-toggle').forEach(b => {
+        b.innerHTML = showHiddenDone
+            ? `<i class="fas fa-eye-slash mr-1"></i>Nascondi di nuovo (${n})`
+            : `<i class="fas fa-eye mr-1"></i>Mostra nascosti (${n})`;
+        b.classList.toggle('bg-amber-600', showHiddenDone);
+        b.classList.toggle('hover:bg-amber-700', showHiddenDone);
+        b.classList.toggle('bg-slate-600', !showHiddenDone);
+        b.classList.toggle('hover:bg-slate-700', !showHiddenDone);
+        b.style.display = (n > 0 || showHiddenDone) ? '' : 'none';
+    });
+}
+
+window.toggleHiddenDone = toggleHiddenDone;
+window.toggleShowHiddenDone = toggleShowHiddenDone;
+
 function deleteOrder(id) {
     const order = orders.find(x => x.id === id);
     if (!order) {
@@ -3412,6 +3469,9 @@ function deleteOrder(id) {
                     if (o.hiddenFromLimited) return false;
                 }
 
+                // Ordini completati nascosti (pulsante "Mostra nascosti")
+                if (!isHiddenDoneVisible(o)) return false;
+
                 // FILTRO ID MIN/MAX - considera anche il prefisso
                 if (filterMinId && compareIds(o.displayId, filterMinId) < 0) return false;
                 if (filterMaxId && compareIds(o.displayId, filterMaxId) > 0) return false;
@@ -3454,8 +3514,9 @@ function deleteOrder(id) {
                 return sortOrder === 'asc' ? comparison : -comparison;
             });
 
+            updateHiddenDoneButtons();
             displayedOrders.forEach(o => {
-                const tr = document.createElement('tr'); const isStaff = o.type === 'Staff'; tr.className = isStaff ? "bg-red-50 hover:bg-red-100 border-b" : "hover:bg-gray-50 border-b";
+                const tr = document.createElement('tr'); const isStaff = o.type === 'Staff'; tr.className = (isStaff ? "bg-red-50 hover:bg-red-100 border-b" : "hover:bg-gray-50 border-b") + (o.hiddenDone ? " hidden-done-row" : "");
                 const kitOptions = getAvailableKitOptionsHTML(o.kitType);
                 
                 let statusInfo;
@@ -3572,7 +3633,7 @@ function deleteOrder(id) {
                 const inventoryBadge = o.inventoryScaledAt ?
                     `<span onclick="undoInventoryScale(${o.id})" class="text-[9px] bg-green-100 text-green-800 px-1 py-0.5 rounded font-bold border border-green-300 cursor-pointer hover:bg-green-200 transition" title="Scalato dal magazzino il ${o.inventoryScaledAt} - Clicca per annullare">📦 SCALATO ↩️</span>` : '';
                 
-                tr.innerHTML = `<td class="px-2 py-2 text-xs font-bold" data-payment-id-col="${o.id}" style="position:sticky; left:0; z-index:5; min-width:72px; max-width:90px; border-right:2px solid #e5e7eb;"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-center border-0 bg-transparent px-1 text-[11px] font-bold uppercase" style="min-width:68px;"></td>
+                tr.innerHTML = `<td class="px-2 py-2 text-xs font-bold" data-payment-id-col="${o.id}" style="position:sticky; left:0; z-index:5; min-width:72px; max-width:90px; border-right:2px solid #e5e7eb;"><input value="${o.displayId}" onblur="updateOrderField(${o.id}, 'displayId', this.value)" class="w-full text-center border-0 bg-transparent px-1 text-[11px] font-bold uppercase" style="min-width:68px;"><div class="text-center">${hiddenDoneButtonHtml(o)}</div></td>
                 <td class="px-2 py-1 font-medium text-xs" style="min-width:110px; max-width:150px;" data-payment-id="${o.id}"><textarea rows="2" onblur="updateOrderField(${o.id}, 'customer', this.value)" class="${customerClass}" style="resize: none; height: 36px; overflow: hidden;">${customerDisplay}</textarea><span class="block">${roleSelector}</span></td>
                 <td class="px-4 py-3"><input value="${o.roleOrYear || ''}" onblur="updateOrderField(${o.id}, 'roleOrYear', this.value)" class="w-full border rounded px-1 text-xs text-center" placeholder="Anno/Ruolo"></td>
                 <td class="px-4 py-3 text-sm text-gray-700"><select onchange="updateOrderField(${o.id}, 'kitType', this.value)" class="text-xs border rounded p-1 w-full">${kitOptions}</select></td>

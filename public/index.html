@@ -207,6 +207,8 @@
         .size-cell-scaled { background-color: #f97316 !important; color: white !important; font-weight: bold; }
         /* Grigio: capo che volutamente NON va consegnato (es. allenatore-atleta: una sola tuta). Non conta tra i Mancanti. */
         .size-cell-skip { background-color: #64748b !important; color: white !important; font-weight: bold; }
+        tr.hidden-done-row > td { opacity: 0.55; }
+        tr.hidden-done-row > td:first-child { opacity: 1; box-shadow: inset 4px 0 0 #64748b; }
 
         /* Stili Catalogo */
         .catalog-item-card { background: white; border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; }
@@ -789,6 +791,9 @@
                         <button onclick="resetAllIdFilters()" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset filtri ID">
                             <i class="fas fa-times"></i>
                         </button>
+                        <button onclick="toggleShowHiddenDone()" class="hidden-done-toggle bg-slate-600 hover:bg-slate-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Ordini completati nascosti: mostrali o nascondili di nuovo">
+                            <i class="fas fa-eye mr-1"></i>Mostra nascosti (0)
+                        </button>
                     </div>
                 </div>
                 </div> <!-- fine #filtersPanel -->
@@ -1247,6 +1252,9 @@
                         </button>
                         <button onclick="resetAllIdFilters()" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold transition" title="Reset filtri ID">
                             <i class="fas fa-times"></i>
+                        </button>
+                        <button onclick="toggleShowHiddenDone()" class="hidden-done-toggle bg-slate-600 hover:bg-slate-700 text-white px-2 py-1 rounded text-xs font-bold transition" title="Ordini completati nascosti: mostrali o nascondili di nuovo">
+                            <i class="fas fa-eye mr-1"></i>Mostra nascosti (0)
                         </button>
                         
                         <div class="h-6 w-px bg-gray-300"></div>
