@@ -846,7 +846,7 @@
             filteredOrders.forEach((order, rowIdx) => {
                 const tr = document.createElement('tr');
                 const isVoid = isTabellaVoidOrder(order);
-                tr.className = 'border hover:bg-gray-50' + (rowIdx % 2 === 1 ? ' tabella-row-alt' : '') + (isVoid ? ' tabella-row-void' : '') + (isHiddenDone(order, 't') ? ' hidden-done-row' : '');
+                tr.className = 'border hover:bg-gray-50' + (rowIdx % 2 === 1 ? ' tabella-row-alt' : '') + (isVoid ? ' tabella-row-void' : '') + (isHiddenDone(order, 't') ? ' hidden-done-row' : '') + (order.id === tabellaFocusOrderId ? ' tabella-row-focus' : '');
                 if (isVoid) tr.title = order.status;
                 
                 const borsoneZaino = order.itemsList.find(i => i.name.includes('Borsone')) ? 'Borsone' : 
@@ -920,8 +920,8 @@
                     : (highlightedSizeCells[borsoneZainoCellKey] === 'skip' ? 'size-cell-skip' : '');
                 
                 let html = `
-                    <td class="border p-1 text-center tabella-ordini-sticky-col-1" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId} ${hiddenDoneButtonHtml(order, 't')}${isVoid ? `<div class="tabella-void-badge">${order.status === 'Ordine annullato' ? 'ANNULLATO' : 'TRASFERITO'}</div>` : ''}</td>
-                    <td class="border p-1 tabella-ordini-sticky-col-2" style="font-size: 10px;">${escapeHtml(order.customer)}</td>
+                    <td class="border p-1 text-center tabella-ordini-sticky-col-1 tabella-focus-trigger" onclick="toggleTabellaRowFocus(${order.id}, this)" title="Clicca per evidenziare la riga" style="font-size: 11px; font-weight:600; white-space:nowrap;">${order.displayId} ${hiddenDoneButtonHtml(order, 't')}${isVoid ? `<div class="tabella-void-badge">${order.status === 'Ordine annullato' ? 'ANNULLATO' : 'TRASFERITO'}</div>` : ''}</td>
+                    <td class="border p-1 tabella-ordini-sticky-col-2 tabella-focus-trigger" onclick="toggleTabellaRowFocus(${order.id}, this)" title="Clicca per evidenziare la riga" style="font-size: 10px;">${escapeHtml(order.customer)}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanMainSize}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">${cleanSockSize === '-' ? '-' : sockSizeText(normalizeSockSize(cleanSockSize))}</td>
                     <td class="border p-1 text-center" style="font-size: 10px;">UNICA</td>
@@ -2973,6 +2973,18 @@ function updateHiddenDoneButtons(v) {
         b.style.display = (n > 0 || on) ? '' : 'none';
     });
 }
+
+// Riga evidenziata in Tabella (clic su ID o Cliente): una sola alla volta,
+// un secondo clic sulla stessa la toglie. Solo vista, non salvata.
+let tabellaFocusOrderId = null;
+function toggleTabellaRowFocus(id, cell) {
+    tabellaFocusOrderId = tabellaFocusOrderId === id ? null : id;
+    const tbody = cell && cell.closest('tbody');
+    if (!tbody) return;
+    tbody.querySelectorAll('tr.tabella-row-focus').forEach(r => r.classList.remove('tabella-row-focus'));
+    if (tabellaFocusOrderId !== null) cell.closest('tr').classList.add('tabella-row-focus');
+}
+window.toggleTabellaRowFocus = toggleTabellaRowFocus;
 
 window.toggleHiddenDone = toggleHiddenDone;
 window.toggleShowHiddenDone = toggleShowHiddenDone;

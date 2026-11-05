@@ -266,6 +266,16 @@
             text-decoration: line-through; font-weight: normal;
             -webkit-print-color-adjust: exact; print-color-adjust: exact;
         }
+        /* Riga evidenziata in giallo chiaro (clic su ID o Cliente) per seguire la
+           lettura. Solo a schermo: in stampa non compare. Le celle verdi/arancioni/
+           grigie restano del loro colore. */
+        @media screen {
+            #tabellaOrdiniStampabile tbody tr.tabella-row-focus > td:not(.size-cell-highlighted):not(.size-cell-scaled):not(.size-cell-skip) {
+                background-color: #fef08a !important;
+            }
+            #tabellaOrdiniStampabile tbody tr.tabella-row-focus > td:first-child { box-shadow: inset 4px 0 0 #eab308, 2px 0 4px rgba(0,0,0,0.1); }
+        }
+        #tabellaOrdiniStampabile tbody td.tabella-focus-trigger { cursor: pointer; }
         #tabellaOrdiniStampabile .tabella-void-badge {
             display: block; width: fit-content; margin: 2px auto 0; padding: 0 4px; border-radius: 3px;
             background: #6b7280; color: #fff; font-size: 8px; font-weight: bold; text-decoration: none;
