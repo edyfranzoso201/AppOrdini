@@ -1858,6 +1858,55 @@
         const match = input.match(/^(.*?)\s*\(/); return (match && match[1].trim()) ? match[1].trim() : input.trim(); }
         function updateSizes(id, t, v) { const o = orders.find(x=>x.id===id); if (!o) return; v = v.toUpperCase().trim(); if (t === 'sock') { if (v === 'UNICA') return alert('Taglia non valida'); v = normalizeSockSize(v); o.sockSize = v; o.itemsList.forEach(i => { if(isSockItem(i.name)) i.size=v; }); } if(t==='main') { o.mainSize = v; o.itemsList.forEach(i=>{ if(!isSockItem(i.name) && !i.name.includes("Borsone") && !i.name.includes("Zaino") && !i.name.includes("Cappellino") && !i.name.includes("Scaldacollo") && !i.name.includes("Guanti")) i.size=v; }); } updateUI(); }
         function updateInventory(itemName, size, value) { const key = `${itemName}_${size}`; if(value === "" || value === null) delete inventory[key]; else inventory[key] = parseInt(value); saveData(); renderMatrices(true); }
+
+        // Reset magazzino (solo admin): il pulsante va tenuto premuto 3 secondi,
+        // lasciandolo prima non succede nulla. Azzera solo la tabella
+        // "2. Magazzino (Giacenze)": calze e pallone restano. Il server tiene
+        // una copia della giacenza precedente.
+        const RESET_INVENTORY_HOLD_MS = 3000;
+        function setupResetInventoryHold() {
+            const btn = document.getElementById('btnResetInventory');
+            if (!btn || btn.dataset.holdReady) return;
+            btn.dataset.holdReady = '1';
+            let timer = null;
+            const cancel = () => { clearTimeout(timer); timer = null; btn.classList.remove('holding'); };
+            btn.addEventListener('pointerdown', (e) => {
+                if (currentUser?.role !== 'admin' || btn.disabled) return;
+                e.preventDefault();
+                clearTimeout(timer);
+                btn.classList.add('holding');
+                timer = setTimeout(() => { cancel(); resetInventoryAll(); }, RESET_INVENTORY_HOLD_MS);
+            });
+            ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
+            btn.addEventListener('contextmenu', (e) => e.preventDefault());
+        }
+        async function resetInventoryAll() {
+            if (currentUser?.role !== 'admin') return;
+            const btn = document.getElementById('btnResetInventory');
+            if (btn) btn.disabled = true;
+            try {
+                // Si azzera solo l'abbigliamento: calze e pallone restano.
+                const keep = {};
+                Object.keys(inventory || {}).forEach(k => {
+                    const name = k.lastIndexOf('_') > 0 ? k.slice(0, k.lastIndexOf('_')) : k;
+                    if (isSockItem(name) || isBallItem(name)) keep[k] = inventory[k];
+                });
+                const res = await fetch('/api/inventory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reset', inventory: keep })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok || !json.success) throw new Error(json.error || ('HTTP ' + res.status));
+                inventory = keep;
+                renderMatrices(true);
+                alert('Giacenze di magazzino azzerate (calze e accessori non toccati).');
+            } catch (e) {
+                alert('Reset magazzino non riuscito: ' + e.message);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
         // Allinea un nome articolo al catalogo corrente (globalItems), che e' la
         // sola fonte autorevole dei prezzi.
         //
@@ -6721,7 +6770,11 @@ function resetFiltersToDefault() {
             // Ordini Squadra: anche la Gestione Stato, in sola lettura (teamReadOnly in squadre.js)
             if (squadreBtn) squadreBtn.classList.toggle('hidden', currentUser.role !== 'admin' && currentUser.role !== 'status_manager');
             const squadreDistBtn = document.getElementById('nav-squadre-distinta');
-            if (squadreDistBtn) squadreDistBtn.classList.toggle('hidden', currentUser.role !== 'admin' && currentUser.role !== 'status_manager');            const squadreCatBtn = document.getElementById('nav-squadre-catalogo');
+            if (squadreDistBtn) squadreDistBtn.classList.toggle('hidden', currentUser.role !== 'admin' && currentUser.role !== 'status_manager');
+            // Reset magazzino in Distinta: solo admin
+            const resetInvBtn = document.getElementById('btnResetInventory');
+            if (resetInvBtn) { resetInvBtn.classList.toggle('hidden', currentUser.role !== 'admin'); setupResetInventoryHold(); }
+            const squadreCatBtn = document.getElementById('nav-squadre-catalogo');
             if (squadreCatBtn) squadreCatBtn.classList.toggle('hidden', currentUser.role !== 'admin');
 
             // Mostra Pagamenti SOLO per admin

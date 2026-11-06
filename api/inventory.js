@@ -21,7 +21,34 @@ export default async function handler(req, res) {
       
     } else if (req.method === 'POST') {
       const { action, inventory } = req.body;
-      
+
+      // Azzera tutte le giacenze (pulsante a pressione lunga in Distinta).
+      // 'save' rifiuta apposta un inventario vuoto, quindi serve un'azione
+      // esplicita. Solo admin; la copia precedente resta in una chiave a
+      // parte per poterla recuperare in caso di errore.
+      if (action === 'reset') {
+        const role = (session.role || '').toLowerCase();
+        if (role !== 'admin') {
+          return res.status(403).json({ success: false, error: 'Solo l\'amministratore puo\' azzerare il magazzino' });
+        }
+        const previous = await redis.get(KEYS.INVENTORY);
+        if (previous) {
+          await redis.set(KEYS.INVENTORY + ':beforeReset', { ...previous, resetAt: new Date().toISOString(), resetBy: session.username || '' });
+        }
+        // Il client azzera solo l'abbigliamento: manda le chiavi da tenere
+        // (calze, pallone). Accetta solo un oggetto semplice di numeri.
+        const keep = {};
+        if (inventory && typeof inventory === 'object' && !Array.isArray(inventory)) {
+          for (const [k, v] of Object.entries(inventory)) {
+            const n = Number(v);
+            if (typeof k === 'string' && k.length < 300 && Number.isFinite(n)) keep[k] = n;
+          }
+        }
+        await redis.set(KEYS.INVENTORY, { inventory: keep, updatedAt: new Date().toISOString() });
+        console.warn(`🧹 Magazzino azzerato da ${session.username} (${previous?.inventory ? Object.keys(previous.inventory).length : 0} chiavi, copia in ${KEYS.INVENTORY}:beforeReset)`);
+        return res.status(200).json({ success: true, message: 'Inventory reset' });
+      }
+
       if (action === 'save') {
         // Le giacenze di magazzino le modifica SOLO l'amministratore.
         //

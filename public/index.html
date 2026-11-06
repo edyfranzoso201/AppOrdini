@@ -285,6 +285,12 @@
         #tab-squadre.team-readonly button[onclick^="openTeamQuickConfig"],
         #tab-squadre-distinta.team-readonly button[onclick^="openTeamQuickConfig"],
         #tab-squadre-distinta.team-readonly button[onclick^="toggleTeamCatalog"] { display: none !important; }
+        /* Reset magazzino a pressione lunga: la barra si riempie in 3 secondi */
+        .hold-reset-btn { position: relative; overflow: hidden; background: #dc2626; color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.2); user-select: none; -webkit-user-select: none; touch-action: none; -webkit-touch-callout: none; }
+        .hold-reset-btn.hidden { display: none; }
+        .hold-reset-btn .hold-reset-fill { position: absolute; inset: 0; width: 0; background: #7f1d1d; }
+        .hold-reset-btn.holding .hold-reset-fill { width: 100%; transition: width 3s linear; }
+        .hold-reset-btn .hold-reset-label { position: relative; }
         #tabellaOrdiniStampabile .tabella-void-badge {
             display: block; width: fit-content; margin: 2px auto 0; padding: 0 4px; border-radius: 3px;
             background: #6b7280; color: #fff; font-size: 8px; font-weight: bold; text-decoration: none;
@@ -918,9 +924,16 @@
                             <div class="section-title text-yellow-800 mb-0">
                                 <span><i class="fas fa-warehouse mr-2"></i> 2. Magazzino (Giacenze)</span>
                             </div>
+                            <div class="flex items-center gap-2">
+                            <!-- Reset magazzino: solo admin, si attiva tenendo premuto 3 secondi (resetInventoryHold in app.js) -->
+                            <button type="button" id="btnResetInventory" class="hold-reset-btn hidden" title="Tieni premuto 3 secondi per azzerare le giacenze di magazzino (abbigliamento; calze e accessori restano)">
+                                <span class="hold-reset-fill"></span>
+                                <span class="hold-reset-label"><i class="fas fa-eraser mr-1"></i> Reset (tieni premuto)</span>
+                            </button>
                             <button onclick="openTableFullscreen('inv')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs font-bold transition shadow-md" title="Apri a schermo intero">
                                 <i class="fas fa-expand mr-1"></i> Espandi
                             </button>
+                            </div>
                         </div>
                         <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="min-w-full divide-y divide-gray-200 text-xs border mb-0" id="invClothingTable"><thead class="bg-yellow-50 sticky-header" id="invClothingHeader"></thead><tbody id="invClothingBody" class="divide-y divide-gray-200"></tbody></table></div>
                     </div>
