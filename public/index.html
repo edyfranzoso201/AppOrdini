@@ -276,6 +276,13 @@
             #tabellaOrdiniStampabile tbody tr.tabella-row-focus > td:first-child { box-shadow: inset 4px 0 0 #eab308, 2px 0 4px rgba(0,0,0,0.1); }
         }
         #tabellaOrdiniStampabile tbody td.tabella-focus-trigger { cursor: pointer; }
+        /* Ordini Squadra in sola lettura (Gestione Stato): via i comandi che scrivono */
+        #tab-squadre.team-readonly #teamNextIdInput,
+        #tab-squadre.team-readonly label[for="teamNextIdInput"],
+        #tab-squadre.team-readonly button[onclick^="teamOpenEditor"],
+        #tab-squadre.team-readonly button[onclick^="teamDeleteRequest"],
+        #tab-squadre.team-readonly #btnImportTeam,
+        #tab-squadre.team-readonly button[onclick^="openTeamQuickConfig"] { display: none !important; }
         #tabellaOrdiniStampabile .tabella-void-badge {
             display: block; width: fit-content; margin: 2px auto 0; padding: 0 4px; border-radius: 3px;
             background: #6b7280; color: #fff; font-size: 8px; font-weight: bold; text-decoration: none;

@@ -1488,6 +1488,7 @@ function renderTeamTab() {
             ${byStatus.length ? teamRequestsTableHtml(reqs, byStatus)
                 : `<p class="text-sm text-gray-500 p-4 text-center">${teamState.view === 'archivio' ? 'Nessuna richiesta in archivio.' : 'Nessuna richiesta. Usa "Importa materiale squadra" per leggere il modulo Google.'}</p>`}
         </div>`;
+    teamApplyReadOnly();
     const matrix = document.getElementById('teamMatrixList');
     if (!matrix) return;
     // Il catalogo articoli (pulsante DB) vive nella Distinta Squadre
@@ -1778,6 +1779,26 @@ function teamStartClock() {
 function setTeamFilter(v) {
     teamState.filter = v;
     renderTeamTab();
+}
+
+// Sola lettura (Gestione Stato): niente modifiche in Ordini Squadra. Il server
+// risponde comunque 403 a ogni scrittura che non venga dall'admin.
+function teamReadOnly() {
+    return !currentUser || currentUser.role !== 'admin';
+}
+
+function teamApplyReadOnly() {
+    const tab = document.getElementById('tab-squadre');
+    if (!tab) return;
+    const ro = teamReadOnly();
+    tab.classList.toggle('team-readonly', ro);
+    if (!ro) return;
+    // Celle modificabili della tabella Richieste (i filtri stanno nel thead e restano attivi)
+    tab.querySelectorAll('.team-requests-table tbody input, .team-requests-table tbody select, .team-requests-table tbody textarea')
+        .forEach(el => { el.disabled = true; });
+    // Nota di stato: solo da leggere
+    tab.querySelectorAll('.team-requests-table tbody [onclick^="teamOpenStatusNote"]')
+        .forEach(el => { el.removeAttribute('onclick'); el.style.cursor = 'default'; });
 }
 
 function openTeamTab() {

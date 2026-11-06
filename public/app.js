@@ -460,7 +460,9 @@
             }
 
             // Materiale squadra: solo admin (anche il server risponde 403 agli altri)
-            if (tabName.startsWith('squadre') && currentUser?.role !== 'admin') {
+            // eccetto Ordini Squadra ('squadre') in sola lettura per la Gestione Stato
+            if (tabName.startsWith('squadre') && currentUser?.role !== 'admin'
+                && !(tabName === 'squadre' && currentUser?.role === 'status_manager')) {
                 alert('⚠️ Non hai i permessi per visualizzare le schede Squadra.');
                 return;
             }
@@ -6716,7 +6718,8 @@ function resetFiltersToDefault() {
 
             // Mostra Distinta Squadre SOLO per admin
             const squadreBtn = document.getElementById('nav-squadre');
-            if (squadreBtn) squadreBtn.classList.toggle('hidden', currentUser.role !== 'admin');
+            // Ordini Squadra: anche la Gestione Stato, in sola lettura (teamReadOnly in squadre.js)
+            if (squadreBtn) squadreBtn.classList.toggle('hidden', currentUser.role !== 'admin' && currentUser.role !== 'status_manager');
             const squadreDistBtn = document.getElementById('nav-squadre-distinta');
             if (squadreDistBtn) squadreDistBtn.classList.toggle('hidden', currentUser.role !== 'admin');
             const squadreCatBtn = document.getElementById('nav-squadre-catalogo');

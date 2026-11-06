@@ -194,7 +194,8 @@ function mergeOrdersThreeWay(baseOrders, currentOrders, incomingOrders) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Materiale di squadra (?scope=team): richieste dal secondo modulo Google e il
-// loro catalogo dedicato. Blob separato dagli ordini personali, SOLO admin.
+// loro catalogo dedicato. Blob separato dagli ordini personali. Scrittura SOLO
+// admin; la Gestione Stato puo' leggere (Ordini Squadra in sola lettura).
 //
 // Le richieste hanno come id l'importKey (data del modulo + email), quindi due
 // dispositivi che importano insieme generano lo stesso id per la stessa
@@ -203,7 +204,10 @@ const TEAM_EMPTY = { requests: [], catalog: null, deletedImportKeys: [], invento
 
 async function handleTeam(req, res, session, redis) {
   const role = (session.role || '').toLowerCase();
-  if (role !== 'admin') {
+  // Lettura: admin + Gestione Stato (Ordini Squadra in sola lettura).
+  // Qualsiasi scrittura resta solo admin.
+  const canRead = role === 'admin' || role === 'status_manager';
+  if (!canRead || (req.method !== 'GET' && role !== 'admin')) {
     return res.status(403).json({ success: false, error: 'Materiale squadra riservato all\'amministratore' });
   }
 
