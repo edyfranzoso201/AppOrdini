@@ -1493,7 +1493,7 @@ function renderTeamTab() {
     if (!matrix) return;
     // Il catalogo articoli (pulsante DB) vive nella Distinta Squadre
     const cat = document.getElementById('teamCatalog');
-    if (cat) cat.innerHTML = teamCatalogHtml();
+    if (cat) cat.innerHTML = teamReadOnly() ? '' : teamCatalogHtml();
     teamRenderDistFilters(inView);
     teamRenderQuickButtons();
     const info = document.getElementById('teamMatrixInfo');
@@ -1502,7 +1502,8 @@ function renderTeamTab() {
     }
     matrix.innerHTML =
         box('2. Riepilogo Richieste (Lordo)', 'fa-list-alt', 'text-blue-900', teamMatrixHtml('GROSS', layout, teamState.inventory)) +
-        box('3. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory)) +
+        // Sola lettura: la giacenza non si mostra
+        (teamReadOnly() ? '' : box('3. Giacenza Magazzino Squadre', 'fa-warehouse', 'text-yellow-800', teamMatrixHtml('INV', layout, teamState.inventory))) +
         box(`4. Da ordinare (Netto: ${netLabel} meno giacenza) ${netInfo}`, 'fa-truck', 'text-red-800', teamMatrixHtml('NET', layout, teamState.inventory)) +
         '<div class="mb-6"></div>';
 }
@@ -1788,9 +1789,10 @@ function teamReadOnly() {
 }
 
 function teamApplyReadOnly() {
+    const ro = teamReadOnly();
+    document.getElementById('tab-squadre-distinta')?.classList.toggle('team-readonly', ro);
     const tab = document.getElementById('tab-squadre');
     if (!tab) return;
-    const ro = teamReadOnly();
     tab.classList.toggle('team-readonly', ro);
     if (!ro) return;
     // Celle modificabili della tabella Richieste (i filtri stanno nel thead e restano attivi)
